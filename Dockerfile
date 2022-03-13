@@ -2,7 +2,6 @@ FROM python:3.8
 
 WORKDIR /opt/tmp
 COPY . /opt/tmp
-COPY ./config.yml.production /opt/tmp/config.yml
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
 EXPOSE 80

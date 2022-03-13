@@ -1,0 +1,15 @@
+site:
+    debug: true
+    secret_key: "django-insecure-g7u^b^2u#gnrxv@g^1uo%igr!f3&vvqan-r)-!d(03=2l%u=v*"
+    allowed_hosts:
+    - 'https://undefined.c7w.tech'
+    - 'https://frontend-undefined.app.secoder.net'
+    - '*'
+   
+database:
+    type: "sqlite3" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
+    host: ""
+    port: 114514
+    name: ""
+    user: ""
+    password: ""

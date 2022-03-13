@@ -1,5 +1,15 @@
 # undefined 后端项目
 
+## For Users
+
+// TODO: 这里讲解后端配置文件的格式
+
+## For Developers
+
+请先阅读[项目规范](https://qynt1gy8vn.feishu.cn/docs/doccnLXFY9wOriyviGh5fv6NUgd)，然后再继续阅读本部分。
+
+// TODO: 这里讲解怎么跑通 CI/CD
+
 ## 数据库模型
 
 ### UMS
@@ -36,6 +46,12 @@
 
 // User + Project 联合唯一
 
+#### ProjectInvitationAssociation
+
++ project: FK, ind
++ invitation: Text, ind（邀请码，用户注册使用直接加身份）
++ role: Text (enum role)
+
 ### RMS
 
 #### Iteration
@@ -62,6 +78,7 @@
 + project: ForeignKey, indexed
 + title: Text, 显示名，要求与 project 联合唯一, indexed
 + description: Text (markdown)
++ rank: Integer // 同一个项目内，IR 按照 rank 顺序升序展示
 + createdBy: FK
 + createdAt: FK
 + disabled: Boolean
@@ -72,12 +89,20 @@
 + project: FK, indexed
 + title: 同上, indexed
 + description: 同上
++ priority: Integer // 开发工作中这一件事的重要性，方便进行完成进度统计
++ rank: Integer // 同一个 IR 内，SR 按照 rank 顺序升序展示
 + createdBy: FK
 + createdAt: FK
-+ IR: FK
 + disabled: Boolean
 
-#### SRIteration Association
+#### IRSRAssociation
+
+出于一个 SR 可能解决多个 IR，一个 IR 可能对应多个 SR 的考虑，建立多对多联系。
+
++ IR: FK
++ SR: FK
+
+#### SRIterationAssociation
 
 + SR: FK
 + iteration: FK
@@ -139,6 +164,7 @@ Request Body:
 + name: str 
 + password: str (already after md5, sha256 it and check)
 + email: str (Remember to check if contains '@')
++ invitation: [Optional] str
 
 Response:
 
