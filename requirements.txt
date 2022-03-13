@@ -3,3 +3,10 @@ PyYAML==6.0
 django-cors-headers
 pymysql
 mysqlclient==2.1.0
+
+djangorestframework
+markdown
+django-filter
+
+pylint-django
+yapf
