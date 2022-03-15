@@ -1,4 +1,7 @@
-*/__pycache__
-*/migrations
+__pycache__/
+migrations/
 db.sqlite3
 config.yml
+
+.vscode
+.idea
