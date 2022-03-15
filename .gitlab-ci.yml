@@ -2,16 +2,42 @@ image: registry.secoder.net/tool/deployer
 
 stages:
   - build
+  - test
   - deploy
 
-build:
+build-master:
   stage: build
   script:
     - export BUILD_IMAGE_NAME=$CI_REGISTRY_IMAGE
     - export BUILD_IMAGE_TAG=$CI_COMMIT_REF_SLUG
     - export BUILD_IMAGE_USERNAME=$CI_REGISTRY_USER
     - export BUILD_IMAGE_PASSWORD=$CI_REGISTRY_PASSWORD
+    - cp ./config.yml.production ./config.yml
     - deployer build
+  only:
+    - master
+
+build-dev:
+  stage: build
+  script:
+    - export BUILD_IMAGE_NAME=$CI_REGISTRY_IMAGE
+    - export BUILD_IMAGE_TAG=$CI_COMMIT_REF_SLUG
+    - export BUILD_IMAGE_USERNAME=$CI_REGISTRY_USER
+    - export BUILD_IMAGE_PASSWORD=$CI_REGISTRY_PASSWORD
+    - cp ./config.yml.dev ./config.yml
+    - deployer build
+  except:
+    - master
+
+style-test:
+  image: python:3.8.5
+  stage: test
+  before_script:
+    - pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
+    - cp ./config.yml.dev ./config.yml
+  script:
+    - pylint --load-plugins pylint_django --fail-under=0 --django-settings-module=backend.settings backend rms ums rdts
+    - exit $?
 
 deploy:
   stage: deploy

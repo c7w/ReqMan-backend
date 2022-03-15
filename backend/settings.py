@@ -13,8 +13,9 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 import yaml
 
-file = open('config.yml', 'r', encoding='utf-8')
+file = open('config.yml.dev', 'r', encoding='utf-8')
 env = yaml.load(file, Loader=yaml.SafeLoader)
+# print(env)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,8 +30,12 @@ SECRET_KEY = env['site']['secret_key']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env['site']['debug']
 
-ALLOWED_HOSTS = env['site']['allowed_hosts']
-CORS_ALLOWED_ORIGINS = env['site']['allowed_hosts']
+if '*' in env['site']['allowed_hosts']:
+    ALLOWED_HOSTS = ['*']
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    ALLOWED_HOSTS = env['site']['allowed_hosts']
+    CORS_ALLOWED_ORIGINS = env['site']['allowed_hosts']
 
 
 # Application definition
@@ -43,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'rest_framework',
     'rms',
     'ums',
     'rdts'

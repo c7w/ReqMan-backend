@@ -1,7 +1,7 @@
-__pycache__/
 migrations/
 db.sqlite3
 config.yml
-
+venv
 .vscode
 .idea
+__pycache__/
