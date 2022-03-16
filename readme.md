@@ -217,7 +217,7 @@ Response:
 
 + id
 + title
-+ desc
++ description
 
 Response
 

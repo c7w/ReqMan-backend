@@ -43,6 +43,20 @@ class UMS_Tests(TestCase):
         )
 
     """
+    create a template client as u1
+    """
+    def login_u1(self, sess):
+        c = Client()
+        c.cookies['sessionId'] = sess
+
+        c.post("/ums/login/", data={
+            'identity': self.u1.name,
+            'password': self.u1.password
+        }, content_type="application/json")
+
+        return c
+
+    """
     illegal cookie
     """
     def test_lacking_cookie(self):
@@ -102,12 +116,7 @@ class UMS_Tests(TestCase):
     /ums/logout
     """
     def test_logout(self):
-        c = Client()
-        c.cookies['sessionId'] = '5'
-        c.post("/ums/login/", data={
-            'identity': self.u1.email,
-            'password': self.u1.password
-        }, content_type="application/json")
+        c = self.login_u1('5')
 
         resp = c.post("/ums/logout/")
         self.assertEqual(resp.json()['code'], 0)
@@ -119,12 +128,7 @@ class UMS_Tests(TestCase):
     /ums/user/
     """
     def test_user(self):
-        c = Client()
-        c.cookies['sessionId'] = '6'
-        c.post("/ums/login/", data={
-            'identity': self.u1.email,
-            'password': self.u1.password
-        }, content_type="application/json")
+        c = self.login_u1('6')
         resp = c.get("/ums/user/")
         self.assertEqual(resp.json()['data']['user']['id'], self.u1.id)
         self.assertEqual(len(resp.json()['data']['projects']), 2)
@@ -187,9 +191,113 @@ class UMS_Tests(TestCase):
         }, content_type="application/json")
         self.assertEqual(resp.json()['code'], 1)
 
+        # successful
         resp = c.post("/ums/project/", data={
             'project': self.p1.id
         }, content_type="application/json")
         self.assertEqual(resp.json()['code'], 0)
 
+    """
+    /ums/modify_project/
+    """
+    def test_modify_project(self):
+        c = self.login_u1(10)
 
+        # not supermaster
+        resp = c.post("/ums/modify_project/", data={
+            'project': self.p2.id,
+            'title': 't',
+            'description': 'd'
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # invalid project id
+        resp = c.post("/ums/modify_project/", data={
+            'project': 9801
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # successful
+        resp = c.post("/ums/modify_project/", data={
+            'project': self.p1.id,
+            'title': 'NewTitle',
+            'description': 'NewDesc'
+        }, content_type="application/json")
+        self.p1 = Project.objects.get(id=self.p1.id) # refresh model
+        self.assertEqual(resp.json()['code'], 0)
+        self.assertEqual(self.p1.title, 'NewTitle')
+        self.assertEqual(self.p1.description, 'NewDesc')
+
+
+    def inv_legal_check(self, resp):
+        inv = resp.json()['data']['invitation']
+        self.assertEqual(resp.json()['code'], 0)
+        self.assertEqual(len(inv), 8)
+        self.assertEqual(inv,
+                         ProjectInvitationAssociation.objects.filter(
+                             project=self.p1,
+                         ).first().invitation)
+        return inv
+
+    """
+    /ums/get_invitation/
+    """
+    def test_get_invitation(self):
+        c = self.login_u1(11)
+
+        # not supermaster
+        resp = c.post("/ums/modify_project/", data={
+            'project': self.p2.id,
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # invalid project id
+        resp = c.post("/ums/modify_project/", data={
+            'project': 9999
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # successful
+        resp = c.post("/ums/get_invitation/", data={
+            'project': self.p1.id,
+        }, content_type="application/json")
+        inv = self.inv_legal_check(resp)
+
+        # do not change
+        resp = c.post("/ums/get_invitation/", data={
+            'project': self.p1.id,
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 0)
+        self.assertEqual(resp.json()['data']['invitation'], inv)
+
+    """
+    /ums/refresh_invitation/
+    """
+    def test_refresh_invitation(self):
+        c = self.login_u1('12')
+
+        # not supermaster
+        resp = c.post("/ums/refresh_invitation/", data={
+            'project': self.p2.id,
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # invalid project id
+        resp = c.post("/ums/refresh_invitation/", data={
+            'project': 7777
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # successful
+        resp = c.post("/ums/refresh_invitation/", data={
+            'project': self.p1.id,
+        }, content_type="application/json")
+        inv = self.inv_legal_check(resp)
+
+        # do change
+        resp = c.post("/ums/refresh_invitation/", data={
+            'project': self.p1.id,
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 0)
+        self.assertEqual(len(resp.json()['data']['invitation']), 8)
+        self.assertNotEqual(resp.json()['data']['invitation'], inv)

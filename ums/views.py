@@ -235,9 +235,10 @@ class UserViewSet(viewsets.ViewSet):
             return FAIL
 
         title = require(req.data, 'title')
-        desc = require(req.data, 'desc')
+        desc = require(req.data, 'description')
         proj.title = title
         proj.description = desc
+        proj.save()
 
         return SUCC
 

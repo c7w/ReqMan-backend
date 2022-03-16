@@ -8,7 +8,7 @@ def invitation_exist(proj: Project, role: str):
     return ProjectInvitationAssociation.objects.filter(
         project=proj,
         role=role
-    )
+    ).first()
 
 def create_inv(proj: Project, role: str):
     return ProjectInvitationAssociation.objects.create(
@@ -43,7 +43,7 @@ def is_role(user: User, proj: Project, role: str):
         user=user,
         project=proj,
         role=role
-    ).first
+    ).first()
 
 def email_valid(email: str):
     return re.match(
