@@ -8,6 +8,8 @@ from utils.sessions import *
 from ums.utils import *
 from django.forms.models import model_to_dict
 
+DEFAULT_INVITED_ROLE = 'member'
+
 def require(lst, attr_name):
     """
     Require a field in parameter lst.
@@ -18,7 +20,10 @@ def require(lst, attr_name):
         raise ParamErr(f'missing {attr_name}.')
     return attr
 
-def intify(inp: str):
+def intify(inp):
+    if type(inp) == int:
+        return inp
+
     try:
         return int(inp)
     except ValueError:
@@ -225,9 +230,54 @@ class UserViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['POST'])
     def refresh_invitation(self, req: Request):
-        pass
+        proj = intify(require(req.data, 'project'))
+        proj = proj_exist(proj)
+        if not proj:
+            return FAIL
+
+        if not is_role(req.user, proj, 'supermaster'):
+            return FAIL
+
+        inv = invitation_exist(proj, DEFAULT_INVITED_ROLE)
+
+        if inv:
+            inv.invitation = gen_invitation()
+        else:
+            inv = ProjectInvitationAssociation.objects.create(
+                project=proj,
+                role=DEFAULT_INVITED_ROLE,
+                invitation=gen_invitation()
+            )
+
+        return Response({
+            'code': 0,
+            'data': {
+                'invitation': inv.invitation
+            }
+        })
+
 
     @action(detail=False, methods=['POST'])
-    def get_invitaion(self, req: Request):
-        pass
+    def get_invitation(self, req: Request):
+        proj = intify(require(req.data, 'project'))
+        proj = proj_exist(proj)
+        if not proj:
+            return FAIL
+
+        if not is_role(req.user, proj, 'supermaster'):
+            return FAIL
+
+        inv = invitation_exist(proj, DEFAULT_INVITED_ROLE)
+        if not inv:
+            inv = create_inv(proj, DEFAULT_INVITED_ROLE)
+
+        return Response({
+            'code': 0,
+            'data': {
+                'invitation': inv.invitation
+            }
+        })
+
+
+
 

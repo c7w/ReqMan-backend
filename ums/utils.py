@@ -1,5 +1,32 @@
 from ums.models import *
 import re
+from random import sample
+import string
+
+def invitation_exist(proj: Project, role: str):
+    assert role in Role
+    return ProjectInvitationAssociation.objects.filter(
+        project=proj,
+        role=role
+    )
+
+def create_inv(proj: Project, role: str):
+    return ProjectInvitationAssociation.objects.create(
+        project=proj,
+        role=role,
+        invitation=gen_invitation()
+    )
+
+def renew_inv(inv: ProjectInvitationAssociation):
+    inv.invitation = gen_invitation()
+    return inv
+
+def gen_invitation():
+    while True:
+        invitation = ''.join(sample(string.ascii_uppercase + string.digits, 8))
+        if not ProjectInvitationAssociation.objects.filter(invitation=invitation).first():
+            break
+    return invitation
 
 def all_users():
     return User.objects.filter(disabled=False)

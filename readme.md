@@ -213,13 +213,30 @@ Response:
     + project: proj_to_list
     + users: filter and user_to_list
 
-#### `[POST] /ums/mosify_project/`
+#### `[POST] /ums/modify_project/`
 
 + 
 
 #### `[POST] /ums/refresh_invitation/`
 
-#### `[GET] /ums/get_invitation/`
++ project
+
+Response
+
++ code 0 if successful else 1
++ data 
+    + invitation
+
+#### `[POST] /ums/get_invitation/`
+
++ project
+
+Response
+
++ code 0 if successful else 1
++ data 
+    + invitation
+
 
 
 
