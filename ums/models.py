@@ -8,7 +8,7 @@ class User(models.Model):
     name = models.TextField(unique=True)
     password = models.TextField()
     email = models.TextField()
-    avatar = models.TextField()
+    avatar = models.TextField(default='')
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now()))
 

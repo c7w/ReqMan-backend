@@ -160,3 +160,5 @@ REST_FRAMEWORK = {
     'UNAUTHENTICATED_USER': None,
     'EXCEPTION_HANDLER': 'utils.exceptions.handler'
 }
+
+APPEND_SLASH=True

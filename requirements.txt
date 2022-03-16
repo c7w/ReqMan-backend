@@ -10,3 +10,4 @@ django-filter
 
 pylint-django
 yapf
+argon2-cffi
