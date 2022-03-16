@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
 from utils.exceptions import ParamErr
-from ums.models import User
+from ums.models import User, Project
 from utils.sessions import *
 # from argon2 import PasswordHasher
 from ums.utils import *
@@ -122,11 +122,15 @@ class UserViewSet(viewsets.ViewSet):
         return Response({
             'user': model_to_dict(req.user, exclude=[
                 'password',
-                'disabled'
+                'disabled',
+                'project'
             ]),
-            'projects': [],
-            'schedule':{
+            'projects': [model_to_dict(p, exclude=['disabled'])
+                         for p in req.user.project.all()],
+            'schedule': {
                 'done': [],
+                'wip': [],
+                'todo': []
             }
         })
 
