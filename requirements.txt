@@ -10,3 +10,7 @@ django-filter
 
 pylint-django
 yapf
+
+pytest
+pytest-django
+coverage

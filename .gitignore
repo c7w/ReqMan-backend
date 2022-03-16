@@ -5,3 +5,7 @@ venv
 .vscode
 .idea
 __pycache__/
+
+.pytest_cache/
+xunit-reports/
+coverage-reports/
