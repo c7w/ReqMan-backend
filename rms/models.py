@@ -1,6 +1,6 @@
-from faulthandler import disable
-from operator import index
-from venv import create
+import datetime as dt
+import pytz
+from backend.settings import TIME_ZONE
 from django.db import models
 
 # Create your models here.
@@ -12,8 +12,8 @@ class Iteration(models.Model):
     title = models.TextField()
     begin = models.FloatField()
     end = models.FloatField()
-    disabled = models.BooleanField()
-    createAt = models.FloatField()
+    disabled = models.BooleanField(default=False)
+    createAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE))))
 
     class Meta:
         indexes = [
@@ -29,8 +29,9 @@ class UserIterationAssociation(models.Model):
         indexes = [
             models.Index(fields=['user']),
             models.Index(fields=['iteration']),
+            models.Index(fields=['user','iteration'])
         ]
-        unique_together = ('user','iteration')
+        unique_together = ['user','iteration']
 
 
 class IR(models.Model):
@@ -40,15 +41,16 @@ class IR(models.Model):
     description = models.TextField()
     rank = models.IntegerField()
     createdBy = models.ForeignKey('ums.User',on_delete=models.CASCADE)
-    createdAt = models.FloatField()
-    disabled = models.BooleanField()
+    createdAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE))))
+    disabled = models.BooleanField(default=False)
 
     class Meta:
         indexes = [
             models.Index(fields=['project']),
-            models.Index(fields=['title'])
+            models.Index(fields=['title']),
+            models.Index(fields=['title','project'])
         ]
-        unique_together = ('project','title')
+        unique_together = ['project','title']
 
 class SR(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -57,6 +59,7 @@ class SR(models.Model):
     description = models.TextField()
     priority = models.IntegerField()
     rank = models.IntegerField()
+    IR = models.ManyToManyField(IR,through='IRSRAssociation')
 
     class SRState(models.TextChoices):
         TODO = 'TODO'
@@ -66,15 +69,16 @@ class SR(models.Model):
     
     state = models.TextField(choices=SRState.choices)
     createdBy = models.ForeignKey('ums.User',on_delete=models.CASCADE)
-    createdAt = models.FloatField()
-    disabled = models.BooleanField()
+    createdAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE))))
+    disabled = models.BooleanField(default=False)
 
     class Meta:
         indexes = [
             models.Index(fields=['project']),
-            models.Index(fields=['title'])
+            models.Index(fields=['title']),
+            models.Index(fields=['title','project'])
         ]
-        unique_together = ('project','title')
+        unique_together = ['project','title']
 
 class IRSRAssociation(models.Model):
     IR = models.ForeignKey(IR,on_delete=models.CASCADE)
@@ -91,15 +95,16 @@ class Service(models.Model):
     description = models.TextField()
     rank = models.IntegerField()
     createdBy = models.ForeignKey('ums.User',on_delete=models.CASCADE)
-    createdAt = models.FloatField()
-    disabled = models.BooleanField()
+    createdAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE))))
+    disabled = models.BooleanField(default=False)
 
     class Meta:
         indexes = [
             models.Index(fields=['project']),
-            models.Index(fields=['title'])
+            models.Index(fields=['title']),
+            models.Index(fields=['title','project'])
         ]
-        unique_together = ('project','title')
+        unique_together = ['project','title']
 
 class SR_Changelog(models.Model):
     id = models.BigIntegerField(primary_key=True)
@@ -115,4 +120,4 @@ class SR_Changelog(models.Model):
     formerState = models.TextField(choices=SRState.choices)
     formerDescription = models.TextField()
     changedBy = models.ForeignKey('ums.User',on_delete=models.CASCADE)
-    changedAt = models.FloatField()
+    changedAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE))))
