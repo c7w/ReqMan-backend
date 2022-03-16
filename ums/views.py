@@ -42,10 +42,10 @@ class UserViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['POST'])
     def register(self, req: Request):
-        name = require(req.POST, 'name')
-        password = require(req.POST, 'password')
-        email = require(req.POST, 'email')
-        invitation = req.POST.get('invitation')
+        name = require(req.data, 'name')
+        password = require(req.data, 'password')
+        email = require(req.data, 'email')
+        invitation = req.data.get('invitation')
 
         if name_valid(name) \
             and not name_exist(name) \
@@ -65,8 +65,8 @@ class UserViewSet(viewsets.ViewSet):
                 'code': 1
             })
 
-        identity = require(req.POST, 'identity')
-        password = require(req.POST, 'password')
+        identity = require(req.data, 'identity')
+        password = require(req.data, 'password')
 
         if name_valid(identity):
             usr = name_exist(identity)

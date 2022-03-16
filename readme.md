@@ -125,7 +125,7 @@ Request params:
 
 Response:
 
-+ code: 0 if success, -1 if not found, 1 if disabled
++ code: 0 if success, 1 if not logged in
 + data
   + user: model_to_dict(User)
   + projects: filter and model_to_dict(Project)
