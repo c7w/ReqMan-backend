@@ -2,6 +2,21 @@ import datetime
 import random
 import string
 from ums.models import SessionPool, EXPIRE_DAYS, User
+from rest_framework import authentication, exceptions, status
+from rest_framework.request import Request
+
+class Unauthenticated(exceptions.APIException):
+    status_code = status.HTTP_403_FORBIDDEN
+
+
+
+
+class SessionAuthentication(authentication.BaseAuthentication):
+    def authenticate(self, req: Request):
+        session_id = getSessionId(req)
+        if not session_id:
+            raise exceptions.AuthenticationFailed('Request without a sessionId')
+        return (verifySessionId(session_id), session_id)
 
 def getSessionId(request):
     return request.COOKIES.get('sessionId')
