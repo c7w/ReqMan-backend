@@ -215,7 +215,13 @@ Response:
 
 #### `[POST] /ums/modify_project/`
 
-+ 
++ id
++ title
++ desc
+
+Response
+
++ code 0 if successful else 1
 
 #### `[POST] /ums/refresh_invitation/`
 

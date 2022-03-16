@@ -45,7 +45,7 @@ SUCC = Response({
     'code': 0
 })
 FAIL = Response({
-                'code': 1
+    'code': 1
 })
 
 class UserViewSet(viewsets.ViewSet):
@@ -226,7 +226,21 @@ class UserViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['POST'])
     def modify_project(self, req: Request):
-        pass
+        proj = intify(require(req.data, 'project'))
+        proj = proj_exist(proj)
+        if not proj:
+            return FAIL
+
+        if not is_role(req.user, proj, "supermaster"):
+            return FAIL
+
+        title = require(req.data, 'title')
+        desc = require(req.data, 'desc')
+        proj.title = title
+        proj.description = desc
+
+        return SUCC
+
 
     @action(detail=False, methods=['POST'])
     def refresh_invitation(self, req: Request):
