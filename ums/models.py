@@ -1,5 +1,7 @@
 from django.db import models
 import datetime as dt
+import pytz
+from backend.settings import TIME_ZONE
 
 EXPIRE_DAYS = 3
 
@@ -10,7 +12,7 @@ class User(models.Model):
     email = models.TextField()
     avatar = models.TextField(default='')
     disabled = models.BooleanField(default=False)
-    createdAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now()))
+    createdAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE))))
 
     class Meta:
         indexes = [

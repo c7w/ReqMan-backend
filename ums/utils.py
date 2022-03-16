@@ -7,10 +7,16 @@ def email_valid(email: str):
         email
     ) is not None
 
-def name_dup(name: str):
+def name_exist(name: str):
     usr = User.objects.filter(name=name).first()
-    return usr is not None
+    return usr
 
-def email_dup(email: str):
+def email_exist(email: str):
     usr = User.objects.filter(email=email).first()
-    return usr is not None
+    return usr
+
+def name_valid(name: str):
+    return re.match(
+        r"^[a-zA-Z0-9_\-\.]+$",
+        name
+    ) is not None

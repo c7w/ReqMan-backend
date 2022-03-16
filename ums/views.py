@@ -4,11 +4,15 @@ from rest_framework.request import Request
 from rest_framework import viewsets
 from utils.exceptions import ParamErr
 from ums.models import User
-from utils.sessions import SessionAuthentication
-from argon2 import PasswordHasher
+from utils.sessions import *
+# from argon2 import PasswordHasher
 from ums.utils import *
 
 def require(lst, attr_name):
+    """
+    Require a field in parameter lst.
+    If it does not exist, raise ParamErr
+    """
     attr = lst.get(attr_name)
     if not attr:
         raise ParamErr(f'missing {attr_name}.')
@@ -25,14 +29,14 @@ class UserViewSet(viewsets.ViewSet):
     def check_username_available(self, req: Request):
         name = require(req.GET, 'name')
         return Response({
-            'code': 1 if name_dup(name) else 0
+            'code': 1 if name_exist(name) else 0
         })
 
     @action(detail=False)
     def check_email_available(self, req: Request):
         email = require(req.GET, 'email')
         return Response({
-            'code': 1 if email_dup(email) else 0
+            'code': 1 if email_exist(email) else 0
         })
 
     @action(detail=False, methods=['POST'])
@@ -42,30 +46,59 @@ class UserViewSet(viewsets.ViewSet):
         email = require(req.POST, 'email')
         invitation = req.POST.get('invitation')
 
-        if name_dup(name):
+        if name_valid(name) \
+            and not name_exist(name) \
+            and email_valid(email) \
+            and not email_exist(email):
+            User.objects.create(name=name, password=password, email=email)
+            return SUCC
+
+        return Response({
+            'code': 1
+        })
+
+    @action(detail=False, methods=['POST'])
+    def login(self, req: Request):
+        if req.user:
             return Response({
-                'code': 1,
-                'field': 'name dup'
+                'code': 1
             })
 
-        if not email_valid(email):
+        identity = require(req.POST, 'identity')
+        password = require(req.POST, 'password')
+
+        if name_valid(identity):
+            usr = name_exist(identity)
+            if usr:
+                if usr.password == password:
+                    bind_session_id(req.COOKIES['sessionId'], usr)
+                    return SUCC
+                else:
+                    return Response({
+                        'code': 3
+                    })
+            else:
+                return Response({
+                    'code': 2
+                })
+        elif email_valid(identity):
+            usr = email_exist(identity)
+            if usr:
+                if usr.password == password:
+                    bind_session_id(req.COOKIES['sessionId'], usr)
+                    return SUCC
+                else:
+                    return Response({
+                        'code': 3
+                    })
+            else:
+                return Response({
+                    'code': 2
+                })
+        else:
             return Response({
-                'code': 2,
-                'field': 'email invalid'
+                'code': 2
             })
-
-        if email_dup(email):
-            return Response({
-                'code': 3,
-                'field': 'email dup'
-            })
-
-        ph = PasswordHasher()
-        password = ph.hash(password)
-
-        User.objects.create(name=name, password=password, email=email)
-
-        return SUCC
 
 
 
