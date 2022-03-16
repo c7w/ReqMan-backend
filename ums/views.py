@@ -7,6 +7,7 @@ from ums.models import User
 from utils.sessions import *
 # from argon2 import PasswordHasher
 from ums.utils import *
+from django.forms.models import model_to_dict
 
 def require(lst, attr_name):
     """
@@ -100,8 +101,33 @@ class UserViewSet(viewsets.ViewSet):
                 'code': 2
             })
 
+    @action(detail=False, methods=['POST'])
+    def logout(self, req: Request):
+        if not req.user:
+            return Response({
+                'code': 1
+            })
 
+        disable_session_id(req.auth)
+        return Response({
+            'code': 0
+        })
 
-
+    @action(detail=False)
+    def user(self, req: Request):
+        if not req.user:
+            return Response({
+                'code': 1
+            })
+        return Response({
+            'user': model_to_dict(req.user, exclude=[
+                'password',
+                'disabled'
+            ]),
+            'projects': [],
+            'schedule':{
+                'done': [],
+            }
+        })
 
 

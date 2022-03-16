@@ -8,12 +8,16 @@ def email_valid(email: str):
     ) is not None
 
 def name_exist(name: str):
-    usr = User.objects.filter(name=name).first()
-    return usr
+    users = User.objects.filter(name=name)
+    for u in users:
+        if not u.disabled:
+            return u
 
 def email_exist(email: str):
-    usr = User.objects.filter(email=email).first()
-    return usr
+    users = User.objects.filter(email=email).first()
+    for u in users:
+        if not u.disabled:
+            return u
 
 def name_valid(name: str):
     return re.match(

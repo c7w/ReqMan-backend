@@ -36,6 +36,6 @@ def bind_session_id(sessionId: str, user: User):
     SessionPool.objects.create(sessionId=sessionId, user=user)
 
 def disable_session_id(sessionId: str):
-    record = SessionPool.objects.filter(sessionId).first()
+    record = SessionPool.objects.filter(sessionId=sessionId).first()
     if record:
         record.delete()
