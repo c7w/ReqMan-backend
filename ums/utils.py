@@ -1,13 +1,22 @@
 from ums.models import *
 import re
 
+def all_users():
+    return User.objects.filter(disabled=False)
+
+def in_proj(user: User, proj: Project):
+    return UserProjectAssociation.objects.filter(
+        user=user,
+        project=proj
+    ).first()
+
 def is_role(user: User, proj: Project, role: str):
     assert role in Role
     return UserProjectAssociation.objects.filter(
         user=user,
         project=proj,
         role=role
-    ).first is not None
+    ).first
 
 def email_valid(email: str):
     return re.match(
@@ -22,10 +31,22 @@ def name_exist(name: str):
             return u
 
 def email_exist(email: str):
-    users = User.objects.filter(email=email).first()
+    users = User.objects.filter(email=email)
     for u in users:
         if not u.disabled:
             return u
+
+def user_exist(id: int):
+    users = User.objects.filter(id=id)
+    for u in users:
+        if not u.disabled:
+            return u
+
+def proj_exist(id: int):
+    projs = Project.objects.filter(id=id)
+    for p in projs:
+        if not p.disabled:
+            return p
 
 def name_valid(name: str):
     return re.match(

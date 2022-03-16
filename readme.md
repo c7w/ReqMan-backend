@@ -209,11 +209,17 @@ Response:
 Response:
 
 + code: 0 if successful, 1 otherwise
-+ data: model_to_dict(project)
-
-
++ data: 
+    + project: proj_to_list
+    + users: filter and user_to_list
 
 #### `[POST] /ums/mosify_project/`
 
-#### `[POST] /ums/get_new_invitation/`
++ 
+
+#### `[POST] /ums/refresh_invitation/`
+
+#### `[GET] /ums/get_invitation/`
+
+
 
