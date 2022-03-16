@@ -168,7 +168,7 @@ Request Body:
 
 Response:
 
-+ code: 0 if success, 1 otherwise
++ code: 0 if success, 2 invalid invitation, 1 otherwise
 
 #### `[GET] /ums/check_username_available`
 

@@ -11,6 +11,7 @@ class Project(models.Model):
     description = models.TextField()
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE))))
+
     class Meta:
         indexes = [
             models.Index(fields=['title']),
@@ -43,10 +44,17 @@ class SessionPool(models.Model):
             models.Index(fields=['sessionId'])
         ]
 
+class Role(models.TextChoices):
+    MEMBER = "member"
+    DEV = 'dev'
+    QA = 'qa'
+    SYS = 'sys'
+    SUPERMASTER = 'supermaster'
+
 class UserProjectAssociation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    role = models.CharField(max_length=20)
+    role = models.TextField(choices=Role.choices)
 
     class Meta:
         unique_together = ['user', 'project']
@@ -56,3 +64,13 @@ class UserProjectAssociation(models.Model):
             models.Index(fields=['user', 'project'])
         ]
 
+class ProjectInvitationAssociation(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    invitation = models.TextField()
+    role = models.TextField(choices=Role.choices)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['project']),
+            models.Index(fields=['invitation'])
+        ]

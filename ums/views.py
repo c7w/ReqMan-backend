@@ -3,9 +3,8 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
 from utils.exceptions import ParamErr
-from ums.models import User, Project
+from ums.models import *
 from utils.sessions import *
-# from argon2 import PasswordHasher
 from ums.utils import *
 from django.forms.models import model_to_dict
 
@@ -46,12 +45,26 @@ class UserViewSet(viewsets.ViewSet):
         password = require(req.data, 'password')
         email = require(req.data, 'email')
         invitation = req.data.get('invitation')
+        relation = None
+        if invitation:
+            relation = ProjectInvitationAssociation.\
+                objects.filter(invitation=invitation).first()
+            if not relation:
+                return Response({
+                    'code': 2
+                })
 
         if name_valid(name) \
             and not name_exist(name) \
             and email_valid(email) \
             and not email_exist(email):
-            User.objects.create(name=name, password=password, email=email)
+            usr = User.objects.create(name=name, password=password, email=email)
+            if relation:
+                UserProjectAssociation.objects.create(
+                    project=relation.project,
+                    user=usr,
+                    role=relation.role
+                )
             return SUCC
 
         return Response({
