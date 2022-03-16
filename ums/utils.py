@@ -1,5 +1,13 @@
-from ums.models import User
+from ums.models import *
 import re
+
+def is_role(user: User, proj: Project, role: str):
+    assert role in Role
+    return UserProjectAssociation.objects.filter(
+        user=user,
+        project=proj,
+        role=role
+    ).first is not None
 
 def email_valid(email: str):
     return re.match(

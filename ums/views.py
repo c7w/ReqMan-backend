@@ -18,8 +18,17 @@ def require(lst, attr_name):
         raise ParamErr(f'missing {attr_name}.')
     return attr
 
+def intify(inp: str):
+    try:
+        return int(inp)
+    except ValueError:
+        raise ParamErr(f"{inp} cannot be convert to an integer")
+
 SUCC = Response({
     'code': 0
+})
+FAIL = Response({
+                'code': 1
 })
 
 class UserViewSet(viewsets.ViewSet):
@@ -129,22 +138,52 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False)
     def user(self, req: Request):
         if not req.user:
-            return Response({
-                'code': 1
-            })
+            return FAIL
         return Response({
-            'user': model_to_dict(req.user, exclude=[
-                'password',
-                'disabled',
-                'project'
-            ]),
-            'projects': [model_to_dict(p, exclude=['disabled'])
-                         for p in req.user.project.all()],
-            'schedule': {
-                'done': [],
-                'wip': [],
-                'todo': []
+            'code': 0,
+            'data': {
+                'user': model_to_dict(req.user, exclude=[
+                    'password',
+                    'disabled',
+                    'project'
+                ]),
+                'projects': [model_to_dict(p, exclude=['disabled'])
+                             for p in req.user.project.all()],
+                'schedule': {
+                    'done': [],
+                    'wip': [],
+                    'todo': []
+                }
             }
         })
+
+    @action(detail=False, methods=['POST'])
+    def modify_user_role(self, req:Request):
+        proj = require(req.data, 'project')
+        user = require(req.data, 'user')
+        role = require(req.data, 'role')
+
+        # params check
+        if role not in Role:
+            return FAIL
+
+        user = User.objects.filter(id=intify(user)).first()
+        if not user:
+            return FAIL
+
+        proj = Project.objects.filter(id=intify(proj)).first()
+        if not proj:
+            return FAIL
+
+        # supermaster check
+        if not is_role(req.user, proj, 'supermaster'):
+            return FAIL
+
+        relation = UserProjectAssociation(user=user, proj=proj)
+        if not relation:
+            return FAIL
+        relation.role = role
+
+        return SUCC
 
 

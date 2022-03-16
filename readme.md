@@ -117,7 +117,9 @@
 
 ### `/ums/`
 
-#### `[GET] /ums/user`
+**所有请求都需要在cookie中包含sessionId，否则一律403 Forbidden** 
+
+#### `[GET] /ums/user/`
 
 Request params:
 
@@ -134,7 +136,7 @@ Response:
     + wip: {}
     + todo: {}
 
-#### `[POST] /ums/login`
+#### `[POST] /ums/login/`
 
 Request Body:
 
@@ -146,7 +148,7 @@ Response:
 
 + code: 0 if success, 1 if already logged in, 2 if invalid identity, 3 if invalid password
 
-#### `[POST] /ums/logout`
+#### `[POST] /ums/logout/`
 
 Request Body:
 
@@ -156,7 +158,7 @@ Response:
 
 + code: 0 if success, 1 if not logged in
 
-#### `[POST] /ums/register`
+#### `[POST] /ums/register/`
 
 Request Body:
 
@@ -170,7 +172,7 @@ Response:
 
 + code: 0 if success, 2 invalid invitation, 1 otherwise
 
-#### `[GET] /ums/check_username_available`
+#### `[GET] /ums/check_username_available/`
 
 + name: str
 
@@ -182,7 +184,7 @@ Explanation:
 
 + 这里 available 是说没有被占用，用户可以使用这个来注册
 
-#### `[GET] /ums/check_email_available`
+#### `[GET] /ums/check_email_available/`
 
 + email: str
 
@@ -190,6 +192,28 @@ Response:
 
 + code: 0 if available, 1 otherwise
 
+#### `[POST] /ums/modify_user_role/`
+
++ project: int, project_id
++ user: int, user_id, user to be modified
++ role: str, the name of the new role, using (member, dev, qa, sys, supermaster)
+
+Response:
+
++ code 0 if successful, 1 otherwise
+
+#### `[POST] /ums/project/`
+
++ project: id of the project
+
+Response:
+
++ code: 0 if successful, 1 otherwise
++ data: model_to_dict(project)
 
 
-// TODO
+
+#### `[POST] /ums/mosify_project/`
+
+#### `[POST] /ums/get_new_invitation/`
+
