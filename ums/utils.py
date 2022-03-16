@@ -52,13 +52,13 @@ def email_valid(email: str):
     ) is not None
 
 def name_exist(name: str):
-    users = User.objects.filter(name=name)
+    users = User.objects.filter(name__iexact=name)
     for u in users:
         if not u.disabled:
             return u
 
 def email_exist(email: str):
-    users = User.objects.filter(email=email)
+    users = User.objects.filter(email__iexact=email)
     for u in users:
         if not u.disabled:
             return u

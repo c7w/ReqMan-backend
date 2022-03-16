@@ -51,16 +51,16 @@ FAIL = Response({
 class UserViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
 
-    @action(detail=False)
+    @action(detail=False, methods=['POST'])
     def check_username_available(self, req: Request):
-        name = require(req.GET, 'name')
+        name = require(req.data, 'name')
         return Response({
             'code': 1 if name_exist(name) else 0
         })
 
-    @action(detail=False)
+    @action(detail=False, methods=['POST'])
     def check_email_available(self, req: Request):
-        email = require(req.GET, 'email')
+        email = require(req.data, 'email')
         return Response({
             'code': 1 if email_exist(email) else 0
         })
@@ -109,7 +109,7 @@ class UserViewSet(viewsets.ViewSet):
 
         if name_valid(identity):
             usr = name_exist(identity)
-            if usr:
+            if usr and usr.name == identity:
                 if usr.password == password:
                     bind_session_id(req.COOKIES['sessionId'], usr)
                     return SUCC

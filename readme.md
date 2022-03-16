@@ -172,7 +172,7 @@ Response:
 
 + code: 0 if success, 2 invalid invitation, 1 otherwise
 
-#### `[GET] /ums/check_username_available/`
+#### `[POST] /ums/check_username_available/`
 
 + name: str
 
@@ -184,7 +184,7 @@ Explanation:
 
 + 这里 available 是说没有被占用，用户可以使用这个来注册
 
-#### `[GET] /ums/check_email_available/`
+#### `[POST] /ums/check_email_available/`
 
 + email: str
 
