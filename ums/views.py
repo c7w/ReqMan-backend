@@ -8,54 +8,28 @@ from utils.sessions import *
 from ums.utils import *
 from django.forms.models import model_to_dict
 
-def require(lst, attr_name):
-    """
-    Require a field in parameter lst.
-    If it does not exist, raise ParamErr
-    """
-    attr = lst.get(attr_name)
-    if not attr:
-        raise ParamErr(f'missing {attr_name}.')
-    return attr
-
-def intify(inp: str):
-    try:
-        return int(inp)
-    except ValueError:
-        raise ParamErr(f"{inp} cannot be convert to an integer")
-
-def user_to_list(user: User):
-    return model_to_dict(user, exclude=[
-        'password',
-        'disabled',
-        'project'
-    ])
-
-def proj_to_list(proj: Project):
-    return model_to_dict(proj, exclude=[
-        'disabled'
-    ])
+DEFAULT_INVITED_ROLE = 'member'
 
 SUCC = Response({
     'code': 0
 })
 FAIL = Response({
-                'code': 1
+    'code': 1
 })
 
 class UserViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
 
-    @action(detail=False)
+    @action(detail=False, methods=['POST'])
     def check_username_available(self, req: Request):
-        name = require(req.GET, 'name')
+        name = require(req.data, 'name')
         return Response({
             'code': 1 if name_exist(name) else 0
         })
 
-    @action(detail=False)
+    @action(detail=False, methods=['POST'])
     def check_email_available(self, req: Request):
-        email = require(req.GET, 'email')
+        email = require(req.data, 'email')
         return Response({
             'code': 1 if email_exist(email) else 0
         })
@@ -104,7 +78,7 @@ class UserViewSet(viewsets.ViewSet):
 
         if name_valid(identity):
             usr = name_exist(identity)
-            if usr:
+            if usr and usr.name == identity:
                 if usr.password == password:
                     bind_session_id(req.COOKIES['sessionId'], usr)
                     return SUCC
@@ -167,33 +141,59 @@ class UserViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['POST'])
     def modify_user_role(self, req:Request):
-        proj = intify(require(req.data, 'project'))
-        user = intify(require(req.data, 'user'))
-        role = require(req.data, 'role')
-
-        # params check
-        if role not in Role:
-            return FAIL
-
-        user = user_exist(user)
-        if not user:
-            return FAIL
-
-        proj = proj_exist(proj)
-        if not proj:
+        relation = proj_user_assoc(req)['relation']
+        if not relation:
             return FAIL
 
         # supermaster check
-        if not is_role(req.user, proj, 'supermaster'):
+        if not is_role(req.user, relation.project, Role.SUPERMASTER):
             return FAIL
 
-        relation = UserProjectAssociation(user=user, proj=proj)
-        if not relation:
+        role = require(req.data, 'role')
+        if role not in Role:
             return FAIL
+
         relation.role = role
         relation.save()
 
         return SUCC
+
+    @action(detail=False, methods=['POST'])
+    def project_rm_user(self, req:Request):
+        relation = proj_user_assoc(req)['relation']
+        if not relation:
+            return FAIL
+
+        # supermaster check
+        if not is_role(req.user, relation.project, Role.SUPERMASTER):
+            return FAIL
+
+        relation.delete()
+        return SUCC
+
+    @action(detail=False, methods=['POST'])
+    def project_add_user(self, req:Request):
+        info = proj_user_assoc(req)
+
+        # supermaster check
+        if not is_role(req.user, info['proj'] , Role.SUPERMASTER):
+            return FAIL
+
+        role = require(req.data, 'role')
+        if role not in Role:
+            return FAIL
+
+        # cannot add a user that already exist
+        if info['relation']:
+            return FAIL
+
+        UserProjectAssociation.objects.create(
+            user=info['user'],
+            project=info['proj'],
+            role=role
+        )
+        return SUCC
+
 
     @action(detail=False, methods=['POST'])
     def project(self,  req: Request):
@@ -221,13 +221,73 @@ class UserViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['POST'])
     def modify_project(self, req: Request):
-        pass
+        proj = intify(require(req.data, 'project'))
+        proj = proj_exist(proj)
+        if not proj:
+            return FAIL
+
+        if not is_role(req.user, proj, "supermaster"):
+            return FAIL
+
+        title = require(req.data, 'title')
+        desc = require(req.data, 'description')
+        proj.title = title
+        proj.description = desc
+        proj.save()
+
+        return SUCC
+
 
     @action(detail=False, methods=['POST'])
     def refresh_invitation(self, req: Request):
-        pass
+        proj = intify(require(req.data, 'project'))
+        proj = proj_exist(proj)
+        if not proj:
+            return FAIL
+
+        if not is_role(req.user, proj, Role.SUPERMASTER):
+            return FAIL
+
+        inv = invitation_exist(proj, DEFAULT_INVITED_ROLE)
+
+        if inv:
+            inv.invitation = gen_invitation()
+        else:
+            inv = ProjectInvitationAssociation.objects.create(
+                project=proj,
+                role=DEFAULT_INVITED_ROLE,
+                invitation=gen_invitation()
+            )
+
+        return Response({
+            'code': 0,
+            'data': {
+                'invitation': inv.invitation
+            }
+        })
+
 
     @action(detail=False, methods=['POST'])
-    def get_invitaion(self, req: Request):
-        pass
+    def get_invitation(self, req: Request):
+        proj = intify(require(req.data, 'project'))
+        proj = proj_exist(proj)
+        if not proj:
+            return FAIL
+
+        if not is_role(req.user, proj, Role.SUPERMASTER):
+            return FAIL
+
+        inv = invitation_exist(proj, DEFAULT_INVITED_ROLE)
+        if not inv:
+            inv = create_inv(proj, DEFAULT_INVITED_ROLE)
+
+        return Response({
+            'code': 0,
+            'data': {
+                'invitation': inv.invitation
+            }
+        })
+
+
+
 
