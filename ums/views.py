@@ -189,7 +189,7 @@ class UserViewSet(viewsets.ViewSet):
 
         UserProjectAssociation.objects.create(
             user=info['user'],
-            project=info['project'],
+            project=info['proj'],
             role=role
         )
         return SUCC

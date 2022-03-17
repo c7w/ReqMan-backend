@@ -30,6 +30,11 @@ class UMS_Tests(TestCase):
             title='ProjTit2',
             description='Desc2'
         )
+        self.p3 = Project.objects.create(
+            title='ProjTit3',
+            description='Desc3'
+        )
+
 
         UserProjectAssociation.objects.create(
             user=self.u1,
@@ -250,6 +255,11 @@ class UMS_Tests(TestCase):
                          ).first().invitation)
         return inv
 
+    def get_inv_for(self, c, proj_id):
+        return c.post("/ums/get_invitation/", data={
+            'project': proj_id,
+        }, content_type="application/json")
+
     """
     /ums/get_invitation/
     """
@@ -257,27 +267,19 @@ class UMS_Tests(TestCase):
         c = self.login_u1('11')
 
         # not supermaster
-        resp = c.post("/ums/modify_project/", data={
-            'project': self.p2.id,
-        }, content_type="application/json")
+        resp = self.get_inv_for(c, self.p2.id)
         self.assertEqual(resp.json()['code'], 1)
 
         # invalid project id
-        resp = c.post("/ums/modify_project/", data={
-            'project': 9999
-        }, content_type="application/json")
+        resp = self.get_inv_for(c, 9999)
         self.assertEqual(resp.json()['code'], 1)
 
         # successful
-        resp = c.post("/ums/get_invitation/", data={
-            'project': self.p1.id,
-        }, content_type="application/json")
+        resp = self.get_inv_for(c, self.p1.id)
         inv = self.inv_legal_check(resp)
 
         # do not change
-        resp = c.post("/ums/get_invitation/", data={
-            'project': self.p1.id,
-        }, content_type="application/json")
+        resp = self.get_inv_for(c, self.p1.id)
         self.assertEqual(resp.json()['code'], 0)
         self.assertEqual(resp.json()['data']['invitation'], inv)
 
@@ -317,7 +319,7 @@ class UMS_Tests(TestCase):
     /ums/modify_user_role/
     """
     def test_modify_user_role(self):
-        c = self.login_u1('12')
+        c = self.login_u1('13')
 
         # not supermaster
         resp = c.post("/ums/modify_user_role/", data={
@@ -363,15 +365,163 @@ class UMS_Tests(TestCase):
             project=self.p1
         ).first().role, Role.MEMBER)
 
+    """
+    /ums/project_add_user/
+    """
+    def test_project_add_user(self):
+        c = self.login_u1('14')
+        url = '/ums/project_add_user/'
+
+        # not supermaster
+        resp = c.post(url, data={
+            'project': self.p3.id,
+            'user': self.u3.id,
+            'role': Role.MEMBER
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # invalid project id
+        resp = c.post(url, data={
+            'project': -1,
+            'user': self.u3.id,
+            'role': Role.SUPERMASTER
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # invalid role
+        resp = c.post(url, data={
+            'project': self.p1.id,
+            'user': self.u3.id,
+            'role': 'undefined'
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # in project
+        resp = c.post(url, data={
+            'project': self.p1.id,
+            'user': self.u2.id,
+            'role': Role.DEV
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # successful
+        resp = c.post(url, data={
+            'project': self.p1.id,
+            'user': self.u3.id,
+            'role': Role.MEMBER
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 0)
+        self.assertEqual(UserProjectAssociation.objects.filter(
+            user=self.u3,
+            project=self.p1
+        ).first().role, Role.MEMBER)
 
 
-        # resp = c.post("/ums/project/", data={
-        #     'project': self.p1.id
-        # }, content_type="application/json")
-        # self.assertEqual(resp.json()['code'], 0)
-        # p2_chk = False
-        # for u in resp.json()['data']['users']:
-        #     if u.id == self.u3.id:
-        #         p2_chk = True
-        #         break
-        # self.assertEqual(p2_chk, True)
+    """
+    /ums/project_rm_user/
+    """
+    def test_project_rm_user(self):
+        c = self.login_u1('15')
+        url = '/ums/project_rm_user/'
+
+        # not supermaster
+        resp = c.post(url, data={
+            'project': self.p2.id,
+            'user': self.u2.id,
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # invalid project id
+        resp = c.post(url, data={
+            'project': -1,
+            'user': self.u3.id,
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # successful
+        resp = c.post(url, data={
+            'project': self.p1.id,
+            'user': self.u2.id,
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 0)
+        self.assertEqual(UserProjectAssociation.objects.filter(
+            user=self.u2,
+            project=self.p1
+        ).first(), None)
+
+        # not in project
+        resp = c.post(url, data={
+            'project': self.p1.id,
+            'user': self.u2.id,
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+    """
+    /ums/register/
+    """
+    def test_register(self):
+        url = '/ums/register/'
+        c = Client()
+        c.cookies['sessionId'] = '16'
+
+        d = self.login_u1('17')
+        self.get_inv_for(d, self.p1.id)
+        self.assertNotEqual(len(ProjectInvitationAssociation.objects.all()), 0)
+
+        # invalid invitation
+        resp = c.post(url, data={
+            'name': 'Dave',
+            'password': 'Dave123456',
+            'email': 'dave@secoder.net',
+            'invitation': 'invalid'
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 2)
+
+        # successful with invitation
+        inv = ProjectInvitationAssociation.objects.filter(project=self.p1).first()
+        resp = c.post(url, data={
+            'name': 'Dave',
+            'password': 'Dave123456',
+            'email': 'dave@secoder.net',
+            'invitation': inv.invitation
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 0)
+        new_user = User.objects.filter(name='Dave').first()
+        self.assertEqual(new_user.email, 'dave@secoder.net')
+        self.assertEqual(new_user.password, 'Dave123456')
+        self.assertEqual(UserProjectAssociation.objects.filter(
+            project=inv.project,
+            user=new_user
+        ).first().role, inv.role)
+
+        # successful without invitation
+        resp = c.post(url, data={
+            'name': 'Eve',
+            'password': 'Eve123456',
+            'email': 'eve@secoder.net',
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 0)
+        new_user = User.objects.filter(name='Eve').first()
+        self.assertEqual(new_user.email, 'eve@secoder.net')
+        self.assertEqual(new_user.password, 'Eve123456')
+        self.assertEqual(len(UserProjectAssociation.objects.filter(
+            user=new_user
+        )), 0)
+
+        # dup name
+        resp = c.post(url, data={
+            'name': 'eve',
+            'password': 'Eve123456',
+            'email': 'eve_dup_name@secoder.net',
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # dup email
+        resp = c.post(url, data={
+            'name': 'EEE',
+            'password': 'Eve123456',
+            'email': 'EVE@secoder.net',
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+
