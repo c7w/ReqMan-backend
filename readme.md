@@ -81,7 +81,7 @@
 + description: Text (markdown)
 + rank: Integer // 同一个项目内，IR 按照 rank 顺序升序展示
 + createdBy: FK
-+ createdAt: FK
++ createdAt: float
 + disabled: Boolean
 
 #### SR
@@ -94,7 +94,7 @@
 + rank: Integer // 同一个 IR 内，SR 按照 rank 顺序升序展示
 + state: enum("TODO", "WIP", "Reviewing", "Done")
 + createdBy: FK
-+ createdAt: FK
++ createdAt: float
 + disabled: Boolean
 
 #### IRSRAssociation
@@ -126,7 +126,8 @@
 + project: FK
 + SR: FK
 + description: Text (Why It was changed?)
-+ formerState:
++ formerState: enum
++ formerDescription: Text
 + changedBy: FK
 + changedAt: float
 
