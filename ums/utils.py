@@ -4,13 +4,12 @@ import string
 
 from rest_framework.request import Request
 from utils.exceptions import ParamErr
-from ums.models import *
-from utils.sessions import *
+from ums.models import Project, User, UserProjectAssociation, ProjectInvitationAssociation, Role
 from django.forms.models import model_to_dict
 
 def require(lst, attr_name):
     """
-    Require a field in parameter lst.
+    require a field in parameter lst.
     If it does not exist, raise ParamErr
     """
     attr = lst.get(attr_name)
@@ -19,6 +18,10 @@ def require(lst, attr_name):
     return attr
 
 def intify(inp):
+    """
+    check input, if input is int, return
+    if input is str, turn it into string, if unable to convert, raise ParamErr
+    """
     if type(inp) == int:
         return inp
 
@@ -28,6 +31,9 @@ def intify(inp):
         raise ParamErr(f"{inp} cannot be convert to an integer")
 
 def user_to_list(user: User):
+    """
+    convert user instance into a dict
+    """
     return model_to_dict(user, exclude=[
         'password',
         'disabled',
@@ -35,13 +41,16 @@ def user_to_list(user: User):
     ])
 
 def proj_to_list(proj: Project):
+    """
+    convert project instance into a dict
+    """
     return model_to_dict(proj, exclude=[
         'disabled'
     ])
 
 def proj_user_assoc(req: Request):
     """
-    check
+    require and check project, user, relation fields in request
     1. project valid
     2. user valid
     3. user in project
@@ -70,6 +79,11 @@ def proj_user_assoc(req: Request):
     }
 
 def invitation_exist(proj: Project, role: str):
+    """
+    check the pair (proj, role)
+    if exist, return the ProjectInvitationAssociation instance
+    if not, return None
+    """
     assert role in Role
     return ProjectInvitationAssociation.objects.filter(
         project=proj,
@@ -77,6 +91,9 @@ def invitation_exist(proj: Project, role: str):
     ).first()
 
 def create_inv(proj: Project, role: str):
+    """
+    create a ProjectInvitationAssociation
+    """
     return ProjectInvitationAssociation.objects.create(
         project=proj,
         role=role,
@@ -84,10 +101,17 @@ def create_inv(proj: Project, role: str):
     )
 
 def renew_inv(inv: ProjectInvitationAssociation):
+    """
+    create a ProjectInvitationAssociation
+    """
     inv.invitation = gen_invitation()
+    inv.save()
     return inv
 
 def gen_invitation():
+    """
+    generate the invitation string and return it
+    """
     while True:
         invitation = ''.join(sample(string.ascii_uppercase + string.digits, 8))
         if not ProjectInvitationAssociation.objects.filter(invitation=invitation).first():
@@ -95,15 +119,28 @@ def gen_invitation():
     return invitation
 
 def all_users():
+    """
+    return all users, filtered the disabled ones
+    """
     return User.objects.filter(disabled=False)
 
 def in_proj(user: User, proj: Project):
+    """
+    check if user in project
+    if true, return UserProjectAssociation instance
+    else return None
+    """
     return UserProjectAssociation.objects.filter(
         user=user,
         project=proj
     ).first()
 
 def is_role(user: User, proj: Project, role: str):
+    """
+    check if user in project with specific role
+    if true, return UserProjectAssociation instance
+    else return None
+    """
     assert role in Role
     return UserProjectAssociation.objects.filter(
         user=user,
@@ -112,36 +149,58 @@ def is_role(user: User, proj: Project, role: str):
     ).first()
 
 def email_valid(email: str):
+    """
+    check if email valid
+    """
     return re.match(
         r"^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$",
         email
     ) is not None
 
 def name_exist(name: str):
+    """
+    check if name exist, NOT case sensitive
+    return user instance if possible
+    """
     users = User.objects.filter(name__iexact=name)
     for u in users:
         if not u.disabled:
             return u
 
 def email_exist(email: str):
+    """
+    check if email exist, NOT case sensitive
+    return user instance if possible
+    """
     users = User.objects.filter(email__iexact=email)
     for u in users:
         if not u.disabled:
             return u
 
 def user_exist(id: int):
+    """
+    check if user exist, NOT case sensitive
+    return user instance if possible
+    """
     users = User.objects.filter(id=id)
     for u in users:
         if not u.disabled:
             return u
 
 def proj_exist(id: int):
+    """
+    check if project exist, NOT case sensitive
+    return project instance if possible
+    """
     projs = Project.objects.filter(id=id)
     for p in projs:
         if not p.disabled:
             return p
 
 def name_valid(name: str):
+    """
+    check if name valid
+    """
     return re.match(
         r"^[a-zA-Z0-9_\-\.]+$",
         name
