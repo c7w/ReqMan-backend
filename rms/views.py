@@ -1,4 +1,3 @@
-from sre_constants import SUCCESS
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -9,24 +8,19 @@ from utils.sessions import SessionAuthentication
 from ums.utils import *
 from rms.utils import *
 
-
 class RMSViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
 
-    @action(detail=False)
-    def project(sef,req:Request):
-        proj = intify(require(req.data,'project'))
+    def projectGET(self,req:Request):
+        proj = intify(require(req.query_params,'project'))
         proj = proj_exist(proj)
         if not proj:
             return FAIL
-        
         if not in_proj(req.user,proj):
             return FAIL
 
-        type = require(req.data,'type')
-        if not type:
-            return FAIL
-        
+        type = require(req.query_params,'type')
+
         resu = []
         if type == 'ir':
             resu = getIR(proj)
@@ -48,9 +42,7 @@ class RMSViewSet(viewsets.ViewSet):
             'data':resu
         })
 
-
-    @action(detail=False,methods=['POST'])
-    def project(self,req:Request):
+    def projectPOST(self,req:Request):
         proj = intify(require(req.data,'project'))
         proj = proj_exist(proj)
         if not proj:
@@ -59,21 +51,24 @@ class RMSViewSet(viewsets.ViewSet):
             return FAIL
         
         operation = require(req.data,'operation')
-        if not operation:
-            return FAIL
 
         type = require(req.data,'type')
-        if not type:
-            return FAIL
-        
+
         isFail = False
         if operation =='create':
             isFail = createOperation(proj,type,req.data)
         elif operation == 'update':
-            pass
+            isFail = updateOperation(proj,type,req.data)
         if operation == 'delete':
-            pass
+            isFail = deleteOperation(proj,type,req.data)
         if isFail:
             return FAIL
         else:
             return SUCC
+
+    @action(detail=False,methods=['POST','GET'])
+    def project(self,req:Request):
+        if req.method == 'POST':
+            return RMSViewSet.projectPOST(self,req)
+        elif req.method == 'GET':
+            return RMSViewSet.projectGET(self,req)

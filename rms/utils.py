@@ -58,14 +58,8 @@ def createSRIterationAssociation(data:dict):
     SRIterationAssociation.objects.create(**data)
 
 def createOperation(proj:Project,type:string,data:dict):
-    
-    
     dataList = require(data,'data')
-    if not dataList:
-        return True
     data = require(dataList,'updateData')
-    if not data:
-        return True
     create = {}
     create.update(data)
     create['project']=proj
@@ -84,5 +78,72 @@ def createOperation(proj:Project,type:string,data:dict):
         createService(create)
     elif type == 'user-iteration':
         createUserIterationAssociation(create)
+    return False
 
-        
+def updateIR(id:int,data:dict):
+    IR.objects.filter(id=id).update(**data)
+
+def updateSR(id:int,data:dict):
+    SR.objects.filter(id=id).update(**data)
+
+def updateIteration(id:int,data:dict):
+    Iteration.objects.filter(id=id).update(**data)
+
+def updateService(id:int,data:dict):
+    Service.objects.filter(id=id).update(**data)
+
+def updateOperation(proj:Project,type:string,data:dict):
+    dataList = require(data,'data')
+    data = require(dataList,'updateData')
+    updates = {}
+    updates.update(data)
+    id = require(dataList,"id")
+    if type == 'ir':
+        updateIR(id,data)
+    elif type == 'sr':
+        updateSR(id,data)
+    elif type == 'iteration':
+        updateIteration(id,data)
+    elif type == 'service':
+        updateService(id,data)
+    return False
+
+def deleteOperation(proj:Project,type:string,data:dict):
+    dataList = require(data,'data')
+    if type == 'ir':
+        id = require(dataList,'id')
+        IR.objects.filter(id=id).update(disabled=True)
+    elif type == 'sr':
+        id = require(dataList,'id')
+        SR.objects.filter(id=id).update(disabled=True)
+    elif type == 'iteration':
+        id = require(dataList,'id')
+        Iteration.objects.filter(id=id).update(disabled=True)
+    elif type == 'ir-sr':
+        IRId = require(dataList,'IRId')
+        SRId = require(dataList,'SRId')
+        sr = SR.objects.filter(id=SRId).first()
+        ir = IR.objects.filter(id=IRId).first()
+        IRSRAssociation.objects.filter(
+            SR=sr,
+            IR=ir
+        ).delete()
+    elif type == 'sr-iteration':
+        iterationId = require(dataList,'iterationId')
+        SRId = require(dataList,'SRId')
+        iteration = Iteration.objects.filter(id=iterationId).first()
+        sr = SR.objects.filter(id=SRId).first()
+        SRIterationAssociation.objects.filter(
+            iteration=iteration,
+            SR=sr
+        ).delete()
+    elif type == 'service':
+        id = require(dataList,'id')
+        Service.objects.filter(id=id).update(disabled=True)
+    elif type == 'user-iteration':
+        iterationId = require(dataList,'iterationId')
+        iteration = Iteration.objects.filter(id=iterationId).first()
+        UserIterationAssociation.objects.filter(
+            iteration=iteration
+        ).delete()
+    return False
