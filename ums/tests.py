@@ -16,6 +16,11 @@ class UMS_Tests(TestCase):
             password='789123',
             email='bob@secoder.net'
         )
+        self.u3 = User.objects.create(
+            name='Caorl',
+            password='159357',
+            email='carol@secoder.net'
+        )
 
         self.p1 = Project.objects.create(
             title='ProjTit1',
@@ -41,6 +46,12 @@ class UMS_Tests(TestCase):
             project=self.p1,
             role=Role.DEV
         )
+        UserProjectAssociation.objects.create(
+            user=self.u3,
+            project=self.p2,
+            role=Role.SUPERMASTER
+        )
+
 
     """
     create a template client as u1
@@ -201,7 +212,7 @@ class UMS_Tests(TestCase):
     /ums/modify_project/
     """
     def test_modify_project(self):
-        c = self.login_u1(10)
+        c = self.login_u1('10')
 
         # not supermaster
         resp = c.post("/ums/modify_project/", data={
@@ -243,7 +254,7 @@ class UMS_Tests(TestCase):
     /ums/get_invitation/
     """
     def test_get_invitation(self):
-        c = self.login_u1(11)
+        c = self.login_u1('11')
 
         # not supermaster
         resp = c.post("/ums/modify_project/", data={
@@ -301,3 +312,66 @@ class UMS_Tests(TestCase):
         self.assertEqual(resp.json()['code'], 0)
         self.assertEqual(len(resp.json()['data']['invitation']), 8)
         self.assertNotEqual(resp.json()['data']['invitation'], inv)
+
+    """
+    /ums/modify_user_role/
+    """
+    def test_modify_user_role(self):
+        c = self.login_u1('12')
+
+        # not supermaster
+        resp = c.post("/ums/modify_user_role/", data={
+            'project': self.p2.id,
+            'user': self.u2.id,
+            'role': Role.SUPERMASTER
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # invalid project id
+        resp = c.post("/ums/modify_user_role/", data={
+            'project': -1,
+            'user': self.u2.id,
+            'role': Role.SUPERMASTER
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # invalid role
+        resp = c.post("/ums/modify_user_role/", data={
+            'project': self.p1.id,
+            'user': self.u2.id,
+            'role': 'undefined'
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # not in project
+        resp = c.post("/ums/modify_user_role/", data={
+            'project': self.p1.id,
+            'user': self.u3.id,
+            'role': Role.DEV
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        # successful
+        resp = c.post("/ums/modify_user_role/", data={
+            'project': self.p1.id,
+            'user': self.u2.id,
+            'role': Role.MEMBER
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 0)
+        self.assertEqual(UserProjectAssociation.objects.filter(
+            user=self.u2,
+            project=self.p1
+        ).first().role, Role.MEMBER)
+
+
+
+        # resp = c.post("/ums/project/", data={
+        #     'project': self.p1.id
+        # }, content_type="application/json")
+        # self.assertEqual(resp.json()['code'], 0)
+        # p2_chk = False
+        # for u in resp.json()['data']['users']:
+        #     if u.id == self.u3.id:
+        #         p2_chk = True
+        #         break
+        # self.assertEqual(p2_chk, True)

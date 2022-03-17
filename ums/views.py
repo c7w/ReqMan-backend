@@ -173,26 +173,24 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['POST'])
     def modify_user_role(self, req:Request):
         proj = intify(require(req.data, 'project'))
-        user = intify(require(req.data, 'user'))
-        role = require(req.data, 'role')
-
-        # params check
-        if role not in Role:
+        proj = proj_exist(proj)
+        if not proj:
             return FAIL
 
+        user = intify(require(req.data, 'user'))
         user = user_exist(user)
         if not user:
             return FAIL
 
-        proj = proj_exist(proj)
-        if not proj:
+        role = require(req.data, 'role')
+        if role not in Role:
             return FAIL
 
         # supermaster check
         if not is_role(req.user, proj, 'supermaster'):
             return FAIL
 
-        relation = UserProjectAssociation(user=user, proj=proj)
+        relation = in_proj(user, proj)
         if not relation:
             return FAIL
         relation.role = role
