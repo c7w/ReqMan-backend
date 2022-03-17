@@ -202,6 +202,25 @@ Response:
 
 + code 0 if successful, 1 otherwise
 
+#### `[POST] /ums/project_rm_user/`
+
++ project: int, project_id
++ user: int, user_id, user to be removed
+
+Response:
+
++ code 0 if successful, 1 otherwise
+
+#### `[POST] /ums/project_add_user/`
+
++ project: int, project_id
++ user: int, user_id, user to be added
++ role: str, the name of the new role, using (member, dev, qa, sys, supermaster)
+
+Response:
+
++ code 0 if successful, 1 otherwise
+
 #### `[POST] /ums/project/`
 
 + project: id of the project
