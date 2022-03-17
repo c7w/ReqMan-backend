@@ -1,8 +1,10 @@
+from sre_constants import SUCCESS
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
 from ums.views import FAIL
+from ums.views import SUCC
 from utils.sessions import SessionAuthentication
 from ums.utils import *
 from rms.utils import *
@@ -49,4 +51,29 @@ class RMSViewSet(viewsets.ViewSet):
 
     @action(detail=False,methods=['POST'])
     def project(self,req:Request):
-        pass
+        proj = intify(require(req.data,'project'))
+        proj = proj_exist(proj)
+        if not proj:
+            return FAIL
+        if not is_role(req.user,proj,Role.SYS):
+            return FAIL
+        
+        operation = require(req.data,'operation')
+        if not operation:
+            return FAIL
+
+        type = require(req.data,'type')
+        if not type:
+            return FAIL
+        
+        isFail = False
+        if operation =='create':
+            isFail = createOperation(proj,type,req.data)
+        elif operation == 'update':
+            pass
+        if operation == 'delete':
+            pass
+        if isFail:
+            return FAIL
+        else:
+            return SUCC
