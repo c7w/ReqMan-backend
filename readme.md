@@ -297,7 +297,7 @@ Response:
 
 + code: 0 if success, 2 invalid invitation, 1 otherwise
 
-#### `[GET] /ums/check_username_available/`
+#### `[POST] /ums/check_username_available/`
 
 + name: str
 
@@ -309,7 +309,7 @@ Explanation:
 
 + 这里 available 是说没有被占用，用户可以使用这个来注册
 
-#### `[GET] /ums/check_email_available/`
+#### `[POST] /ums/check_email_available/`
 
 + email: str
 
@@ -321,6 +321,25 @@ Response:
 
 + project: int, project_id
 + user: int, user_id, user to be modified
++ role: str, the name of the new role, using (member, dev, qa, sys, supermaster)
+
+Response:
+
++ code 0 if successful, 1 otherwise
+
+#### `[POST] /ums/project_rm_user/`
+
++ project: int, project_id
++ user: int, user_id, user to be removed
+
+Response:
+
++ code 0 if successful, 1 otherwise
+
+#### `[POST] /ums/project_add_user/`
+
++ project: int, project_id
++ user: int, user_id, user to be added
 + role: str, the name of the new role, using (member, dev, qa, sys, supermaster)
 
 Response:
@@ -340,11 +359,34 @@ Response:
 
 #### `[POST] /ums/modify_project/`
 
-+ 
++ id
++ title
++ description
+
+Response
+
++ code 0 if successful else 1
 
 #### `[POST] /ums/refresh_invitation/`
 
-#### `[GET] /ums/get_invitation/`
++ project
+
+Response
+
++ code 0 if successful else 1
++ data 
+    + invitation
+
+#### `[POST] /ums/get_invitation/`
+
++ project
+
+Response
+
++ code 0 if successful else 1
++ data 
+    + invitation
+
 
 
 ### `/rms/`

@@ -37,7 +37,7 @@ class User(models.Model):
 class SessionPool(models.Model):
     sessionId = models.CharField(max_length=32)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    expireAt = models.DateTimeField(default=dt.datetime.now() + dt.timedelta(days=EXPIRE_DAYS))
+    expireAt = models.DateTimeField(default=dt.datetime.now(pytz.timezone(TIME_ZONE)) + dt.timedelta(days=EXPIRE_DAYS))
 
     class Mata:
         indexes = [
