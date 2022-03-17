@@ -32,7 +32,7 @@ def getSRIteration(proj:Project):
 def getIRSR(proj:Project):
     IRs = getIR(proj)
     SRs = getSR(proj)
-    return IRSRAssociation.objects.filter(IR in IRs ,SR in SRs)
+    return IRSRAssociation.objects.filter(IR__in= IRs ,SR__in =SRs)
 
 
 

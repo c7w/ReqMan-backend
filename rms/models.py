@@ -59,7 +59,7 @@ class SR(models.Model):
     description = models.TextField()
     priority = models.IntegerField()
     rank = models.IntegerField()
-    IR = models.ManyToManyField(IR,through='IRSRAssociation')
+    IR = models.ManyToManyField(IR,through='IRSRAssociation',)
 
     class SRState(models.TextChoices):
         TODO = 'TODO'

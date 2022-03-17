@@ -11,6 +11,9 @@ from rms.utils import *
 class RMSViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
 
+    def serialize(self,resu:dict,excludeList:list=[]):
+        return [model_to_dict(p,exclude=excludeList) for p in resu] 
+
     def projectGET(self,req:Request):
         proj = intify(require(req.query_params,'project'))
         proj = proj_exist(proj)
@@ -18,25 +21,26 @@ class RMSViewSet(viewsets.ViewSet):
             return FAIL
         if not in_proj(req.user,proj):
             return FAIL
-
         type = require(req.query_params,'type')
 
         resu = []
         if type == 'ir':
-            resu = getIR(proj)
+            resu =  self.serialize(getIR(proj),['SR'])
         elif type == 'sr':
-            resu = getSR(proj)
+            resu = self.serialize(getSR(proj),['IR'])
         elif type == 'iteration':
-            resu = getIeration(proj)
+            resu = self.serialize(getIeration(proj))
         elif type == 'ir-sr':
-            resu = getIRSR(proj)
+            resu = self.serialize(getIRSR(proj))
         elif type == 'sr-iteration':
-            resu = getSRIteration(proj)
+            resu = self.serialize(getSRIteration(proj))
         elif type == 'service':
-            resu = getService(proj)
+            resu = self.serialize(getService(proj))
         elif type == 'user-iteration':
-            resu = getUserIteration(proj)
-        
+            resu = self.serialize(getUserIteration(proj))
+        else:
+            return FAIL
+        print(resu)
         return Response({
             'code':0,
             'data':resu
