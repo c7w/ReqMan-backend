@@ -35,7 +35,6 @@
 + id: BigAuto, primary_key
 + title: Text, indexed
 + description: Text, indexed (Markdown)
-+ invitation: Text
 + disabled: Boolean
 + createdAt: Float
 
@@ -243,11 +242,17 @@ Repo > 设置 > 访问令牌
 
 ### `/ums/`
 
-#### `[GET] /ums/user`
+**所有请求都需要在cookie中包含sessionId，否则一律403 Forbidden** 
+
+#### `[GET] /ums/user/`
+
+Request params:
+
++ sessionId: str
 
 Response:
 
-+ code: 0 if success, -1 if not found, 1 if disabled
++ code: 0 if success, 1 if not logged in
 + data
   + user: model_to_dict(User)
   + projects: filter and model_to_dict(Project)
@@ -255,12 +260,12 @@ Response:
     + done: {}
     + wip: {}
     + todo: {}
-  + projects: []
 
-#### `[POST] /ums/login`
+#### `[POST] /ums/login/`
 
 Request Body:
 
+- sessionId: str
 - identity: str (username or email)
 - password: str (already after md5, sha256 it and check)
 
@@ -268,16 +273,21 @@ Response:
 
 + code: 0 if success, 1 if already logged in, 2 if invalid identity, 3 if invalid password
 
-#### `[POST] /ums/logout`
+#### `[POST] /ums/logout/`
+
+Request Body:
+
++ sessionId: str
 
 Response:
 
 + code: 0 if success, 1 if not logged in
 
-#### `[POST] /ums/register`
+#### `[POST] /ums/register/`
 
 Request Body:
 
++ sessionId: str
 + name: str 
 + password: str (already after md5, sha256 it and check)
 + email: str (Remember to check if contains '@')
@@ -285,9 +295,9 @@ Request Body:
 
 Response:
 
-+ code: 0 if success, 1 otherwise
++ code: 0 if success, 2 invalid invitation, 1 otherwise
 
-#### `[GET] /ums/check_username_available`
+#### `[GET] /ums/check_username_available/`
 
 + name: str
 
@@ -299,7 +309,7 @@ Explanation:
 
 + 这里 available 是说没有被占用，用户可以使用这个来注册
 
-#### `[GET] /ums/check_email_available`
+#### `[GET] /ums/check_email_available/`
 
 + email: str
 
@@ -307,15 +317,35 @@ Response:
 
 + code: 0 if available, 1 otherwise
 
+#### `[POST] /ums/modify_user_role/`
 
++ project: int, project_id
++ user: int, user_id, user to be modified
++ role: str, the name of the new role, using (member, dev, qa, sys, supermaster)
 
-请设计并补全这一部分：
+Response:
 
-+ 一个项目的 supermaster 更改同一个项目内的其他用户的身份
-+ 获取项目信息的接口，包括项目和其下的所有人员及身份
-+ 更改项目信息
-+ 获取项目邀请码的接口，仅有 supermaster 有权限拿到邀请码
-+ 刷新项目邀请码的接口，仅有 supermaster 有权限
++ code 0 if successful, 1 otherwise
+
+#### `[POST] /ums/project/`
+
++ project: id of the project
+
+Response:
+
++ code: 0 if successful, 1 otherwise
++ data: 
+    + project: proj_to_list
+    + users: filter and user_to_list
+
+#### `[POST] /ums/modify_project/`
+
++ 
+
+#### `[POST] /ums/refresh_invitation/`
+
+#### `[GET] /ums/get_invitation/`
+
 
 ### `/rms/`
 
