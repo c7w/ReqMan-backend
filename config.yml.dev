@@ -5,11 +5,11 @@ site:
     - 'https://undefined.c7w.tech'
     - 'https://frontend-undefined.app.secoder.net'
     - '*'
-   
+
 database:
-    type: "sqlite3" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
-    host: ""
-    port: 114514
-    name: ""
-    user: ""
-    password: ""
+    type: "mysql" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
+    host: "mysql.undefined.secoder.local"
+    port: 3306
+    name: "project-dev"
+    user: "root"
+    password: "c7w,yyds"
