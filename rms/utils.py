@@ -259,16 +259,21 @@ def deleteOperation(proj:Project,type:string,data:dict):
     dataList = require(data,'data')
     if type == 'ir':
         id = require(dataList,'id')
+        judgeTypeInt(id)
         IR.objects.filter(id=id).update(disabled=True)
     elif type == 'sr':
         id = require(dataList,'id')
+        judgeTypeInt(id)
         SR.objects.filter(id=id).update(disabled=True)
     elif type == 'iteration':
         id = require(dataList,'id')
+        judgeTypeInt(id)
         Iteration.objects.filter(id=id).update(disabled=True)
     elif type == 'ir-sr':
         IRId = require(dataList,'IRId')
         SRId = require(dataList,'SRId')
+        judgeTypeInt(IRId)
+        judgeTypeInt(SRId)
         sr = SR.objects.filter(id=SRId).first()
         ir = IR.objects.filter(id=IRId).first()
         IRSRAssociation.objects.filter(
@@ -277,7 +282,9 @@ def deleteOperation(proj:Project,type:string,data:dict):
         ).delete()
     elif type == 'sr-iteration':
         iterationId = require(dataList,'iterationId')
+        judgeTypeInt(iterationId)
         SRId = require(dataList,'SRId')
+        judgeTypeInt(SRId)
         iteration = Iteration.objects.filter(id=iterationId).first()
         sr = SR.objects.filter(id=SRId).first()
         SRIterationAssociation.objects.filter(
@@ -286,9 +293,11 @@ def deleteOperation(proj:Project,type:string,data:dict):
         ).delete()
     elif type == 'service':
         id = require(dataList,'id')
+        judgeTypeInt(id)
         Service.objects.filter(id=id).update(disabled=True)
     elif type == 'user-iteration':
         iterationId = require(dataList,'iterationId')
+        judgeTypeInt(iterationId)
         iteration = Iteration.objects.filter(id=iterationId).first()
         UserIterationAssociation.objects.filter(
             iteration=iteration

@@ -40,7 +40,6 @@ class RMSViewSet(viewsets.ViewSet):
             resu = self.serialize(getUserIteration(proj))
         else:
             return FAIL
-        print(resu)
         return Response({
             'code':0,
             'data':resu

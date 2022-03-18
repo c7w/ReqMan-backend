@@ -81,12 +81,10 @@ class RMS_Tests(TestCase):
         id = self.ums.p1.id
         type = 'ir'
         url='/rms/project/'
-        print(url)
         resp = c.get(url,data={
             'project':str(id),
             'type':type
         })
-        print(resp)
         self.assertEqual(resp.json()['code'],0)
 
         type = 'sr'
@@ -94,7 +92,6 @@ class RMS_Tests(TestCase):
             'project':str(id),
             'type':type
         })
-        print(resp)
         self.assertEqual(resp.json()['code'],0)
 
         type = 'service'
@@ -102,7 +99,6 @@ class RMS_Tests(TestCase):
             'project':str(id),
             'type':type
         })
-        print(resp)
         self.assertEqual(resp.json()['code'],0)
 
         type = 'sr-iteration'
@@ -110,7 +106,6 @@ class RMS_Tests(TestCase):
             'project':str(id),
             'type':type
         })
-        print(resp)
         self.assertEqual(resp.json()['code'],0)
 
         type = 'iteration'
@@ -118,7 +113,6 @@ class RMS_Tests(TestCase):
             'project':str(id),
             'type':type
         })
-        print(resp)
         self.assertEqual(resp.json()['code'],0)
 
         type = 'ir-sr'
@@ -126,7 +120,6 @@ class RMS_Tests(TestCase):
             'project':str(id),
             'type':type
         })
-        print(resp)
         self.assertEqual(resp.json()['code'],0)
 
         type = 'user-iteration'
@@ -134,7 +127,6 @@ class RMS_Tests(TestCase):
             'project':str(id),
             'type':type
         })
-        print(resp)
         self.assertEqual(resp.json()['code'],0)
 
         type = 'user-iteration'
@@ -142,7 +134,6 @@ class RMS_Tests(TestCase):
             'project':str(id),
             'type':type
         })
-        print(resp.json())
         self.assertEqual(resp.json()['code'],0)
         
         # no type
@@ -150,7 +141,6 @@ class RMS_Tests(TestCase):
         resp = c.get(url,data={
             'project':str(id),
         })
-        print(resp.json())
         self.assertEqual(resp.json()['code'],-1)
 
         # no project
@@ -158,7 +148,6 @@ class RMS_Tests(TestCase):
         resp = c.get(url,data={
             'type':type
         })
-        print(resp.json())
         self.assertEqual(resp.json()['code'],-1)
 
         # wrong project
@@ -167,7 +156,6 @@ class RMS_Tests(TestCase):
             'project':999,
             'type':type
         })
-        print(resp.json())
         self.assertEqual(resp.json()['code'],1)
 
         # out of project
@@ -177,13 +165,11 @@ class RMS_Tests(TestCase):
             'project':str(id),
             'type':type
         })
-        print(resp.json())
         self.assertEqual(resp.json()['code'],1)
 
     def postMessage(self,c,datas,excode):
         url = '/rms/project/'
         resp = c.post(url,data=datas,content_type="application/json")
-        print(resp.json())
         self.assertEqual(resp.json()['code'],excode)
 
     def test_Post(self):
@@ -412,6 +398,105 @@ class RMS_Tests(TestCase):
             }
         }
         self.postMessage(c,data14,0)
+
+        # delete
+        data15={
+            'project':1,
+            'type':'ir',
+            'operation':'delete',
+            'data':{
+                'id':2
+            }
+        }
+        self.postMessage(c,data15,0)
+
+        # wrong id
+        data16={
+            'project':1,
+            'type':'ir',
+            'operation':'delete',
+            'data':{
+                'id':'ss'
+            }
+        }
+        self.postMessage(c,data16,-1)
+
+        # more mes
+        data17={
+            'project':1,
+            'type':'ir',
+            'operation':'delete',
+            'data':{
+                'id':2,
+                'name':'as'
+            }
+        }
+        self.postMessage(c,data17,0)
+
+        data18={
+            'project':1,
+            'type':'sr',
+            'operation':'delete',
+            'data':{
+                'id':2
+            }
+        }
+        self.postMessage(c,data18,0)
+
+        data19={
+            'project':1,
+            'type':'iteration',
+            'operation':'delete',
+            'data':{
+                'id':2
+            }
+        }
+        self.postMessage(c,data19,0)
+
+        data150={
+            'project':1,
+            'type':'service',
+            'operation':'delete',
+            'data':{
+                'id':2
+            }
+        }
+        self.postMessage(c,data150,0)
+
+        data151={
+            'project':1,
+            'type':'ir-sr',
+            'operation':'delete',
+            'data':{
+                'SRId':2,
+                'IRId':1,
+            }
+        }
+        self.postMessage(c,data151,0)
+
+        data152={
+            'project':1,
+            'type':'sr-iteration',
+            'operation':'delete',
+            'data':{
+                'SRId':2,
+                'iterationId':999,
+            }
+        }
+        self.postMessage(c,data152,0)
+
+        data153={
+            'project':1,
+            'type':'user-iteration',
+            'operation':'delete',
+            'data':{
+                'iterationId':2
+            }
+        }
+        self.postMessage(c,data153,0)
+
+
+
 
 
 
