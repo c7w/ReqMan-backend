@@ -19,5 +19,6 @@ import backend.views as views
 
 urlpatterns = [
     path('', views.root),
-    path('ums/', include('ums.urls'))
+    path('ums/', include('ums.urls')),
+    path('rms/', include('rms.urls'))
 ]

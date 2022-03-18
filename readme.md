@@ -391,19 +391,79 @@ Response
 
 ### `/rms/`
 
-以下请求请自行设计并补全本文档的本部分，需要实现以下功能。
-
 + 获取用户参与的所有项目
 + 用户输入邀请码加入项目，成为开发工程师
 + 用户新建项目，成为系统工程师
+
+#### 统一接口
 + 这里留一个**统一的接口**，比如 `[GET|POST] /rms/project/`
-  + 给定某个项目ID，[READ/CREATE/UPDATE/DELETE, 以下简称 CRUD] IR（注意鉴权）
+  + 给定某个项目ID，[READ/CREATE/UPDATE/DELETE, 以下简称 CRUD] IR
   + 给定某个项目ID，CRUD 所有的 SR
   + 给定某个项目ID，CRUD 所有的 Iteration
   + 给定某个项目ID，CRD IR-SR // A-B 代表两者之间的联系
   + 给定某个项目ID，CRD 的 SR-Iteration
   + 给定某个项目ID，CRUD Service
   + 给定某个项目ID，CRD User-Iteration
++ 
+
+#### `[GET] /rms/project/`
+
++ project (id)
++ type (sr,ir,iteration,ir-sr,sr-iteration,service,user-iteration)
+
+
+Response
+
++ code: 0 if success, 1 if not log in
++ data: list of data
+
+Explanation
+
++ 这里的 list 是对应种类数据的 List, 每个是一个对象
+
+#### `[POST] /rms/project/`
+
++ project (id)
+
++ type (sr,ir,iteration,ir-sr,sr-iteration,service,user-iteration) (string)
+
++ operation (update,create,delete) (string)
+
++ data:
+
+  ```python
+  "data" :{ # update
+  	id:
+  	updateData:{
+  		'title':'TitleText'
+  	}
+  }
+  "data" :{ # delete ir sr iteration service
+      id:
+  }
+  "data":{ # delete relation
+      iterationId:
+      IRId:
+      SRId:
+  }
+  "data" :{ # create
+      updateData:{
+          'title':....,
+          ...
+          IRId SRId iterationId:
+          userId
+      }
+  }
+  ```
+  
+  
+
+Response
++ code 0 if success, else 1
+
+Explanation
++ 创建操作需要提交的数据参数参考前面的数据库设计
++ 部分种类数据无法 update 参考请求上方统一接口定义
 
 // 对于 CRUD，推荐的设计模式是：
 
