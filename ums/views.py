@@ -175,7 +175,7 @@ class UserViewSet(viewsets.ViewSet):
     def project_add_user(self, req:Request):
         info = proj_user_assoc(req)
 
-        # supermaster check
+        # supermaster check 
         if not is_role(req.user, info['proj'] , Role.SUPERMASTER):
             return FAIL
 

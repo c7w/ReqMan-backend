@@ -406,7 +406,7 @@ Response
   + 给定某个项目ID，CRD User-Iteration
 + 
 
-#### `[GET] /rms/project`
+#### `[GET] /rms/project/`
 
 + project (id)
 + type (sr,ir,iteration,ir-sr,sr-iteration,service,user-iteration)
@@ -421,12 +421,42 @@ Explanation
 
 + 这里的 list 是对应种类数据的 List, 每个是一个对象
 
-#### `[POST] /rms/project`
+#### `[POST] /rms/project/`
 
 + project (id)
+
 + type (sr,ir,iteration,ir-sr,sr-iteration,service,user-iteration) (string)
+
 + operation (update,create,delete) (string)
-+ data
+
++ data:
+
+  ```python
+  "data" :{ # update
+  	id:
+  	updateData:{
+  		'title':'TitleText'
+  	}
+  }
+  "data" :{ # delete ir sr iteration service
+      id:
+  }
+  "data":{ # delete relation
+      iterationId:
+      IRId:
+      SRId:
+  }
+  "data" :{ # create
+      updateData:{
+          'title':....,
+          ...
+          IRId SRId iterationId:
+          userId
+      }
+  }
+  ```
+  
+  
 
 Response
 + code 0 if success, else 1
