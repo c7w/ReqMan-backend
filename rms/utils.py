@@ -175,16 +175,67 @@ def createOperation(proj:Project,type:string,data:dict,user:User):
         createUserIterationAssociation(create)
     return False
 
-def updateIR(id:int,data:dict):
+def updateIR(id:int,datas:dict):
+    data = {}
+    for i in datas:
+        if i == 'title':
+            data['title'] = datas[i]
+            judgeTypeStr(data['title'])
+        elif i == 'description':
+            data['description']=datas[i]
+            judgeTypeStr(data['description'])
+        elif i == 'rank':
+            data[i]=datas[i]
+            judgeTypeInt(data['rank'])
     IR.objects.filter(id=id).update(**data)
 
-def updateSR(id:int,data:dict):
+def updateSR(id:int,datas:dict):
+    rangeWord = ['title','description','rank','priority','state']
+    data = {}
+    for i in datas:
+        if i in rangeWord:
+            data[i]=datas[i]
+    if 'title' in data:
+        judgeTypeStr(data['title'])
+    if 'description' in data:
+        judgeTypeStr(data['description'])
+    if 'rank' in data:
+        judgeTypeInt(data['rank'])
+    if 'priority' in data:
+        judgeTypeInt(data['priority'])
+    if 'state' in data:
+        if  not data['state'] in ['TODO','WIP','Reviewing','Done']:
+            raise ParamErr(f'wrong type.')
     SR.objects.filter(id=id).update(**data)
 
-def updateIteration(id:int,data:dict):
+def updateIteration(id:int,datas:dict):
+    rangeWord =['title','sid','begin','end']
+    data = {}
+    for i in datas:
+        if i in rangeWord:
+            data[i]=datas[i]
+    if 'title' in data:
+        judgeTypeStr(data['title'])
+    if 'sid' in data:
+        judgeTypeInt(data['sid'])
+    if 'begin' in data:
+        judgeTypeFloat((data['begin']))
+    if 'end' in data:
+        judgeTypeFloat(data['end'])
     Iteration.objects.filter(id=id).update(**data)
 
-def updateService(id:int,data:dict):
+def updateService(id:int,datas:dict):
+    data = {}
+    for i in datas:
+        if i == 'title':
+            data['title'] = datas[i]
+            judgeTypeStr(data['title'])
+        elif i == 'description':
+            data['description']=datas[i]
+            judgeTypeStr(data['description'])
+        elif i == 'rank':
+            data[i]=datas[i]
+            judgeTypeInt(data['rank'])
     Service.objects.filter(id=id).update(**data)
 
 def updateOperation(proj:Project,type:string,data:dict):
@@ -193,6 +244,7 @@ def updateOperation(proj:Project,type:string,data:dict):
     updates = {}
     updates.update(data)
     id = require(dataList,"id")
+    judgeTypeInt(id)
     if type == 'ir':
         updateIR(id,data)
     elif type == 'sr':

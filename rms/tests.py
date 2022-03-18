@@ -319,7 +319,99 @@ class RMS_Tests(TestCase):
         }
         self.postMessage(c,data9,0)
 
+        # update
+        data10={
+            'project':1,
+            'type':'ir',
+            'operation':'update',
+            'data':{
+                'id':2,
+                'updateData':{
+                    'title':'aas',
+                    'description':'sbb',
+                    'rank':1325,
+                }
+            }
+        }
+        self.postMessage(c,data10,0)
 
+        # wrong Id
+        data11={
+            'project':1,
+            'type':'ir',
+            'operation':'update',
+            'data':{
+                'id':'daw',
+                'updateData':{
+                    'title':'aas',
+                    'description':'sbb',
+                    'rank':1325,
+                }
+            }
+        }
+        self.postMessage(c,data11,-1)
+
+        # wrong Mes
+        data11={
+            'project':1,
+            'type':'ir',
+            'operation':'update',
+            'data':{
+                'id':2,
+                'updateData':{
+                    'title':'aas',
+                    'description':'sbb',
+                    'rank':1325,
+                    'name':'as'
+                }
+            }
+        }
+        self.postMessage(c,data11,0)
+
+        data12={
+            'project':1,
+            'type':'sr',
+            'operation':'update',
+            'data':{
+                'id':2,
+                'updateData':{
+                    'title':'aas',
+                    'description':'sbb',
+                    'rank':1325,
+                }
+            }   
+        }
+        self.postMessage(c,data12,0)
+
+        data13={
+            'project':1,
+            'type':'iteration',
+            'operation':'update',
+            'data':{
+                'id':2,
+                'updateData':{
+                    'title':'aas',
+                    'sid':12,
+                    'state':'Done',
+                }
+            }
+        }
+        self.postMessage(c,data13,0)
+
+        data14={
+            'project':1,
+            'type':'service',
+            'operation':'update',
+            'data':{
+                'id':2,
+                'updateData':{
+                    'title':'aasas',
+                    'description':'sbb',
+                    'rank':1325,
+                }
+            }
+        }
+        self.postMessage(c,data14,0)
 
 
 
