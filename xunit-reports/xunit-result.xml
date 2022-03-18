@@ -1,1 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.193" timestamp="2022-03-16T10:29:45.268550" hostname="cc7w"><testcase classname="backend.tests.RoutingTests" name="test_root" time="0.077" /></testsuite></testsuites>

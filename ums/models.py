@@ -20,9 +20,9 @@ class Project(models.Model):
 
 class User(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.TextField(unique=True)
+    name = models.CharField(max_length=255, unique=True)
     password = models.TextField()
-    email = models.TextField()
+    email = models.CharField(max_length=255, unique=True)
     avatar = models.TextField(default='')
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE))))
@@ -66,7 +66,7 @@ class UserProjectAssociation(models.Model):
 
 class ProjectInvitationAssociation(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    invitation = models.TextField()
+    invitation = models.CharField(max_length=64)
     role = models.TextField(choices=Role.choices)
 
     class Meta:
