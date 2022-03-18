@@ -34,35 +34,130 @@ def getIRSR(proj:Project):
     SRs = getSR(proj)
     return IRSRAssociation.objects.filter(IR__in= IRs ,SR__in =SRs)
 
+def judgeTypeInt(data):
+    if type(data) == int:
+        return
+    else:
+        raise ParamErr(f'wrong Int type.')
 
+def judgeTypeStr(data):
+    if type(data) == str:
+        return
+    else:
+        raise ParamErr(f'wrong String type.')
 
-def createIR(data:dict):
+def judgeTypeFloat(data):
+    if type(data) == float:
+        return
+    else:
+        raise ParamErr(f'wrong Float type.')
+
+def createIR(datas:dict):
+    data={}
+    data['project'] = require(datas,'project')
+    data['title'] = require(datas,'title')
+    judgeTypeStr(data['title'])
+    data['description'] =  require(datas,'description')
+    judgeTypeStr(data['description'])
+    data['rank'] = require(datas,'rank')
+    judgeTypeInt(data['rank'])
+    data['createdBy'] = require(datas,'createdBy')
     IR.objects.create(**data)
 
-def createSR(data:dict):
+def createSR(datas:dict):
+    data={}
+    data['project'] = require(datas,'project')
+    data['title'] = require(datas,'title')
+    judgeTypeStr(data['title'])
+    data['description'] =  require(datas,'description')
+    judgeTypeStr(data['description'])
+    data['rank'] = require(datas,'rank')
+    judgeTypeInt(data['rank'])
+    data['priority']=require(datas,'priority')
+    judgeTypeInt(data['priority'])
+    data['createdBy'] = require(datas,'createdBy')
+    data['state']=require(datas,'state')
+    if  not data['state'] in ['TODO','WIP','Reviewing','Done']:
+        raise ParamErr(f'wrong type.')
     SR.objects.create(**data)
 
-def createIteration(data:dict):
+def createIteration(datas:dict):
+    data={}
+    data['project'] = require(datas,'project')
+    data['title'] = require(datas,'title')
+    judgeTypeStr(data['title'])
+    data['sid'] = require(datas,'sid')
+    judgeTypeInt(data['sid'])
+    data['begin'] = require(datas,'begin')
+    judgeTypeFloat(data['begin'])
+    data['end']=require(datas,'end')
+    judgeTypeFloat(data['end'])
     Iteration.objects.create(**data)
 
-def createService(data:dict):
+def createService(datas:dict):
+    data={}
+    data['project'] = require(datas,'project')
+    data['title'] = require(datas,'title')
+    judgeTypeStr(data['title'])
+    data['description'] =  require(datas,'description')
+    judgeTypeStr(data['description'])
+    data['rank'] = require(datas,'rank')
+    judgeTypeInt(data['rank'])
+    data['createdBy'] = require(datas,'createdBy')
     Service.objects.create(**data)
 
-def createIRSRAssociation(data:dict):
+def createIRSRAssociation(datas:dict):
+    ir = require(datas,'IRId')
+    judgeTypeInt(ir)
+    sr = require(datas,'SRId')
+    judgeTypeInt(sr)
+    ir = IR.objects.filter(id=ir).first()
+    sr = SR.objects.filter(id=sr).first()
+    if not ir or not sr:
+        raise ParamErr(f'wrong IR/SR Id.')
+    data = {
+        'IR':ir,
+        "SR":sr
+    }
     IRSRAssociation.objects.create(**data)
 
-def createUserIterationAssociation(data:dict):
+def createUserIterationAssociation(datas:dict):
+    it = require(datas,'iterationId')
+    judgeTypeInt(it)
+    it = Iteration.objects.filter(id=it).first()
+    user = require(datas,'userId')
+    judgeTypeInt(user)
+    user = User.objects.filter(id=user).first()
+    if not user or not it:
+        raise ParamErr(f'wrong It/User Id.')
+    data = {
+        'user':user,
+        'iteration':it
+    }
     UserIterationAssociation.objects.create(**data)
 
-def createSRIterationAssociation(data:dict):
+def createSRIterationAssociation(datas:dict):
+    sr = require(datas,'SRId')
+    judgeTypeInt(sr)
+    sr = SR.objects.filter(id=sr).first()
+    it = require(datas,'iterationId')
+    judgeTypeInt(it)
+    it = Iteration.objects.filter(id=it).first()
+    if not it or not sr:
+        raise ParamErr(f'wrong It/SR Id.')
+    data = {
+        'SR':sr,
+        'iteration':it
+    }
     SRIterationAssociation.objects.create(**data)
 
-def createOperation(proj:Project,type:string,data:dict):
+def createOperation(proj:Project,type:string,data:dict,user:User):
     dataList = require(data,'data')
     data = require(dataList,'updateData')
     create = {}
     create.update(data)
     create['project']=proj
+    create['createdBy']=user
 
     if type == 'ir':
         createIR(create)

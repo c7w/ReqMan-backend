@@ -60,7 +60,7 @@ class RMSViewSet(viewsets.ViewSet):
 
         isFail = False
         if operation =='create':
-            isFail = createOperation(proj,type,req.data)
+            isFail = createOperation(proj,type,req.data,req.user)
         elif operation == 'update':
             isFail = updateOperation(proj,type,req.data)
         if operation == 'delete':

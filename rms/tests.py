@@ -1,5 +1,3 @@
-from http import client
-from venv import create
 from django.test import TestCase
 from rms.models import *
 from ums.models import *
@@ -170,7 +168,7 @@ class RMS_Tests(TestCase):
             'type':type
         })
         print(resp.json())
-        self.assertEqual(resp.json()['code'],-1)
+        self.assertEqual(resp.json()['code'],1)
 
         # out of project
         c=self.login(self.ums.u3,'102')
@@ -182,7 +180,149 @@ class RMS_Tests(TestCase):
         print(resp.json())
         self.assertEqual(resp.json()['code'],1)
 
-        
+    def postMessage(self,c,datas,excode):
+        url = '/rms/project/'
+        resp = c.post(url,data=datas,content_type="application/json")
+        print(resp.json())
+        self.assertEqual(resp.json()['code'],excode)
+
+    def test_Post(self):
+        c = self.login(self.u4,'103')
+        data1={
+            'project':1,
+            'type':'ir',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'title':'aa',
+                    'description':'bb',
+                    'rank':132,
+                }
+            }
+        }
+        self.postMessage(c,data1,0)
+
+        # more arugment
+        data2={
+            'project':1,
+            'type':'ir',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'title':'cc',
+                    'description':'dd',
+                    'rank':112,
+                    'name':'12'
+                }
+            }
+        }
+        self.postMessage(c,data2,0)
+
+        # wrong type
+        data3={
+            'project':1,
+            'type':'ir',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'title':'aa',
+                    'description':'ss',
+                    'rank':'ads',
+                    'name':'12'
+                }
+            }
+        }
+        self.postMessage(c,data3,-1)
+
+        data4={
+            'project':1,
+            'type':'sr',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'title':'av',
+                    'description':'sx',
+                    'rank':123,
+                    'priority':2,
+                    'state':'TODO'
+                }
+            }
+        }
+        self.postMessage(c,data4,0)
+
+        data5={
+            'project':1,
+            'type':'iteration',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'title':'w',
+                    'sid':21,
+                    'begin':123.0,
+                    'end':2.0,
+                    'state':'TODO'
+                }
+            }
+        }
+        self.postMessage(c,data5,0)
+
+        data6={
+            'project':1,
+            'type':'service',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'title':'12a',
+                    'description':'d',
+                    'rank':12,
+                }
+            }
+        }
+        self.postMessage(c,data6,0)
+
+        data7={
+            'project':1,
+            'type':'ir-sr',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'IRId':2,
+                    'SRId':2,
+                }
+            }
+        }
+        self.postMessage(c,data7,0)
+
+        data8={
+            'project':1,
+            'type':'user-iteration',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'iterationId':1,
+                    'userId':2,
+                }
+            }
+        }
+        self.postMessage(c,data8,0)
+
+        data9={
+            'project':1,
+            'type':'sr-iteration',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'iterationId':1,
+                    'SRId':2,
+                }
+            }
+        }
+        self.postMessage(c,data9,0)
+
+
+
+
+
 
 
 
