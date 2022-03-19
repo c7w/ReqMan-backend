@@ -2,7 +2,26 @@
 
 ## For Users
 
-// TODO: 这里讲解后端配置文件的格式
+请查看 `config.yml.bak` 中的说明。
+
+```yaml
+# You should finish this file and move it to `./config/config.yml` to deploy your own site.
+site:
+    debug: false
+    secret_key: "django-insecure-vyuaosduoiasbduiasdbiuasobdisaoBULABULA"
+    allowed_hosts: # CORS
+    - 'https://undefined.c7w.tech'
+    - 'https://frontend-undefined.app.secoder.net'
+    - '*'
+
+database:
+    type: "mysql" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
+    host: "mysql.undefined.secoder.local"
+    port: 3306
+    name: "PROJECT_DATABASE"
+    user: "YOUR_USER"
+    password: "THERE_SHOULD_BE_A_PASSWORD"
+```
 
 ## For Developers
 
