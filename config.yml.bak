@@ -8,7 +8,7 @@ site:
     - '*'
 
 database:
-    type: "mysql" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
+    type: "sqlite3" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
     host: "mysql.undefined.secoder.local"
     port: 3306
     name: "PROJECT_DATABASE"

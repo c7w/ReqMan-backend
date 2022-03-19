@@ -8,6 +8,7 @@ stages:
 build-master:
   stage: build
   script:
+    - cp ./config.yml.bak ./config.yml
     - export BUILD_IMAGE_NAME=$CI_REGISTRY_IMAGE
     - export BUILD_IMAGE_TAG=$CI_COMMIT_REF_SLUG
     - export BUILD_IMAGE_USERNAME=$CI_REGISTRY_USER
@@ -19,6 +20,7 @@ build-master:
 build-dev:
   stage: build
   script:
+    - cp ./config.yml.bak ./config.yml
     - export BUILD_IMAGE_NAME=$CI_REGISTRY_IMAGE
     - export BUILD_IMAGE_TAG=$CI_COMMIT_REF_SLUG
     - export BUILD_IMAGE_USERNAME=$CI_REGISTRY_USER
@@ -31,6 +33,7 @@ style-test:
   image: python:3.8.5
   stage: test
   before_script:
+    - cp ./config.yml.bak ./config.yml
     - pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
   script:
     - pylint --load-plugins pylint_django --fail-under=0 --django-settings-module=backend.settings backend rms ums rdts
@@ -40,6 +43,7 @@ unit-test:
   image: python:3.8.5
   stage: test
   before_script:
+    - cp ./config.yml.bak ./config.yml
     - pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
   script:
     - python manage.py makemigrations
