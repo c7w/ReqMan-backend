@@ -7,8 +7,8 @@ EXPIRE_DAYS = 3
 
 class Project(models.Model):
     id = models.BigAutoField(primary_key=True)
-    title = models.TextField()
-    description = models.TextField()
+    title = models.CharField(max_length=255)
+    description = models.CharField(max_length=3072)
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE))))
 
