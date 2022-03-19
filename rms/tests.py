@@ -1,3 +1,5 @@
+import sys
+
 from django.test import TestCase
 from rms.models import *
 from ums.models import *
@@ -66,10 +68,12 @@ class RMS_Tests(TestCase):
     def login(self,user,sess):
         c=Client()
         c.cookies['sessionId'] = sess
-        c.post("/ums/login/", data={
+        res = c.post("/ums/login/", data={
             'identity': user.name,
             'password': user.password
         }, content_type="application/json")
+        for ss in SessionPool.objects.all(): print(ss.user, ss.sessionId, file=sys.stderr)
+
         return c
 
 
@@ -135,7 +139,7 @@ class RMS_Tests(TestCase):
             'type':type
         })
         self.assertEqual(resp.json()['code'],0)
-        
+
         # no type
         type = 'iteration'
         resp = c.get(url,data={
@@ -174,8 +178,9 @@ class RMS_Tests(TestCase):
 
     def test_Post(self):
         c = self.login(self.u4,'103')
+        # print(c.cookies)
         data1={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir',
             'operation':'create',
             'data':{
@@ -190,7 +195,7 @@ class RMS_Tests(TestCase):
 
         # more arugment
         data2={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir',
             'operation':'create',
             'data':{
@@ -206,7 +211,7 @@ class RMS_Tests(TestCase):
 
         # wrong type
         data3={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir',
             'operation':'create',
             'data':{
@@ -221,7 +226,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data3,-1)
 
         data4={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'sr',
             'operation':'create',
             'data':{
@@ -237,7 +242,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data4,0)
 
         data5={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'iteration',
             'operation':'create',
             'data':{
@@ -253,7 +258,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data5,0)
 
         data6={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'service',
             'operation':'create',
             'data':{
@@ -267,7 +272,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data6,0)
 
         data7={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir-sr',
             'operation':'create',
             'data':{
@@ -280,25 +285,25 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data7,0)
 
         data8={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'user-iteration',
             'operation':'create',
             'data':{
                 'updateData':{
-                    'iterationId':1,
-                    'userId':2,
+                    'iterationId':self.It1.id,
+                    'userId':self.ums.u2.id,
                 }
             }
         }
         self.postMessage(c,data8,0)
 
         data9={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'sr-iteration',
             'operation':'create',
             'data':{
                 'updateData':{
-                    'iterationId':1,
+                    'iterationId':self.It1.id,
                     'SRId':2,
                 }
             }
@@ -307,7 +312,7 @@ class RMS_Tests(TestCase):
 
         # update
         data10={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir',
             'operation':'update',
             'data':{
@@ -323,7 +328,7 @@ class RMS_Tests(TestCase):
 
         # wrong Id
         data11={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir',
             'operation':'update',
             'data':{
@@ -339,7 +344,7 @@ class RMS_Tests(TestCase):
 
         # wrong Mes
         data11={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir',
             'operation':'update',
             'data':{
@@ -355,7 +360,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data11,0)
 
         data12={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'sr',
             'operation':'update',
             'data':{
@@ -365,12 +370,12 @@ class RMS_Tests(TestCase):
                     'description':'sbb',
                     'rank':1325,
                 }
-            }   
+            }
         }
         self.postMessage(c,data12,0)
 
         data13={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'iteration',
             'operation':'update',
             'data':{
@@ -385,7 +390,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data13,0)
 
         data14={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'service',
             'operation':'update',
             'data':{
@@ -401,7 +406,7 @@ class RMS_Tests(TestCase):
 
         # delete
         data15={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir',
             'operation':'delete',
             'data':{
@@ -412,7 +417,7 @@ class RMS_Tests(TestCase):
 
         # wrong id
         data16={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir',
             'operation':'delete',
             'data':{
@@ -423,7 +428,7 @@ class RMS_Tests(TestCase):
 
         # more mes
         data17={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir',
             'operation':'delete',
             'data':{
@@ -434,7 +439,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data17,0)
 
         data18={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'sr',
             'operation':'delete',
             'data':{
@@ -444,7 +449,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data18,0)
 
         data19={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'iteration',
             'operation':'delete',
             'data':{
@@ -454,7 +459,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data19,0)
 
         data150={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'service',
             'operation':'delete',
             'data':{
@@ -464,7 +469,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data150,0)
 
         data151={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'ir-sr',
             'operation':'delete',
             'data':{
@@ -475,7 +480,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data151,0)
 
         data152={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'sr-iteration',
             'operation':'delete',
             'data':{
@@ -486,7 +491,7 @@ class RMS_Tests(TestCase):
         self.postMessage(c,data152,0)
 
         data153={
-            'project':1,
+            'project':self.ums.p1.id,
             'type':'user-iteration',
             'operation':'delete',
             'data':{

@@ -60,6 +60,7 @@ class UserViewSet(viewsets.ViewSet):
                     user=usr,
                     role=relation.role
                 )
+            bind_session_id(req.COOKIES['sessionId'], usr)
             return SUCC
 
         return Response({
@@ -175,7 +176,7 @@ class UserViewSet(viewsets.ViewSet):
     def project_add_user(self, req:Request):
         info = proj_user_assoc(req)
 
-        # supermaster check 
+        # supermaster check
         if not is_role(req.user, info['proj'] , Role.SUPERMASTER):
             return FAIL
 
@@ -194,6 +195,17 @@ class UserViewSet(viewsets.ViewSet):
         )
         return SUCC
 
+
+    @action(detail=False, methods=['POST'])
+    def create_project(self, req: Request):
+        if not req.user:
+            return FAIL
+        title = require(req.data, 'title')
+        description = require(req.data, 'description')
+
+        proj = Project.objects.create(title=title, description=description)
+        UserProjectAssociation.objects.create(project=proj, user=req.user, role='supermaster')
+        return SUCC
 
     @action(detail=False, methods=['POST'])
     def project(self,  req: Request):

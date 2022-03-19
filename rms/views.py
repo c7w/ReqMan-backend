@@ -1,3 +1,5 @@
+import sys
+
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -12,7 +14,7 @@ class RMSViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
 
     def serialize(self,resu:dict,excludeList:list=[]):
-        return [model_to_dict(p,exclude=excludeList) for p in resu] 
+        return [model_to_dict(p,exclude=excludeList) for p in resu]
 
     def projectGET(self,req:Request):
         proj = intify(require(req.query_params,'project'))
@@ -52,7 +54,7 @@ class RMSViewSet(viewsets.ViewSet):
             return FAIL
         if not is_role(req.user,proj,Role.SYS):
             return FAIL
-        
+
         operation = require(req.data,'operation')
 
         type = require(req.data,'type')
