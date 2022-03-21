@@ -4,9 +4,15 @@ django-cors-headers
 pymysql
 mysqlclient==2.1.0
 
-djangorestframework
+djangorestframework~=3.13.1
 markdown
 django-filter
 
 pylint-django
 yapf
+
+pytest
+pytest-django
+coverage
+
+pytz~=2021.3

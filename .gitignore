@@ -1,8 +1,12 @@
-__pycache__/
 migrations/
 db.sqlite3
 config.yml
 venv
-
-.idea
 .vscode
+.idea
+__pycache__/
+
+.pytest_cache/
+xunit-reports/
+coverage-reports/
+.coverage
