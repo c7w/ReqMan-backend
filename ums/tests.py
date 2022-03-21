@@ -557,4 +557,15 @@ class UMS_Tests(TestCase):
         }, content_type="application/json")
         self.assertEqual(resp.json()['code'], 1)
 
-
+    """
+    frequent request should be throttled
+    """
+    def test_throttle(self):
+        url = '/ums/login/'
+        c = Client()
+        c.cookies['sessionId'] = '19'
+        for i in range(100):
+            resp = c.post(url, data={})
+            if resp.json()['code'] == -3:
+                return
+        raise AssertionError

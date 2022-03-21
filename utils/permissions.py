@@ -3,7 +3,7 @@ from rest_framework import exceptions
 from ums.utils import is_role, in_proj, intify, require, proj_exist
 from ums.models import Role
 from functools import wraps
-from utils.exceptions import ParamErr
+from utils.exceptions import ParamErr, Failure
 
 rights = {}
 

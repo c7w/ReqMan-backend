@@ -14,10 +14,16 @@ def handler(e, ctx):
             resp.data['code'] = -4
         elif type(e) is ParamErr:
             resp.data['code'] = -1
+        elif type(e) is Failure:
+            resp.data['code'] = 1
         else:
             resp.data['code'] = -100
 
     return resp
+
+class Failure(exceptions.APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = 'Fail.'
 
 class ParamErr(exceptions.APIException):
     status_code = status.HTTP_400_BAD_REQUEST
