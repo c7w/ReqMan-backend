@@ -1,8 +1,30 @@
-from django.test import TestCase, Client
+from django.test import TestCase
+from django.test import Client as DefaultClient
 from ums.models import *
 
 SUCC = {'code': 0}
 FAIL = {'code': 1}
+
+class Client(DefaultClient):
+    """
+    for copy cookie sessionId into respective method body
+    """
+
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+
+    def _add_cookie(self, kw):
+        if 'sessionId' in self.cookies:
+            if 'data' not in kw:
+                kw['data'] = {}
+            kw['data']['sessionId'] = self.cookies['sessionId'].value
+        return kw
+
+    def post(self, *args, **kw):
+        return super(Client, self).post(*args, **self._add_cookie(kw))
+
+    def get(self, *args, **kw):
+        return super(Client, self).get(*args, **self._add_cookie(kw))
 
 class UMS_Tests(TestCase):
     def setUp(self):

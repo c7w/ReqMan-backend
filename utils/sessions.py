@@ -15,7 +15,9 @@ class SessionAuthentication(authentication.BaseAuthentication):
         return (verify_session_id(session_id), session_id)
 
 def get_session_id(request):
-    return request.COOKIES.get('sessionId')
+    if request.method == 'POST':
+        return request.data.get('sessionId')
+    return request.GET.get('sessionId')
 
 def set_session_id(response):
     sessionId = ''.join(random.sample(string.ascii_letters + string.digits, 32))
