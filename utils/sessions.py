@@ -12,7 +12,7 @@ class SessionAuthentication(authentication.BaseAuthentication):
         session_id = get_session_id(req)
         if not session_id:
             raise exceptions.AuthenticationFailed('Request without a sessionId')
-        return (verify_session_id(session_id), session_id)
+        return (verify_session_id(session_id), {"sessionId": session_id})
 
 def get_session_id(request):
     if request.method == 'POST':

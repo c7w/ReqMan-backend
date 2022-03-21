@@ -11,9 +11,11 @@ def handler(e, ctx):
         elif type(e) is exceptions.PermissionDenied:
             resp.data['code'] = -2
         elif type(e) is exceptions.AuthenticationFailed:
+            resp.data['code'] = -4
+        elif type(e) is ParamErr:
             resp.data['code'] = -1
         else:
-            resp.data['code'] = -4
+            resp.data['code'] = -100
 
     return resp
 
