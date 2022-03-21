@@ -6,7 +6,14 @@ def handler(e, ctx):
     resp = exception_handler(e, ctx)
 
     if resp is not None:
-        resp.data['code'] = -1
+        if type(e) is exceptions.Throttled:
+            resp.data['code'] = -3
+        elif type(e) is exceptions.PermissionDenied:
+            resp.data['code'] = -2
+        elif type(e) is exceptions.AuthenticationFailed:
+            resp.data['code'] = -1
+        else:
+            resp.data['code'] = -4
 
     return resp
 

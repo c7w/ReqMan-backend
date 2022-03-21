@@ -7,6 +7,7 @@ from ums.models import *
 from utils.sessions import *
 from ums.utils import *
 from django.forms.models import model_to_dict
+from utils.throttle import GeneralThrottle, SpecialThrottle
 
 DEFAULT_INVITED_ROLE = 'member'
 
@@ -19,6 +20,7 @@ FAIL = Response({
 
 class UserViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
+    throttle_classes = [GeneralThrottle]
 
     @action(detail=False, methods=['POST'])
     def check_username_available(self, req: Request):
@@ -34,8 +36,11 @@ class UserViewSet(viewsets.ViewSet):
             'code': 1 if email_exist(email) else 0
         })
 
-    @action(detail=False, methods=['POST'])
+    @action(detail=False, methods=['POST'], throttle_classes=throttle_classes + [SpecialThrottle('register')])
     def register(self, req: Request):
+        if req.user:
+            return FAIL
+
         name = require(req.data, 'name')
         password = require(req.data, 'password')
         email = require(req.data, 'email')
@@ -81,7 +86,7 @@ class UserViewSet(viewsets.ViewSet):
             usr = name_exist(identity)
             if usr and usr.name == identity:
                 if usr.password == password:
-                    bind_session_id(req.COOKIES['sessionId'], usr)
+                    bind_session_id(req.auth, usr)
                     return SUCC
                 else:
                     return Response({
