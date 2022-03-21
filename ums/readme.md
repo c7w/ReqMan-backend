@@ -2,6 +2,9 @@
 
 ## Session Uitls
 
+**现在cookie统一变成参数！！！不再查验cookie！！！**
+**单测加在cookie里会被自动移动到相应方法参数中**
+
 ### uitls.SessionAuthentication
 完成ViewSet的用户sessionId验证
 
