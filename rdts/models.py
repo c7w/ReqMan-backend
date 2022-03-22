@@ -1,4 +1,6 @@
 import datetime as dt
+from email import message
+from secrets import choice
 import pytz
 from backend.settings import TIME_ZONE
 from django.db import models
@@ -64,4 +66,40 @@ class MergeRequest(models.Model):
         ]
 
 
-class 
+class Issue(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    issue_id = models.IntegerField()
+    repo = models.ForeignKey(Repository,on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    
+    class IssueState(models.TextChoices):
+        ClOSED = 'closed'
+        OPENED = 'opened'
+    
+    state = models.TextChoices(choice=IssueState.choices)
+    authoredByEmail = models.CharField(max_length=255)
+    authoredAt = models.FloatField(null=True,blank=True)
+    reviewedByEmail = models.CharField(max_length=255)
+    reviewedAt = models.FloatField(null=True,blank=True)
+    disabled = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['authoredByEmail']),
+            models.Index(fields=['reviewedByEmail'])
+        ]
+
+
+class CommitSRAssociation(models.Model):
+    commit = models.ForeignKey(Commit,on_delete=models.CASCADE)
+    SR = models.ForeignKey('rms.SR',on_delete=models.CASCADE)
+
+class MRSRAssociation(models.Model):
+    MR = models.ForeignKey(MergeRequest,on_delete=models.CASCADE)
+    SR = models.ForeignKey('rms.SR',on_delete=models.CASCADE)
+
+class IssueSRAssociation(models.Model):
+    issue = models.ForeignKey(Issue,on_delete=models.CASCADE)
+    SR = models.ForeignKey('rms.SR',on_delete=models.CASCADE)
+ 
