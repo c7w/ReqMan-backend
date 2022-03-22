@@ -36,6 +36,7 @@ class UserViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['POST'])
     def register(self, req: Request):
+
         name = require(req.data, 'name')
         password = require(req.data, 'password')
         email = require(req.data, 'email')
@@ -49,10 +50,12 @@ class UserViewSet(viewsets.ViewSet):
                     'code': 2
                 })
 
+        print(name_valid(name))
         if name_valid(name) \
             and not name_exist(name) \
             and email_valid(email) \
             and not email_exist(email):
+
             usr = User.objects.create(name=name, password=password, email=email)
             if relation:
                 UserProjectAssociation.objects.create(
@@ -60,7 +63,7 @@ class UserViewSet(viewsets.ViewSet):
                     user=usr,
                     role=relation.role
                 )
-            bind_session_id(req.COOKIES['sessionId'], usr)
+            bind_session_id(get_session_id(req), usr)
             return SUCC
 
         return Response({
@@ -81,7 +84,7 @@ class UserViewSet(viewsets.ViewSet):
             usr = name_exist(identity)
             if usr and usr.name == identity:
                 if usr.password == password:
-                    bind_session_id(req.COOKIES['sessionId'], usr)
+                    bind_session_id(get_session_id(req), usr)
                     return SUCC
                 else:
                     return Response({
@@ -95,7 +98,7 @@ class UserViewSet(viewsets.ViewSet):
             usr = email_exist(identity)
             if usr:
                 if usr.password == password:
-                    bind_session_id(req.COOKIES['sessionId'], usr)
+                    bind_session_id(get_session_id(req), usr)
                     return SUCC
                 else:
                     return Response({

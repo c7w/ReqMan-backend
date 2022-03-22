@@ -202,6 +202,6 @@ def name_valid(name: str):
     check if name valid
     """
     return re.match(
-        r"^[a-zA-Z0-9_\-\.]+$",
+        r"^[a-zA-Z0-9_]{3,16}$",
         name
     ) is not None

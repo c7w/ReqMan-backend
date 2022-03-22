@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 import yaml
 
-file = open('config.yml.bak', 'r', encoding='utf-8')
+file = open('config.yml', 'r', encoding='utf-8')
 env = yaml.load(file, Loader=yaml.SafeLoader)
 # print(env)
 
