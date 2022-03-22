@@ -52,7 +52,7 @@ class MergeRequest(models.Model):
         ClOSED = 'closed'
         OPENED = 'opened'
 
-    state = models.TextChoices(choice=MRState.choices)
+    state = models.TextField(choices=MRState.choices)
     authoredByEmail = models.CharField(max_length=255)
     authoredAt = models.FloatField(null=True,blank=True)
     reviewedByEmail = models.CharField(max_length=255)
@@ -77,7 +77,7 @@ class Issue(models.Model):
         ClOSED = 'closed'
         OPENED = 'opened'
     
-    state = models.TextChoices(choice=IssueState.choices)
+    state = models.TextField(choices=IssueState.choices)
     authoredByEmail = models.CharField(max_length=255)
     authoredAt = models.FloatField(null=True,blank=True)
     reviewedByEmail = models.CharField(max_length=255)
