@@ -14,13 +14,19 @@ class Gitlab:
     def issues(self):
         return self.request("issues")
 
-    def commits(self):
-        return self.request("repository/commits")
+    def commits(self, page):
+        return self.request("repository/commits", page)
 
-    def request(self, req_type: str):
-        url = self.base.strip("/") + ("/api/v4/projects/%d/" % self.repo) + req_type
+    def request(self, req_type: str, page):
+        url = (
+            self.base.strip("/")
+            + ("/api/v4/projects/%d/" % self.repo)
+            + req_type
+            + f"?page={page}"
+        )
+        print(url)
         resp = requests.get(url, headers={"PRIVATE-TOKEN": self.token})
-        return resp.status_code, resp.json
+        return resp.status_code, resp.json()
 
 
 type_map = {"gitlab": Gitlab}

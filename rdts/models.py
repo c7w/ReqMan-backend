@@ -116,9 +116,7 @@ class RemoteRepo(models.Model):
     access_token = models.TextField()
     enable_crawling = models.BooleanField(default=True)
     info = models.TextField(default="{}")
-    repo = models.ForeignKey(
-        Repository, on_delete=models.CASCADE, default=Repository.objects.get(id=1)
-    )
+    repo = models.ForeignKey(Repository, on_delete=models.CASCADE)
 
 
 class CrawlLog(models.Model):

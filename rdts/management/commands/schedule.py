@@ -22,6 +22,7 @@ class Command(BaseCommand):
     help = "Run Schedule Tasks"
 
     def crawl_all(self):
+        print(RemoteRepo.objects.filter(enable_crawling=True))
         for r in RemoteRepo.objects.filter(enable_crawling=True):
             if r.type not in type_map:
                 CrawlLog.objects.create(
@@ -32,56 +33,72 @@ class Command(BaseCommand):
                 json.loads(r.info)["base_url"], r.remote_id, r.access_token
             )
 
+            print("begin req")
             # make requests
-            commits = req.commits()
-            sleep(1)
-            merges = req.merges()
-            sleep(1)
-            issues = req.issues()
+            commits = []
+            i = 1
+            while True:
+                sleep(0.5)
+                self.stdout.write(f" Begin commits on page {i}")
+                part = req.commits(i)
+                if part[0] == 200:
+                    if len(part[1]):
+                        commits += part[1]
+                        i += 1
+                    else:
+                        break
+                else:
+                    CrawlLog.objects.create(
+                        repo=r,
+                        time=now(),
+                        request_type="commit",
+                        status=part[0],
+                        message=part[1]["message"],
+                    )
+            print(len(commits))
 
             # process commits
-            if commits[0] == 200:
-                crawl = CrawlLog.objects.create(
-                    repo=r, time=now(), request_type="commit"
-                )
-                commits = commits[1].json()
-                commits_dic = {}
+            crawl = CrawlLog.objects.create(repo=r, time=now(), request_type="commit")
+            commits_dic = {}
 
-                # hash commits
-                for c in commits:
-                    commits_dic[c["id"]] = c
+            # hash commits
+            for c in commits:
+                commits_dic[c["id"]] = c
 
-                ori_commits = Commit.objects.filter(repo=r.repo)
+            ori_commits = Commit.objects.filter(repo=r.repo)
 
-                # search for deletion
-                for c in ori_commits:
-                    if c.hash_id not in commits_dic:
-                        c.disabled = True
-                        c.save()
-                        CommitCrawlAssociation.objects.create(
-                            commit=c, crawl=crawl, operation="remove"
-                        )
+            # search for deletion
+            for c in ori_commits:
+                if c.hash_id not in commits_dic:
+                    c.disabled = True
+                    c.save()
+                    CommitCrawlAssociation.objects.create(
+                        commit=c, crawl=crawl, operation="remove"
+                    )
 
-                # search for addition
-                for c in commits:
-                    if not ori_commits.filter(hash_id=c["id"]).first():
-                        Commit.objects.create(
-                            hash_id=c["id"],
-                            repo=r.repo,
-                            title=c["title"],
-                            message=c["message"],
-                            committer_email=c["committer_email"],
-                            committer_name=c["committer_name"],
-                            createdAt=dt.datetime.timestamp(
-                                parse_date(c["created_at"])
-                            ),
-                        )
-
-                crawl.finished = True
-                crawl.save()
+            # search for addition
+            print(len(commits))
+            for c in commits:
+                if not ori_commits.filter(hash_id=c["id"]).first():
+                    new_c = Commit.objects.create(
+                        hash_id=c["id"],
+                        repo=r.repo,
+                        title=c["title"],
+                        message=c["message"],
+                        commiter_email=c["committer_email"],
+                        commiter_name=c["committer_name"],
+                        createdAt=dt.datetime.timestamp(parse_date(c["created_at"])),
+                        url=c["web_url"],
+                    )
+                    CommitCrawlAssociation.objects.create(
+                        commit=new_c, crawl=crawl, operation="insert"
+                    )
+            crawl.finished = True
+            crawl.save()
 
     def handle(self, *args, **options):
         # s = BlockingScheduler()
         # s.add_job(test_job, 'interval', seconds=1)
         # s.start()
+        print(123)
         self.crawl_all()
