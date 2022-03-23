@@ -27,7 +27,15 @@ database:
 
 请先阅读[项目规范](https://qynt1gy8vn.feishu.cn/docs/doccnLXFY9wOriyviGh5fv6NUgd)，然后再继续阅读本部分。
 
-// TODO: 这里讲解怎么跑通 CI/CD
+为了通过 CI 请在 push 之前自行运行脚本 `./test.sh`，会自动执行风格测试与单元测试。
+
+为了代码风格统一，我们安装了 black 库：
+
++ https://zhuanlan.zhihu.com/p/203307235
+
+也就是说，你只需要在补全依赖之后，使用 `black <你的模块名>` 即可自动 format。
+
+请注意一次 commit 不能过 500 行的限制。
 
 ## 数据库模型
 

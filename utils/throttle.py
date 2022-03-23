@@ -1,5 +1,6 @@
 from rest_framework.throttling import SimpleRateThrottle
 
+
 class GeneralThrottle(SimpleRateThrottle):
     def __init__(self):
         """
@@ -14,18 +15,15 @@ class GeneralThrottle(SimpleRateThrottle):
 
     def allow_request(self, request, view):
         if not request.user:
-            self.define_type('visitor')
+            self.define_type("visitor")
             self.ident = self.get_ident(request)
         else:
-            self.define_type('user')
+            self.define_type("user")
             self.ident = str(request.user.id)
 
         assert self.rate is not None
 
-        self.key = self.cache_format % {
-            'scope': self.scope,
-            'ident': self.ident
-        }
+        self.key = self.cache_format % {"scope": self.scope, "ident": self.ident}
 
         self.history = self.cache.get(self.key, [])
         self.now = self.timer()
@@ -45,7 +43,8 @@ def SpecialThrottle(scope_name: str):
 
         def get_cache_key(self, request, view):
             return self.cache_format % {
-                'scope': self.scope,
-                'ident': self.get_ident(request)
+                "scope": self.scope,
+                "ident": self.get_ident(request),
             }
+
     return SpecialThrottleClass

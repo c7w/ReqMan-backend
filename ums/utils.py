@@ -4,8 +4,15 @@ import string
 
 from rest_framework.request import Request
 from utils.exceptions import ParamErr
-from ums.models import Project, User, UserProjectAssociation, ProjectInvitationAssociation, Role
+from ums.models import (
+    Project,
+    User,
+    UserProjectAssociation,
+    ProjectInvitationAssociation,
+    Role,
+)
 from django.forms.models import model_to_dict
+
 
 def require(lst, attr_name):
     """
@@ -14,8 +21,9 @@ def require(lst, attr_name):
     """
     attr = lst.get(attr_name)
     if not attr:
-        raise ParamErr(f'missing {attr_name}.')
+        raise ParamErr(f"missing {attr_name}.")
     return attr
+
 
 def intify(inp):
     """
@@ -30,23 +38,20 @@ def intify(inp):
     except ValueError:
         raise ParamErr(f"{inp} cannot be convert to an integer")
 
+
 def user_to_list(user: User):
     """
     convert user instance into a dict
     """
-    return model_to_dict(user, exclude=[
-        'password',
-        'disabled',
-        'project'
-    ])
+    return model_to_dict(user, exclude=["password", "disabled", "project"])
+
 
 def proj_to_list(proj: Project):
     """
     convert project instance into a dict
     """
-    return model_to_dict(proj, exclude=[
-        'disabled'
-    ])
+    return model_to_dict(proj, exclude=["disabled"])
+
 
 def proj_user_assoc(req: Request):
     """
@@ -58,25 +63,18 @@ def proj_user_assoc(req: Request):
     return a dict of the instances or None in the corresponding field
     """
 
-    proj = intify(require(req.data, 'project'))
+    proj = intify(require(req.data, "project"))
     proj = proj_exist(proj)
 
-    user = intify(require(req.data, 'user'))
+    user = intify(require(req.data, "user"))
     user = user_exist(user)
 
     if not user or not proj:
-        return {
-            'user': user,
-            'proj': proj,
-            'relation': None
-        }
+        return {"user": user, "proj": proj, "relation": None}
 
     relation = in_proj(user, proj)
-    return {
-        'user': user,
-        'proj': proj,
-        'relation': relation
-    }
+    return {"user": user, "proj": proj, "relation": relation}
+
 
 def invitation_exist(proj: Project, role: str):
     """
@@ -85,20 +83,17 @@ def invitation_exist(proj: Project, role: str):
     if not, return None
     """
     assert role in Role
-    return ProjectInvitationAssociation.objects.filter(
-        project=proj,
-        role=role
-    ).first()
+    return ProjectInvitationAssociation.objects.filter(project=proj, role=role).first()
+
 
 def create_inv(proj: Project, role: str):
     """
     create a ProjectInvitationAssociation
     """
     return ProjectInvitationAssociation.objects.create(
-        project=proj,
-        role=role,
-        invitation=gen_invitation()
+        project=proj, role=role, invitation=gen_invitation()
     )
+
 
 def renew_inv(inv: ProjectInvitationAssociation):
     """
@@ -108,15 +103,19 @@ def renew_inv(inv: ProjectInvitationAssociation):
     inv.save()
     return inv
 
+
 def gen_invitation():
     """
     generate the invitation string and return it
     """
     while True:
-        invitation = ''.join(sample(string.ascii_uppercase + string.digits, 8))
-        if not ProjectInvitationAssociation.objects.filter(invitation=invitation).first():
+        invitation = "".join(sample(string.ascii_uppercase + string.digits, 8))
+        if not ProjectInvitationAssociation.objects.filter(
+            invitation=invitation
+        ).first():
             break
     return invitation
+
 
 def all_users():
     """
@@ -124,16 +123,15 @@ def all_users():
     """
     return User.objects.filter(disabled=False)
 
+
 def in_proj(user: User, proj: Project):
     """
     check if user in project
     if true, return UserProjectAssociation instance
     else return None
     """
-    return UserProjectAssociation.objects.filter(
-        user=user,
-        project=proj
-    ).first()
+    return UserProjectAssociation.objects.filter(user=user, project=proj).first()
+
 
 def is_role(user: User, proj: Project, role: str):
     """
@@ -143,19 +141,19 @@ def is_role(user: User, proj: Project, role: str):
     """
     assert role in Role
     return UserProjectAssociation.objects.filter(
-        user=user,
-        project=proj,
-        role=role
+        user=user, project=proj, role=role
     ).first()
+
 
 def email_valid(email: str):
     """
     check if email valid
     """
-    return re.match(
-        r"^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$",
-        email
-    ) is not None
+    return (
+        re.match(r"^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$", email)
+        is not None
+    )
+
 
 def name_exist(name: str):
     """
@@ -167,6 +165,7 @@ def name_exist(name: str):
         if not u.disabled:
             return u
 
+
 def email_exist(email: str):
     """
     check if email exist, NOT case sensitive
@@ -176,6 +175,7 @@ def email_exist(email: str):
     for u in users:
         if not u.disabled:
             return u
+
 
 def user_exist(id: int):
     """
@@ -187,6 +187,7 @@ def user_exist(id: int):
         if not u.disabled:
             return u
 
+
 def proj_exist(id: int):
     """
     check if project exist, NOT case sensitive
@@ -197,11 +198,9 @@ def proj_exist(id: int):
         if not p.disabled:
             return p
 
+
 def name_valid(name: str):
     """
     check if name valid
     """
-    return re.match(
-        r"^[a-zA-Z0-9_]{3,16}$",
-        name
-    ) is not None
+    return re.match(r"^[a-zA-Z0-9_]{3,16}$", name) is not None

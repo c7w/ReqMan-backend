@@ -18,7 +18,7 @@ from django.urls import path, include
 import backend.views as views
 
 urlpatterns = [
-    path('', views.root),
-    path('ums/', include('ums.urls')),
-    path('rms/', include('rms.urls'))
+    path("", views.root),
+    path("ums/", include("ums.urls")),
+    path("rms/", include("rms.urls")),
 ]

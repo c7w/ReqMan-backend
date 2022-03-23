@@ -5,8 +5,7 @@ import backend.views
 
 
 class RoutingTests(TestCase):
-
     def test_root(self):
         """Test if path `/` is configurated normally"""
-        resolver = resolve('/')
+        resolver = resolve("/")
         self.assertEqual(resolver.func, backend.views.root)

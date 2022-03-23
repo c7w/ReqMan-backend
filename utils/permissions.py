@@ -7,17 +7,19 @@ from utils.exceptions import ParamErr, Failure
 
 rights = {}
 
+
 def project_rights(role):
     def decorator(func):
-        rights[func.__name__] = {
-            'type': 'project',
-            'role': role
-        }
+        rights[func.__name__] = {"type": "project", "role": role}
+
         @wraps(func)
         def wrapper(*args, **kw):
             return func(*args, **kw)
+
         return wrapper
+
     return decorator
+
 
 class GeneralPermission(BasePermission):
     def has_permission(self, req, view):
@@ -25,24 +27,24 @@ class GeneralPermission(BasePermission):
             return True
         pm = rights[view.action]
         # check project - user rights
-        if pm['type'] == 'project':
+        if pm["type"] == "project":
             if not req.user:
                 return False
-            proj = intify(require(req.data, 'project'))
+            proj = intify(require(req.data, "project"))
             proj = proj_exist(proj)
             if not proj:
                 raise ParamErr
 
-            if pm['role'] == 'AnyMember':
+            if pm["role"] == "AnyMember":
                 relation = in_proj(req.user, proj)
             else:
-                assert pm['role'] in Role
-                relation = is_role(req.user, proj, pm['role'])
+                assert pm["role"] in Role
+                relation = is_role(req.user, proj, pm["role"])
 
             if not relation:
                 return False
 
-            req.auth['proj'] = proj
-            req.auth['relation'] = relation
+            req.auth["proj"] = proj
+            req.auth["relation"] = relation
             return True
         return True
