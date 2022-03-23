@@ -106,13 +106,21 @@ class IssueSRAssociation(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
 
+
 class RemoteRepo(models.Model):
     id = models.BigAutoField(primary_key=True)
     type = models.CharField(max_length=50)
     remote_id = models.TextField()
     access_token = models.TextField()
+    enable_crawling = models.BooleanField(default=True)
+    info = models.TextField(default="{}")
+    repo = models.ForeignKey(Repository, on_delete=models.CASCADE)
+
 
 class CrawlLog(models.Model):
     id = models.BigAutoField(primary_key=True)
     repo = models.ForeignKey(RemoteRepo, on_delete=models.CASCADE)
     time = models.FloatField()
+    status = models.IntegerField(default=200)
+    message = models.TextField(default="")
+    request_type = models.TextField(default="")
