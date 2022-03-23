@@ -35,7 +35,7 @@ if "*" in env["site"]["allowed_hosts"]:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     ALLOWED_HOSTS = env["site"]["allowed_hosts"]
-    CORS_ALLOWED_ORIGINS = env["site"]["allowed_hosts"]
+    CORS_ALLOWED_ORIGINS = env["site"]["cors_allowed_hosts"]
 
 # Application definition
 
