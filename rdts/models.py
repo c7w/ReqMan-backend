@@ -67,8 +67,9 @@ class MergeRequest(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=["authoredByEmail"]),
-            models.Index(fields=["reviewedByEmail"]),
+            models.Index(fields=["authoredByUserName"]),
+
+            models.Index(fields=["reviewedByUserName"]),
         ]
 
 
@@ -86,16 +87,17 @@ class Issue(models.Model):
     state = models.TextField(choices=IssueState.choices)
     authoredByUserName = models.CharField(max_length=255)
     authoredAt = models.FloatField(null=True, blank=True)
+    updatedAt = models.FloatField(null=True, blank=True)
     closedByUserName = models.CharField(max_length=255)
     closedAt = models.FloatField(null=True, blank=True)
-    assignee = models.CharField(max_length=255)
+    assigneeUserName = models.CharField(max_length=255)
     disabled = models.BooleanField(default=False)
     url = models.TextField()
 
     class Meta:
         indexes = [
-            models.Index(fields=["authoredByEmail"]),
-            models.Index(fields=["reviewedByEmail"]),
+            models.Index(fields=["authoredByUserName"]),
+            models.Index(fields=["closedByUserName"]),
         ]
 
 
@@ -130,7 +132,7 @@ class CrawlLog(models.Model):
     time = models.FloatField()
     status = models.IntegerField(default=200)
     message = models.TextField(default="")
-    request_type = models.TextField(default="")
+    request_type = models.TextField(default="general")
     finished = models.BooleanField(default=False)
 
 
