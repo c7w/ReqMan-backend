@@ -34,7 +34,9 @@ class Commit(models.Model):
     title = models.CharField(max_length=255)
     message = models.TextField()
     commiter_email = models.CharField(max_length=255)
+    commiter_name = models.CharField(max_length=255)
     createdAt = models.FloatField()
+    url = models.TextField()
     disabled = models.BooleanField(default=False)
 
     class Meta:
@@ -114,7 +116,9 @@ class RemoteRepo(models.Model):
     access_token = models.TextField()
     enable_crawling = models.BooleanField(default=True)
     info = models.TextField(default="{}")
-    repo = models.ForeignKey(Repository, on_delete=models.CASCADE)
+    repo = models.ForeignKey(
+        Repository, on_delete=models.CASCADE, default=Repository.objects.get(id=1)
+    )
 
 
 class CrawlLog(models.Model):
@@ -124,3 +128,22 @@ class CrawlLog(models.Model):
     status = models.IntegerField(default=200)
     message = models.TextField(default="")
     request_type = models.TextField(default="")
+    finished = models.BooleanField(default=False)
+
+
+class CommitCrawlAssociation(models.Model):
+    commit = models.ForeignKey(Commit, on_delete=models.CASCADE)
+    crawl = models.ForeignKey(CrawlLog, on_delete=models.CASCADE)
+    operation = models.CharField(max_length=10)
+
+
+class MergeCrawlAssociation(models.Model):
+    merge = models.ForeignKey(MergeRequest, on_delete=models.CASCADE)
+    crawl = models.ForeignKey(CrawlLog, on_delete=models.CASCADE)
+    operation = models.CharField(max_length=10)
+
+
+class IssueCrawlAssociation(models.Model):
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
+    crawl = models.ForeignKey(CrawlLog, on_delete=models.CASCADE)
+    operation = models.CharField(max_length=10)
