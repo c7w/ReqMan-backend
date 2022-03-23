@@ -27,7 +27,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env['site']['secret_key']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env['site']['debug']
+# DEBUG = env['site']['debug']
+DEBUG = True
 
 if '*' in env['site']['allowed_hosts']:
     ALLOWED_HOSTS = ['*']
@@ -152,7 +153,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [],
     'UNAUTHENTICATED_USER': None,
-    'EXCEPTION_HANDLER': 'utils.exceptions.handler'
+    'EXCEPTION_HANDLER': 'utils.exceptions.handler',
+    'DEFAULT_THROTTLE_RATES': {
+        # general throttles
+        'user': '60/min',
+        'visitor': '30/min',
+        # special throttles
+        'register': '10/day',
+    }
 }
 
 APPEND_SLASH=True
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cache_table',
+    }
+}
+

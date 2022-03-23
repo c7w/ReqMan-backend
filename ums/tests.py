@@ -100,7 +100,7 @@ class UMS_Tests(TestCase):
     def test_lacking_cookie(self):
         c = Client()
         resp = c.post("/ums/login/")
-        self.assertEqual(resp.json()['code'], -1)
+        self.assertEqual(resp.json()['code'], -4)
 
     """
     /ums/login/
@@ -221,13 +221,13 @@ class UMS_Tests(TestCase):
         resp = c.post("/ums/project/", data={
             'project': 999
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertNotEqual(resp.json()['code'], 0)
 
         # not in project
         resp = c.post("/ums/project/", data={
             'project': self.p2.id
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertEqual(resp.json()['code'], -2)
 
         # successful
         resp = c.post("/ums/project/", data={
@@ -247,13 +247,13 @@ class UMS_Tests(TestCase):
             'title': 't',
             'description': 'd'
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertEqual(resp.json()['code'], -2)
 
         # invalid project id
         resp = c.post("/ums/modify_project/", data={
             'project': 9801
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertEqual(resp.json()['code'], -1)
 
         # successful
         resp = c.post("/ums/modify_project/", data={
@@ -290,11 +290,11 @@ class UMS_Tests(TestCase):
 
         # not supermaster
         resp = self.get_inv_for(c, self.p2.id)
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertEqual(resp.json()['code'], -2)
 
         # invalid project id
         resp = self.get_inv_for(c, 9999)
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertEqual(resp.json()['code'], -1)
 
         # successful
         resp = self.get_inv_for(c, self.p1.id)
@@ -315,13 +315,13 @@ class UMS_Tests(TestCase):
         resp = c.post("/ums/refresh_invitation/", data={
             'project': self.p2.id,
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertEqual(resp.json()['code'], -2)
 
         # invalid project id
         resp = c.post("/ums/refresh_invitation/", data={
             'project': 7777
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertNotEqual(resp.json()['code'], 0)
 
         # successful
         resp = c.post("/ums/refresh_invitation/", data={
@@ -349,7 +349,7 @@ class UMS_Tests(TestCase):
             'user': self.u2.id,
             'role': Role.SUPERMASTER
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertEqual(resp.json()['code'], -2)
 
         # invalid project id
         resp = c.post("/ums/modify_user_role/", data={
@@ -357,7 +357,7 @@ class UMS_Tests(TestCase):
             'user': self.u2.id,
             'role': Role.SUPERMASTER
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertEqual(resp.json()['code'], -1)
 
         # invalid role
         resp = c.post("/ums/modify_user_role/", data={
@@ -400,7 +400,7 @@ class UMS_Tests(TestCase):
             'user': self.u3.id,
             'role': Role.MEMBER
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertEqual(resp.json()['code'], -2)
 
         # invalid project id
         resp = c.post(url, data={
@@ -408,7 +408,7 @@ class UMS_Tests(TestCase):
             'user': self.u3.id,
             'role': Role.SUPERMASTER
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertNotEqual(resp.json()['code'], 0)
 
         # invalid role
         resp = c.post(url, data={
@@ -451,14 +451,14 @@ class UMS_Tests(TestCase):
             'project': self.p2.id,
             'user': self.u2.id,
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertEqual(resp.json()['code'], -2)
 
         # invalid project id
         resp = c.post(url, data={
             'project': -1,
             'user': self.u3.id,
         }, content_type="application/json")
-        self.assertEqual(resp.json()['code'], 1)
+        self.assertNotEqual(resp.json()['code'], 0)
 
         # successful
         resp = c.post(url, data={
@@ -516,6 +516,17 @@ class UMS_Tests(TestCase):
             user=new_user
         ).first().role, inv.role)
 
+        # user will not register after login
+        resp = d.post(url, data={
+            'name': 'Eve',
+            'password': 'Eve123456',
+            'email': 'eve@secoder.net',
+        }, content_type="application/json")
+        self.assertEqual(resp.json()['code'], 1)
+
+        c = Client()
+        c.cookies['sessionId'] = '18'
+
         # successful without invitation
         resp = c.post(url, data={
             'name': 'Eve',
@@ -546,4 +557,15 @@ class UMS_Tests(TestCase):
         }, content_type="application/json")
         self.assertEqual(resp.json()['code'], 1)
 
-
+    """
+    frequent request should be throttled
+    """
+    def test_throttle(self):
+        url = '/ums/login/'
+        c = Client()
+        c.cookies['sessionId'] = '19'
+        for i in range(100):
+            resp = c.post(url, data={})
+            if resp.json()['code'] == -3:
+                return
+        raise AssertionError

@@ -1,4 +1,4 @@
-from rest_framework.decorators import action
+from rest_framework.decorators import action, throttle_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
@@ -7,6 +7,8 @@ from ums.models import *
 from utils.sessions import *
 from ums.utils import *
 from django.forms.models import model_to_dict
+from utils.throttle import GeneralThrottle, SpecialThrottle
+from utils.permissions import GeneralPermission, project_rights
 
 DEFAULT_INVITED_ROLE = 'member'
 
@@ -19,6 +21,8 @@ FAIL = Response({
 
 class UserViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
+    throttle_classes = [GeneralThrottle]
+    permission_classes = [GeneralPermission]
 
     @action(detail=False, methods=['POST'])
     def check_username_available(self, req: Request):
@@ -34,8 +38,10 @@ class UserViewSet(viewsets.ViewSet):
             'code': 1 if email_exist(email) else 0
         })
 
-    @action(detail=False, methods=['POST'])
+    @action(detail=False, methods=['POST'], throttle_classes=throttle_classes + [SpecialThrottle('register')])
     def register(self, req: Request):
+        if req.user:
+            return FAIL
 
         name = require(req.data, 'name')
         password = require(req.data, 'password')
@@ -84,7 +90,7 @@ class UserViewSet(viewsets.ViewSet):
             usr = name_exist(identity)
             if usr and usr.name == identity:
                 if usr.password == password:
-                    bind_session_id(get_session_id(req), usr)
+                    bind_session_id(req.auth['sessionId'], usr)
                     return SUCC
                 else:
                     return Response({
@@ -120,7 +126,7 @@ class UserViewSet(viewsets.ViewSet):
                 'code': 1
             })
 
-        disable_session_id(req.auth)
+        disable_session_id(req.auth['sessionId'])
         return Response({
             'code': 0
         })
@@ -143,14 +149,11 @@ class UserViewSet(viewsets.ViewSet):
             }
         })
 
+    @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=['POST'])
     def modify_user_role(self, req:Request):
         relation = proj_user_assoc(req)['relation']
         if not relation:
-            return FAIL
-
-        # supermaster check
-        if not is_role(req.user, relation.project, Role.SUPERMASTER):
             return FAIL
 
         role = require(req.data, 'role')
@@ -162,26 +165,20 @@ class UserViewSet(viewsets.ViewSet):
 
         return SUCC
 
+    @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=['POST'])
     def project_rm_user(self, req:Request):
         relation = proj_user_assoc(req)['relation']
         if not relation:
             return FAIL
 
-        # supermaster check
-        if not is_role(req.user, relation.project, Role.SUPERMASTER):
-            return FAIL
-
         relation.delete()
         return SUCC
 
+    @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=['POST'])
     def project_add_user(self, req:Request):
         info = proj_user_assoc(req)
-
-        # supermaster check
-        if not is_role(req.user, info['proj'] , Role.SUPERMASTER):
-            return FAIL
 
         role = require(req.data, 'role')
         if role not in Role:
@@ -210,16 +207,10 @@ class UserViewSet(viewsets.ViewSet):
         UserProjectAssociation.objects.create(project=proj, user=req.user, role='supermaster')
         return SUCC
 
+    @project_rights('AnyMember')
     @action(detail=False, methods=['POST'])
     def project(self,  req: Request):
-        proj = intify(require(req.data, 'project'))
-
-        proj = proj_exist(proj)
-        if not proj:
-            return FAIL
-
-        if not in_proj(req.user, proj):
-            return FAIL
+        proj = req.auth['proj']
 
         users = [user_to_list(u) for u in all_users().filter(project=proj)]
         proj = proj_to_list(proj)
@@ -232,14 +223,10 @@ class UserViewSet(viewsets.ViewSet):
             }
         })
 
-
-
+    @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=['POST'])
     def modify_project(self, req: Request):
-        proj = intify(require(req.data, 'project'))
-        proj = proj_exist(proj)
-        if not proj:
-            return FAIL
+        proj = req.auth['proj']
 
         if not is_role(req.user, proj, "supermaster"):
             return FAIL
@@ -252,17 +239,10 @@ class UserViewSet(viewsets.ViewSet):
 
         return SUCC
 
-
+    @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=['POST'])
     def refresh_invitation(self, req: Request):
-        proj = intify(require(req.data, 'project'))
-        proj = proj_exist(proj)
-        if not proj:
-            return FAIL
-
-        if not is_role(req.user, proj, Role.SUPERMASTER):
-            return FAIL
-
+        proj = req.auth['proj']
         inv = invitation_exist(proj, DEFAULT_INVITED_ROLE)
 
         if inv:
@@ -281,16 +261,10 @@ class UserViewSet(viewsets.ViewSet):
             }
         })
 
-
+    @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=['POST'])
     def get_invitation(self, req: Request):
-        proj = intify(require(req.data, 'project'))
-        proj = proj_exist(proj)
-        if not proj:
-            return FAIL
-
-        if not is_role(req.user, proj, Role.SUPERMASTER):
-            return FAIL
+        proj = req.auth['proj']
 
         inv = invitation_exist(proj, DEFAULT_INVITED_ROLE)
         if not inv:

@@ -6,9 +6,24 @@ def handler(e, ctx):
     resp = exception_handler(e, ctx)
 
     if resp is not None:
-        resp.data['code'] = -1
+        if type(e) is exceptions.Throttled:
+            resp.data['code'] = -3
+        elif type(e) is exceptions.PermissionDenied:
+            resp.data['code'] = -2
+        elif type(e) is exceptions.AuthenticationFailed:
+            resp.data['code'] = -4
+        elif type(e) is ParamErr:
+            resp.data['code'] = -1
+        elif type(e) is Failure:
+            resp.data['code'] = 1
+        else:
+            resp.data['code'] = -100
 
     return resp
+
+class Failure(exceptions.APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = 'Fail.'
 
 class ParamErr(exceptions.APIException):
     status_code = status.HTTP_400_BAD_REQUEST
