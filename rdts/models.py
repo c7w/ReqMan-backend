@@ -56,13 +56,14 @@ class MergeRequest(models.Model):
         OPENED = "opened"
 
     state = models.TextField(choices=MRState.choices)
-    authoredByEmail = models.CharField(max_length=255, default='')
-    authoredByUserName = models.CharField(max_length=255, default='')
+    authoredByEmail = models.CharField(max_length=255, default="")
+    authoredByUserName = models.CharField(max_length=255, default="")
     authoredAt = models.FloatField(null=True, blank=True)
-    reviewedByEmail = models.CharField(max_length=255, default='')
-    reviewedByUserName = models.CharField(max_length=255, default='')
+    reviewedByEmail = models.CharField(max_length=255, default="")
+    reviewedByUserName = models.CharField(max_length=255, default="")
     reviewedAt = models.FloatField(null=True, blank=True)
     disabled = models.BooleanField(default=False)
+    url = models.TextField()
 
     class Meta:
         indexes = [
@@ -83,11 +84,13 @@ class Issue(models.Model):
         OPENED = "opened"
 
     state = models.TextField(choices=IssueState.choices)
-    authoredByEmail = models.CharField(max_length=255)
+    authoredByUserName = models.CharField(max_length=255)
     authoredAt = models.FloatField(null=True, blank=True)
-    reviewedByEmail = models.CharField(max_length=255)
-    reviewedAt = models.FloatField(null=True, blank=True)
+    closedByUserName = models.CharField(max_length=255)
+    closedAt = models.FloatField(null=True, blank=True)
+    assignee = models.CharField(max_length=255)
     disabled = models.BooleanField(default=False)
+    url = models.TextField()
 
     class Meta:
         indexes = [
