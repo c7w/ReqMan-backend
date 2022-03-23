@@ -56,13 +56,16 @@ class Command(BaseCommand):
 
         ori_merges = MergeRequest.objects.filter(repo=r.repo, disabled=False)
 
+        updated = False
+
         # search for deletion
         for c in ori_merges:
             if c.merge_id not in merges_dic:
+                updated = True
                 c.disabled = True
                 c.save()
                 MergeCrawlAssociation.objects.create(
-                    merge=c, crawl=crawl, operation="remove"
+                    merge=c, crawl=crawl, operation=CrawlerOp.REMOVE
                 )
 
         # search for addition
@@ -76,8 +79,12 @@ class Command(BaseCommand):
                 "state": c["state"],
                 "authoredByUserName": c["author"]["username"],
                 "authoredAt": dt.datetime.timestamp(parse_date(c["created_at"])),
-                "reviewedByUserName": c["merged_by"]["username"] if c["merged_by"] is not None else '',
-                "reviewedAt": dt.datetime.timestamp(parse_date(c["merged_at"])) if c["merged_at"] is not None else None,
+                "reviewedByUserName": c["merged_by"]["username"]
+                if c["merged_by"] is not None
+                else "",
+                "reviewedAt": dt.datetime.timestamp(parse_date(c["merged_at"]))
+                if c["merged_at"] is not None
+                else None,
                 "url": c["web_url"],
             }
             mr = ori_merges.filter(merge_id=c["iid"])
@@ -96,17 +103,20 @@ class Command(BaseCommand):
                     "url": c["web_url"],
                 }
                 if prev_info != kw:
+                    updated = True
                     mr.update(**kw)
                     MergeCrawlAssociation.objects.create(
-                        merge=m, crawl=crawl, operation="update"
+                        merge=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
             else:
+                updated = True
                 new_c = MergeRequest.objects.create(**kw)
                 MergeCrawlAssociation.objects.create(
-                    merge=new_c, crawl=crawl, operation="insert"
+                    merge=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
 
         crawl.finished = True
+        crawl.updated = updated
         crawl.save()
 
     def get_commit(self, r: RemoteRepo, req):
@@ -145,13 +155,16 @@ class Command(BaseCommand):
 
         ori_commits = Commit.objects.filter(repo=r.repo, disabled=False)
 
+        updated = False
+
         # search for deletion
         for c in ori_commits:
             if c.hash_id not in commits_dic:
+                updated = True
                 c.disabled = True
                 c.save()
                 CommitCrawlAssociation.objects.create(
-                    commit=c, crawl=crawl, operation="remove"
+                    commit=c, crawl=crawl, operation=CrawlerOp.REMOVE
                 )
 
         # search for addition
@@ -180,16 +193,19 @@ class Command(BaseCommand):
                     "url": oc.url,
                 }
                 if old_key != kw:
+                    updated = True
                     cs.update(**kw)
                     CommitCrawlAssociation.objects.create(
-                        commit=oc, crawl=crawl, operation="update"
+                        commit=oc, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
             else:
+                updated = True
                 new_c = Commit.objects.create(**kw)
                 CommitCrawlAssociation.objects.create(
-                    commit=new_c, crawl=crawl, operation="insert"
+                    commit=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
         crawl.finished = True
+        crawl.updated = updated
         crawl.save()
 
     def get_issue(self, r: RemoteRepo, req):
@@ -228,13 +244,16 @@ class Command(BaseCommand):
 
         ori_issues = Issue.objects.filter(repo=r.repo, disabled=False)
 
+        updated = False
+
         # search for deletion
         for c in ori_issues:
             if c.issue_id not in issues_dic:
+                updated = True
                 c.disabled = True
                 c.save()
                 IssueCrawlAssociation.objects.create(
-                    issue=c, crawl=crawl, operation="remove"
+                    issue=c, crawl=crawl, operation=CrawlerOp.REMOVE
                 )
 
         for c in issues:
@@ -247,45 +266,54 @@ class Command(BaseCommand):
                 "authoredByUserName": c["author"]["username"],
                 "authoredAt": dt.datetime.timestamp(parse_date(c["created_at"])),
                 "updatedAt": dt.datetime.timestamp(parse_date(c["updated_at"])),
-                "closedByUserName": c["closed_by"]["username"] if c["closed_by"] is not None else '',
-                "closedAt": dt.datetime.timestamp(parse_date(c["closed_at"])) if c["closed_at"] is not None else None,
-                "assigneeUserName": c['assignee']['username'] if c['assignee'] is not None else '',
+                "closedByUserName": c["closed_by"]["username"]
+                if c["closed_by"] is not None
+                else "",
+                "closedAt": dt.datetime.timestamp(parse_date(c["closed_at"]))
+                if c["closed_at"] is not None
+                else None,
+                "assigneeUserName": c["assignee"]["username"]
+                if c["assignee"] is not None
+                else "",
                 "url": c["web_url"],
             }
             iss = ori_issues.filter(issue_id=c["iid"])
             if len(iss):
                 m: Issue = iss.first()
                 prev_info = {
-                "issue_id": m.issue_id,
-                "repo": m.repo,
-                "title": m.title,
-                "description": m.description,
-                "state": m.state,
-                "authoredByUserName": m.authoredByUserName,
-                "authoredAt": m.authoredAt,
-                "updatedAt": m.updatedAt,
-                "closedByUserName": m.closedByUserName,
-                "closedAt": m.closedAt,
-                "assigneeUserName": m.assigneeUserName,
-                "url": m.url,
-            }
+                    "issue_id": m.issue_id,
+                    "repo": m.repo,
+                    "title": m.title,
+                    "description": m.description,
+                    "state": m.state,
+                    "authoredByUserName": m.authoredByUserName,
+                    "authoredAt": m.authoredAt,
+                    "updatedAt": m.updatedAt,
+                    "closedByUserName": m.closedByUserName,
+                    "closedAt": m.closedAt,
+                    "assigneeUserName": m.assigneeUserName,
+                    "url": m.url,
+                }
                 if prev_info != kw:
+                    updated = True
                     iss.update(**kw)
                     IssueCrawlAssociation.objects.create(
-                        issue=m, crawl=crawl, operation="update"
+                        issue=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
             else:
+                updated = True
                 new_c = Issue.objects.create(**kw)
                 IssueCrawlAssociation.objects.create(
-                    issue=new_c, crawl=crawl, operation="insert"
+                    issue=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
 
         crawl.finished = True
+        crawl.updated = updated
         crawl.save()
 
     def crawl_all(self):
         remote_repos = RemoteRepo.objects.filter(enable_crawling=True)
-        self.stdout.write("Repos: " + ", ".join([r.id for r in remote_repos]))
+        self.stdout.write("Repos: " + ", ".join([str(r.id) for r in remote_repos]))
 
         for r in remote_repos:
             if r.type not in type_map:
@@ -303,9 +331,10 @@ class Command(BaseCommand):
             self.get_issue(r, req)
             sleep(BIG_INTERVAL)
 
+        self.stdout.write("END OF TASK CRAWL")
+
     def handle(self, *args, **options):
         s = BlockingScheduler()
         self.stdout.write("Scheduler Initialized")
-        s.add_job(self.crawl_all, 'interval', minutes=3)
+        s.add_job(self.crawl_all, "interval", minutes=3)
         s.start()
-
