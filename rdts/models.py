@@ -51,14 +51,16 @@ class MergeRequest(models.Model):
     description = models.TextField()
 
     class MRState(models.TextChoices):
-        MERGED = "Merged"
+        MERGED = "merged"
         ClOSED = "closed"
         OPENED = "opened"
 
     state = models.TextField(choices=MRState.choices)
-    authoredByEmail = models.CharField(max_length=255)
+    authoredByEmail = models.CharField(max_length=255, default='')
+    authoredByUserName = models.CharField(max_length=255, default='')
     authoredAt = models.FloatField(null=True, blank=True)
-    reviewedByEmail = models.CharField(max_length=255)
+    reviewedByEmail = models.CharField(max_length=255, default='')
+    reviewedByUserName = models.CharField(max_length=255, default='')
     reviewedAt = models.FloatField(null=True, blank=True)
     disabled = models.BooleanField(default=False)
 

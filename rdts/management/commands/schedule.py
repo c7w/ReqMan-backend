@@ -9,17 +9,97 @@ from time import sleep
 import json
 from iso8601 import parse_date
 
-
-def test_job():
-    print(123)
-
-
 def now():
     return dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
 
-
 class Command(BaseCommand):
     help = "Run Schedule Tasks"
+
+    def get_merge(self, r: RemoteRepo, req):
+        print("begin query merges")
+        # make requests
+        merges = []
+        i = 1
+        while True:
+            sleep(0.5)
+            self.stdout.write(f" Begin merges on page {i}")
+            part = req.merges(i)
+            if part[0] == 200:
+                if len(part[1]):
+                    merges += part[1]
+                    i += 1
+                else:
+                    break
+            else:
+                CrawlLog.objects.create(
+                    repo=r,
+                    time=now(),
+                    request_type="merge",
+                    status=part[0],
+                    message=part[1]["message"],
+                )
+        print(len(merges))
+
+        # process merges
+        crawl = CrawlLog.objects.create(repo=r, time=now(), request_type="merge")
+        merges_dic = {}
+
+        # hash merges
+        for c in merges:
+            merges_dic[c["id"]] = c
+
+        ori_merges = MergeRequest.objects.filter(repo=r.repo)
+
+        # search for deletion
+        for c in ori_merges:
+            if c.hash_id not in merges_dic:
+                c.disabled = True
+                c.save()
+                MergeCrawlAssociation.objects.create(
+                    merge=c, crawl=crawl, operation="remove"
+                )
+
+        # search for addition
+        print(len(merges))
+        for c in merges:
+            kw = {
+                "merge_id": c['iid'],
+                "repo": r.repo,
+                "title": c['title'],
+                "description": c['description'],
+                "state": c['state'],
+                "authoredByUserName": c['author']['username'],
+                "authoredAt": dt.datetime.timestamp(parse_date(c['created_at'])),
+                "reviewedByUserName": c['merged_by']['username'],
+                "reviewedAt": dt.datetime.timestamp(parse_date(c['merged_at'])),
+            }
+            mr = ori_merges.filter(merge_id=c["iid"])
+            if len(mr):
+                m: MergeRequest = mr.first()
+                prev_info = {
+                    "merge_id": m.merge_id,
+                    "repo": m.repo,
+                    "title": m.title,
+                    "description": m.description,
+                    "state": m.state,
+                    "authoredByUserName": m.authoredByUserName,
+                    "authoredAt": m.authoredAt,
+                    "reviewedByUserName": m.reviewedByUserName,
+                    "reviewedAt": m.reviewedAt,
+                }
+                if prev_info != kw:
+                    mr.update(**kw)
+                    MergeCrawlAssociation.objects.create(
+                        merge=m, crawl=crawl, operation="refresh"
+                    )
+            else:
+                new_c = MergeRequest.objects.create(**kw)
+                MergeCrawlAssociation.objects.create(
+                    merge=new_c, crawl=crawl, operation="insert"
+                )
+
+        crawl.finished = True
+        crawl.save()
 
     def crawl_all(self):
         print(RemoteRepo.objects.filter(enable_crawling=True))
@@ -33,7 +113,7 @@ class Command(BaseCommand):
                 json.loads(r.info)["base_url"], r.remote_id, r.access_token
             )
 
-            print("begin req")
+            print("begin query commits")
             # make requests
             commits = []
             i = 1

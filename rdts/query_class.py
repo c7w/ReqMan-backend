@@ -8,11 +8,11 @@ class Gitlab:
         self.repo = int(repo)
         self.token = access_token
 
-    def merges(self):
-        return self.request("merge_requests")
+    def merges(self, page):
+        return self.request("merge_requests", page)
 
-    def issues(self):
-        return self.request("issues")
+    def issues(self, page):
+        return self.request("issues", page)
 
     def commits(self, page):
         return self.request("repository/commits", page)
