@@ -48,6 +48,7 @@ unit-test:
   script:
     - python manage.py makemigrations
     - python manage.py migrate
+    - python manage.py createcachetable
     - coverage run --source backend,ums,rms,rdts -m pytest --junit-xml=xunit-reports/xunit-result.xml
     - ret=$?
     - coverage xml -o coverage-reports/coverage.xml

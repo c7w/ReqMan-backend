@@ -27,7 +27,15 @@ database:
 
 请先阅读[项目规范](https://qynt1gy8vn.feishu.cn/docs/doccnLXFY9wOriyviGh5fv6NUgd)，然后再继续阅读本部分。
 
-// TODO: 这里讲解怎么跑通 CI/CD
+为了通过 CI 请在 push 之前自行运行脚本 `./test.sh`，会自动执行风格测试与单元测试。
+
+为了代码风格统一，我们安装了 black 库：
+
++ https://zhuanlan.zhihu.com/p/203307235
+
+也就是说，你只需要在补全依赖之后，使用 `black <你的模块名>` 即可自动 format。
+
+请注意一次 commit 不能过 500 行的限制。
 
 ## 数据库模型
 
@@ -235,7 +243,7 @@ database:
 
 #### MRSRAssociation
 
-+ commit: FK
++ MR: FK
 + SR: FK
 
 #### IssueSRAssociation
@@ -259,7 +267,15 @@ Repo > 设置 > 访问令牌
 
 若不加说明，[GET/POST] 方法的 [请求参数/请求体] 中均带有 sessionId 字段用于鉴权。
 
-请**不要**在鉴权的时候大量复制粘贴相同的代码片段，应该使用一个专门的函数来鉴权。传入 sessionId 与所需权限，返回一个布尔值。
+### 鉴权注意
+当前使用的鉴权机制
++ 首先判断是否有sessionId，没有的，`AuthenticationFailed`， -4
++ 再判断有无权限访问，比如只有supermaster能修改项目信息等， 权限不足， `PermissionDenied`, -2
++ 再判断用户访问是否过于频繁，过于频繁，`Throttled`，-3
++ 再判断请求是否缺乏必要的参数，缺乏的， `ParamErr`, -1
++ 做完了这些，控制权被移交给相应API函数，API函数也可能发出上述异常
++ 意料之外的Exception, -100
+
 
 ### `/ums/`
 
