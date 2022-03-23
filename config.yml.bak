@@ -4,10 +4,11 @@
 site:
     debug: false
     secret_key: "django-insecure-vyuaosduoiasbduiasdbiuasobdisaoBULABULA"
-    allowed_hosts: # CORS
-    - 'https://undefined.c7w.tech'
+    allowed_hosts: # Backend
+    - 'localhost'
+    cors_allowed_hosts: # Frontend
+    - 'http://localhost:3000'
     - 'https://frontend-undefined.app.secoder.net'
-    - '*'
 
 database:
     type: "sqlite3" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
