@@ -235,7 +235,7 @@ database:
 
 #### MRSRAssociation
 
-+ commit: FK
++ MR: FK
 + SR: FK
 
 #### IssueSRAssociation
