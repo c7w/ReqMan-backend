@@ -1,5 +1,7 @@
 from rest_framework.routers import DefaultRouter
-from rms.views import RMSViewSet
+from rdts.views import RDTSViewSet
 
 router = DefaultRouter()
-router.register("", RMSViewSet, basename="RMS")
+router.register("", RDTSViewSet, basename="RDTS")
+
+urlpatterns = router.urls
