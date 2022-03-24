@@ -310,3 +310,31 @@ class Command(BaseCommand):
         crawl.finished = True
         crawl.updated = updated
         crawl.save()
+
+    def crawl_all(self):
+        remote_repos = RemoteRepo.objects.filter(enable_crawling=True)
+        self.stdout.write("Repos: " + ", ".join([str(r.id) for r in remote_repos]))
+
+        for r in remote_repos:
+            if r.type not in type_map:
+                CrawlLog.objects.create(
+                    repo=r, time=now(), status=-1, message="Repo type not supported"
+                )
+                continue
+            req = type_map[r.type](
+                json.loads(r.info)["base_url"], r.remote_id, r.access_token
+            )
+            self.get_commit(r, req)
+            sleep(BIG_INTERVAL)
+            self.get_merge(r, req)
+            sleep(BIG_INTERVAL)
+            self.get_issue(r, req)
+            sleep(BIG_INTERVAL)
+
+        self.stdout.write("END OF TASK CRAWL")
+
+    def handle(self, *args, **options):
+        s = BlockingScheduler()
+        self.stdout.write("Scheduler Initialized")
+        s.add_job(self.crawl_all, "interval", minutes=3)
+        s.start()
