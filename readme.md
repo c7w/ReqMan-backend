@@ -160,6 +160,13 @@ database:
 
 ### RDTS
 
+**开发风险提示：目前数据库中对字符串留空采取了两种不同方式**
+1. 空字符串 ''
+2. None (SQL 中为 Null)
+接口开发时注意判断
+
+#### 自动同步工具的文档见`rdts/management/command/readme.md`
+
 #### Repository
 
 + id: BigAuto, pk
@@ -182,13 +189,14 @@ database:
 + createdAt: float
 + disabled: Boolean
 
+> ADDED BY lambda
++ url
+
 照着这个建：
 
 + https://gitlab.secoder.net/api/v4/projects/468/repository/commits
 
-```json
-{"id":"d6ba051d2b107287ee7a036e7defcadeb151e538","short_id":"d6ba051d","created_at":"2022-03-15T20:32:32.000+08:00","parent_ids":["4afe7fb64ef32997c5ee72465b09f4239bed8bea"],"title":"[SR.001.000] Fix routing issues: remove .htaccess, modify nginx settings","message":"[SR.001.000] Fix routing issues: remove .htaccess, modify nginx settings\n","author_name":"c7w","author_email":"admin@cc7w.cf","authored_date":"2022-03-15T20:32:32.000+08:00","committer_name":"c7w","committer_email":"admin@cc7w.cf","committed_date":"2022-03-15T20:32:32.000+08:00","web_url":"https://gitlab.secoder.net/undefined/frontend/-/commit/d6ba051d2b107287ee7a036e7defcadeb151e538"}
-```
+
 
 #### Merge Request
 
@@ -207,10 +215,10 @@ database:
 
 + https://gitlab.secoder.net/api/v4/projects/468/merge_requests
 
-```json
-{"id":60,"iid":8,"project_id":468,"title":"[SR.001.002.F] Modify SonarQube properties","description":"[SR.001.002] Modify SonarQube properties","state":"merged","created_at":"2022-03-15T06:36:09.461Z","updated_at":"2022-03-15T06:45:56.029Z","merged_by":{"id":122,"name":"高焕昂","username":"2020010951","state":"active","avatar_url":"https://gitlab.secoder.net/uploads/-/system/user/avatar/122/avatar.png","web_url":"https://gitlab.secoder.net/2020010951"},"merged_at":"2022-03-15T06:45:26.204Z","closed_by":null,"closed_at":null,"target_branch":"dev","source_branch":"feature-001-002","user_notes_count":0,"upvotes":0,"downvotes":0,"author":{"id":122,"name":"高焕昂","username":"2020010951","state":"active","avatar_url":"https://gitlab.secoder.net/uploads/-/system/user/avatar/122/avatar.png","web_url":"https://gitlab.secoder.net/2020010951"},"assignees":[],"assignee":null,"source_project_id":468,"target_project_id":468,"labels":["infrastructure"],"work_in_progress":false,"milestone":null,"merge_when_pipeline_succeeds":false,"merge_status":"cannot_be_merged","sha":"0d4457764c1d034a8438f7e344de047d2f13b675","merge_commit_sha":"35c111aaa4f153f67aeb931d36d55c2a07ae0e85","squash_commit_sha":null,"discussion_locked":null,"should_remove_source_branch":null,"force_remove_source_branch":true,"reference":"!8","references":{"short":"!8","relative":"!8","full":"undefined/frontend!8"},"web_url":"https://gitlab.secoder.net/undefined/frontend/-/merge_requests/8","time_stats":{"time_estimate":0,"total_time_spent":0,"human_time_estimate":null,"human_total_time_spent":null},"squash":false,"task_completion_status":{"count":0,"completed_count":0},"has_conflicts":true,"blocking_discussions_resolved":true}
-```
-
+> ADDED BY lambda
++ authoredByUserName
++ reviewedByUserName
++ url
 
 
 #### Issue
@@ -224,17 +232,18 @@ database:
 + state: enum
 + authoredBy: FK, allow_null
 + authoredAt: float, allow_null
-+ reviewedBy: FK, allow_null
-+ reviewedAt: float, allow_null
++ closedBy: FK, allow_null (**modified**, because issue should be called "close" instead of review)
++ closedAt: float, allow_null (**modified**)
 + disabled: Boolean
 
+> ADDED by lambda
++ authoredByUserName, Char
++ closedByUserName, Char
++ assigneeUserName, Char
++ url, Text
 朝着这个建：
 
 + https://gitlab.secoder.net/api/v4/projects/468/issues
-
-```json
-{"id":167,"iid":8,"project_id":468,"title":"[SR.002.001] 增加前端部署用分支配置文件","description":"[SR.002.001] 增加前端部署用分支配置文件\n并完成 readme.md 中的有关说明","state":"opened","created_at":"2022-03-15T06:04:34.022Z","updated_at":"2022-03-15T06:04:34.022Z","closed_at":null,"closed_by":null,"labels":["infrastructure"],"milestone":null,"assignees":[{"id":122,"name":"高焕昂","username":"2020010951","state":"active","avatar_url":"https://gitlab.secoder.net/uploads/-/system/user/avatar/122/avatar.png","web_url":"https://gitlab.secoder.net/2020010951"}],"author":{"id":122,"name":"高焕昂","username":"2020010951","state":"active","avatar_url":"https://gitlab.secoder.net/uploads/-/system/user/avatar/122/avatar.png","web_url":"https://gitlab.secoder.net/2020010951"},"assignee":{"id":122,"name":"高焕昂","username":"2020010951","state":"active","avatar_url":"https://gitlab.secoder.net/uploads/-/system/user/avatar/122/avatar.png","web_url":"https://gitlab.secoder.net/2020010951"},"user_notes_count":0,"merge_requests_count":0,"upvotes":0,"downvotes":0,"due_date":"2022-03-22","confidential":false,"discussion_locked":null,"web_url":"https://gitlab.secoder.net/undefined/frontend/-/issues/8","time_stats":{"time_estimate":0,"total_time_spent":0,"human_time_estimate":null,"human_total_time_spent":null},"task_completion_status":{"count":0,"completed_count":0},"has_tasks":false,"_links":{"self":"https://gitlab.secoder.net/api/v4/projects/468/issues/8","notes":"https://gitlab.secoder.net/api/v4/projects/468/issues/8/notes","award_emoji":"https://gitlab.secoder.net/api/v4/projects/468/issues/8/award_emoji","project":"https://gitlab.secoder.net/api/v4/projects/468"},"references":{"short":"#8","relative":"#8","full":"undefined/frontend#8"},"moved_to_id":null}
-```
 
 #### CommitSRAssociation
 
