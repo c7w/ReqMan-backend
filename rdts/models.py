@@ -40,9 +40,10 @@ class Commit(models.Model):
     disabled = models.BooleanField(default=False)
 
     class Meta:
-        indexes = [models.Index(fields=["commiter_email"]),
-                    models.Index(fields=['commiter_name']),
-                    models.Index(fields=['repo'])
+        indexes = [
+            models.Index(fields=["commiter_email"]),
+            models.Index(fields=["commiter_name"]),
+            models.Index(fields=["repo"]),
         ]
 
 
@@ -59,7 +60,7 @@ class MergeRequest(models.Model):
         OPENED = "opened"
 
     state = models.TextField(choices=MRState.choices)
-    authoredByEmail = models.CharField(max_length=255,default="")
+    authoredByEmail = models.CharField(max_length=255, default="")
     authoredByUserName = models.CharField(max_length=255, default="")
     authoredAt = models.FloatField(null=True, blank=True)
     reviewedByEmail = models.CharField(max_length=255, default="")
@@ -72,7 +73,7 @@ class MergeRequest(models.Model):
         indexes = [
             models.Index(fields=["authoredByUserName"]),
             models.Index(fields=["reviewedByUserName"]),
-            models.Index(fields=['repo']),
+            models.Index(fields=["repo"]),
         ]
 
 
@@ -101,7 +102,7 @@ class Issue(models.Model):
         indexes = [
             models.Index(fields=["authoredByUserName"]),
             models.Index(fields=["closedByUserName"]),
-            models.Index(fields=['repo']),
+            models.Index(fields=["repo"]),
         ]
 
 
@@ -118,6 +119,7 @@ class MRSRAssociation(models.Model):
 class IssueSRAssociation(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
+
 
 class RemoteRepo(models.Model):
     """

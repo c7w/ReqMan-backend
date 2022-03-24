@@ -14,7 +14,6 @@ from rms.utils import *
 class RMSViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
 
-
     def projectGET(self, req: Request):
         proj = intify(require(req.query_params, "project"))
         proj = proj_exist(proj)
