@@ -1,6 +1,7 @@
-from urllib.request import Request
+from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework import viewsets
-from rdts.utlis import getRepo, repoExist
+from rdts.utlis import getCommit, getCommitSR, getIssue, getIssueSR, getMR, getMRSR, getRepo, repoExist
 from ums.utils import in_proj, intify, proj_exist, require
 from ums.views import FAIL
 from utils.sessions import SessionAuthentication
@@ -27,7 +28,21 @@ class RDTSViewSet(viewsets.ViewSet):
         if not repo:
             return FAIL
         if type == 'mr':
-            resu = serialize
+            resu = serialize(getMR(repo))
+        elif type == 'commit':
+            resu = serialize(getCommit(repo))
+        elif type == 'issue':
+            resu = serialize(getIssue(repo))
+        elif type == 'commit-sr':
+            resu = serialize(getCommitSR(repo))
+        elif type == 'mr-sr':
+            resu = serialize(getMRSR(repo))
+        elif type == 'issue-sr':
+            resu = serialize(getIssueSR(repo))
+        else:
+            return FAIL
+        return Response({'code':0,'data':resu})
+        
 
     def projectPOST(self,req:Request):
         pass
