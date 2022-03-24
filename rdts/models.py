@@ -95,7 +95,8 @@ class Issue(models.Model):
     assigneeUserName = models.CharField(max_length=255)
     disabled = models.BooleanField(default=False)
     url = models.TextField()
-    labels = models.TextField(default="")
+    labels = models.TextField(default="[]")  # 以json 形式存下所有label, 频繁用的label直接取出来当布尔键存
+    is_bug = models.BooleanField(default=False)
 
     class Meta:
         indexes = [

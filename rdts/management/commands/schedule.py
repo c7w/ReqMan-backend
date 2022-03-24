@@ -21,7 +21,7 @@ class Command(BaseCommand):
     help = "Run Schedule Tasks"
 
     def get_merge(self, r: RemoteRepo, req):
-        print("begin query merges")
+        self.stdout.write("begin query merges")
         # make requests
         merges = []
         i = 1
@@ -44,7 +44,7 @@ class Command(BaseCommand):
                     message=part[1]["message"],
                 )
                 return
-        print(len(merges))
+        self.stdout.write(str(len(merges)))
 
         # process merges
         crawl = CrawlLog.objects.create(repo=r, time=now(), request_type="merge")
@@ -69,7 +69,7 @@ class Command(BaseCommand):
                 )
 
         # search for addition
-        print(len(merges))
+        self.stdout.write(str(len(merges)))
         for c in merges:
             kw = {
                 "merge_id": c["iid"],
@@ -120,7 +120,7 @@ class Command(BaseCommand):
         crawl.save()
 
     def get_commit(self, r: RemoteRepo, req):
-        print("begin query commits")
+        self.stdout.write("begin query commits")
         # make requests
         commits = []
         i = 1
@@ -143,7 +143,7 @@ class Command(BaseCommand):
                     message=part[1]["message"],
                 )
                 return
-        print(len(commits))
+        self.stdout.write(str(len(commits)))
 
         # process commits
         crawl = CrawlLog.objects.create(repo=r, time=now(), request_type="commit")
@@ -209,7 +209,7 @@ class Command(BaseCommand):
         crawl.save()
 
     def get_issue(self, r: RemoteRepo, req):
-        print("begin query issues")
+        self.stdout.write("begin query issues")
         # make requests
         issues = []
         i = 1
@@ -232,7 +232,7 @@ class Command(BaseCommand):
                     message=part[1]["message"],
                 )
                 return
-        print(len(issues))
+        self.stdout.write(str(len(issues)))
 
         # process issues
         crawl = CrawlLog.objects.create(repo=r, time=now(), request_type="issue")
@@ -276,6 +276,8 @@ class Command(BaseCommand):
                 if c["assignee"] is not None
                 else "",
                 "url": c["web_url"],
+                "labels": json.dumps(c["labels"], ensure_ascii=False),
+                "is_bug": "bug" in c["labels"],
             }
             iss = ori_issues.filter(issue_id=c["iid"])
             if len(iss):
@@ -293,6 +295,8 @@ class Command(BaseCommand):
                     "closedAt": m.closedAt,
                     "assigneeUserName": m.assigneeUserName,
                     "url": m.url,
+                    "labels": m.labels,
+                    "is_bug": m.is_bug,
                 }
                 if prev_info != kw:
                     updated = True
