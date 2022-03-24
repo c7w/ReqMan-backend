@@ -1,8 +1,9 @@
-from faulthandler import disable
 from rms.models import *
 from ums.models import Project
 from ums.utils import *
 
+def serialize(resu: dict, excludeList: list = []):
+    return [model_to_dict(p, exclude=excludeList) for p in resu]
 
 def getIR(proj: Project):
     return IR.objects.filter(project=proj, disabled=False).order_by("rank")

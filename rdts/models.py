@@ -38,7 +38,9 @@ class Commit(models.Model):
     disabled = models.BooleanField(default=False)
 
     class Meta:
-        indexes = [models.Index(fields=["commiter_email"])]
+        indexes = [models.Index(fields=["commiter_email"]),
+                    models.Index(fields=['repo'])
+        ]
 
 
 class MergeRequest(models.Model):
@@ -54,9 +56,9 @@ class MergeRequest(models.Model):
         OPENED = "opened"
 
     state = models.TextField(choices=MRState.choices)
-    authoredByEmail = models.CharField(max_length=255)
+    authoredByEmail = models.CharField(max_length=255,null=True,blank=True)
     authoredAt = models.FloatField(null=True, blank=True)
-    reviewedByEmail = models.CharField(max_length=255)
+    reviewedByEmail = models.CharField(max_length=255,null=True,blank=True)
     reviewedAt = models.FloatField(null=True, blank=True)
     disabled = models.BooleanField(default=False)
 
@@ -64,6 +66,7 @@ class MergeRequest(models.Model):
         indexes = [
             models.Index(fields=["authoredByEmail"]),
             models.Index(fields=["reviewedByEmail"]),
+            models.Index(fields=['repo']),
         ]
 
 
@@ -89,6 +92,7 @@ class Issue(models.Model):
         indexes = [
             models.Index(fields=["authoredByEmail"]),
             models.Index(fields=["reviewedByEmail"]),
+            models.Index(fields=['repo']),
         ]
 
 
