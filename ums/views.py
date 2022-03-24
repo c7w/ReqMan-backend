@@ -18,7 +18,7 @@ FAIL = Response({"code": 1})
 
 class UserViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
-    throttle_classes = [GeneralThrottle]
+    # throttle_classes = [GeneralThrottle]
     permission_classes = [GeneralPermission]
 
     @action(detail=False, methods=["POST"])
@@ -34,7 +34,7 @@ class UserViewSet(viewsets.ViewSet):
     @action(
         detail=False,
         methods=["POST"],
-        throttle_classes=throttle_classes + [SpecialThrottle("register")],
+    #    throttle_classes=throttle_classes + [SpecialThrottle("register")],
     )
     def register(self, req: Request):
         if req.user:
