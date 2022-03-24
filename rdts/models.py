@@ -156,7 +156,7 @@ class CrawlLog(models.Model):
     updated = models.BooleanField(
         default=False
     )  # 本次爬取是否对数据库做了修改，加上是考虑到大部分爬取都没有修改，用这个字段可以加速查询速度
-    labels = models.TextField(default='')
+    labels = models.TextField(default="")
 
 
 class CrawlerOp(models.TextChoices):

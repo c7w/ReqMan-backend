@@ -118,3 +118,195 @@ class Command(BaseCommand):
         crawl.finished = True
         crawl.updated = updated
         crawl.save()
+
+    def get_commit(self, r: RemoteRepo, req):
+        print("begin query commits")
+        # make requests
+        commits = []
+        i = 1
+        while True:
+            sleep(SMALL_INTERVAL)
+            self.stdout.write(f" Begin commits on page {i}")
+            part = req.commits(i)
+            if part[0] == 200:
+                if len(part[1]):
+                    commits += part[1]
+                    i += 1
+                else:
+                    break
+            else:
+                CrawlLog.objects.create(
+                    repo=r,
+                    time=now(),
+                    request_type="commit",
+                    status=part[0],
+                    message=part[1]["message"],
+                )
+                return
+        print(len(commits))
+
+        # process commits
+        crawl = CrawlLog.objects.create(repo=r, time=now(), request_type="commit")
+        commits_dic = {}
+
+        # hash commits
+        for c in commits:
+            commits_dic[c["id"]] = c
+
+        ori_commits = Commit.objects.filter(repo=r.repo, disabled=False)
+
+        updated = False
+
+        # search for deletion
+        for c in ori_commits:
+            if c.hash_id not in commits_dic:
+                updated = True
+                c.disabled = True
+                c.save()
+                CommitCrawlAssociation.objects.create(
+                    commit=c, crawl=crawl, operation=CrawlerOp.REMOVE
+                )
+
+        # search for addition
+        for c in commits:
+            kw = {
+                "hash_id": c["id"],
+                "repo": r.repo,
+                "title": c["title"],
+                "message": c["message"],
+                "commiter_email": c["committer_email"],
+                "commiter_name": c["committer_name"],
+                "createdAt": dt.datetime.timestamp(parse_date(c["created_at"])),
+                "url": c["web_url"],
+            }
+            cs = ori_commits.filter(hash_id=c["id"])
+            if len(cs):
+                oc: Commit = cs.first()
+                old_key = {
+                    "hash_id": oc.hash_id,
+                    "repo": oc.repo,
+                    "title": oc.title,
+                    "message": oc.message,
+                    "commiter_email": oc.commiter_email,
+                    "commiter_name": oc.commiter_name,
+                    "createdAt": oc.createdAt,
+                    "url": oc.url,
+                }
+                if old_key != kw:
+                    updated = True
+                    cs.update(**kw)
+                    CommitCrawlAssociation.objects.create(
+                        commit=oc, crawl=crawl, operation=CrawlerOp.UPDATE
+                    )
+            else:
+                updated = True
+                new_c = Commit.objects.create(**kw)
+                CommitCrawlAssociation.objects.create(
+                    commit=new_c, crawl=crawl, operation=CrawlerOp.INSERT
+                )
+        crawl.finished = True
+        crawl.updated = updated
+        crawl.save()
+
+    def get_issue(self, r: RemoteRepo, req):
+        print("begin query issues")
+        # make requests
+        issues = []
+        i = 1
+        while True:
+            sleep(SMALL_INTERVAL)
+            self.stdout.write(f" Begin issues on page {i}")
+            part = req.issues(i)
+            if part[0] == 200:
+                if len(part[1]):
+                    issues += part[1]
+                    i += 1
+                else:
+                    break
+            else:
+                CrawlLog.objects.create(
+                    repo=r,
+                    time=now(),
+                    request_type="issue",
+                    status=part[0],
+                    message=part[1]["message"],
+                )
+                return
+        print(len(issues))
+
+        # process issues
+        crawl = CrawlLog.objects.create(repo=r, time=now(), request_type="issue")
+        issues_dic = {}
+
+        # hash issues
+        for c in issues:
+            issues_dic[c["iid"]] = c
+
+        ori_issues = Issue.objects.filter(repo=r.repo, disabled=False)
+
+        updated = False
+
+        # search for deletion
+        for c in ori_issues:
+            if c.issue_id not in issues_dic:
+                updated = True
+                c.disabled = True
+                c.save()
+                IssueCrawlAssociation.objects.create(
+                    issue=c, crawl=crawl, operation=CrawlerOp.REMOVE
+                )
+
+        for c in issues:
+            kw = {
+                "issue_id": c["iid"],
+                "repo": r.repo,
+                "title": c["title"],
+                "description": c["description"],
+                "state": c["state"],
+                "authoredByUserName": c["author"]["username"],
+                "authoredAt": dt.datetime.timestamp(parse_date(c["created_at"])),
+                "updatedAt": dt.datetime.timestamp(parse_date(c["updated_at"])),
+                "closedByUserName": c["closed_by"]["username"]
+                if c["closed_by"] is not None
+                else "",
+                "closedAt": dt.datetime.timestamp(parse_date(c["closed_at"]))
+                if c["closed_at"] is not None
+                else None,
+                "assigneeUserName": c["assignee"]["username"]
+                if c["assignee"] is not None
+                else "",
+                "url": c["web_url"],
+            }
+            iss = ori_issues.filter(issue_id=c["iid"])
+            if len(iss):
+                m: Issue = iss.first()
+                prev_info = {
+                    "issue_id": m.issue_id,
+                    "repo": m.repo,
+                    "title": m.title,
+                    "description": m.description,
+                    "state": m.state,
+                    "authoredByUserName": m.authoredByUserName,
+                    "authoredAt": m.authoredAt,
+                    "updatedAt": m.updatedAt,
+                    "closedByUserName": m.closedByUserName,
+                    "closedAt": m.closedAt,
+                    "assigneeUserName": m.assigneeUserName,
+                    "url": m.url,
+                }
+                if prev_info != kw:
+                    updated = True
+                    iss.update(**kw)
+                    IssueCrawlAssociation.objects.create(
+                        issue=m, crawl=crawl, operation=CrawlerOp.UPDATE
+                    )
+            else:
+                updated = True
+                new_c = Issue.objects.create(**kw)
+                IssueCrawlAssociation.objects.create(
+                    issue=new_c, crawl=crawl, operation=CrawlerOp.INSERT
+                )
+
+        crawl.finished = True
+        crawl.updated = updated
+        crawl.save()
