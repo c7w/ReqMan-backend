@@ -223,3 +223,155 @@ def createOpertion(proj: Project, type: str, data: dict, user: User):
     elif type == "commit-sr":
         createCommitSR(create)
     return False
+
+
+def updateRepo(id:int,datas:dict):
+    data = {}
+    rangeWord = ['url', 'project', 'title', 'description', 'createdBy', 'createdAt']
+    for i in datas:
+        if i in rangeWord:
+            data[i] = datas[i]
+    if "url" in data:
+        judgeTypeStr(data["url"])
+    if "title" in data:
+        judgeTypeStr(data["title"])
+    if "description" in data:
+        judgeTypeStr(data["description"])
+    if "createdAt" in data:
+        judgeTypeFloat(data["createdAt"])
+    if 'project'in data:
+        judgeTypeInt(data['project'])
+        project = Project.objects.filter(id=data['project']).first()
+        if not project:
+            raise ParamErr(f"wrong project Id.")
+        data['project'] = project
+    if 'createdBy' in data:
+        judgeTypeInt(data['createdBy'])
+        user = User.objects.filter(id = data['createdBy']).first()
+        if not user:
+            raise ParamErr(f"wrong user Id.")
+        data['createdBy']=user
+    Repository.objects.filter(id=id).update(**data)
+
+def updateMR(id:int,datas:dict):
+    data = {}
+    rangeWord = ['merge_id', 'repo', 'title', 'description', 'state', 'authoredByEmail', 'authoredByUserName', 'authoredAt', 'reviewedByEmail', 'reviewedByUserName', 'reviewedAt', 'url']
+    for i in datas:
+        if i in rangeWord:
+            data[i] = datas[i]
+    if "merge_id" in data:
+        judgeTypeInt(data["merge_id"])
+    if "title" in data:
+        judgeTypeStr(data["title"])
+    if "description" in data:
+        judgeTypeStr(data["description"])
+    if "state" in data:
+        if not data["state"] in [i for i in MergeRequest.MRState]:
+            raise ParamErr(f"wrong state type.")
+    if "authoredByEmail" in data:
+        judgeTypeStr(data["authoredByEmail"])
+    if "authoredByUserName" in data:
+        judgeTypeStr(data["authoredByUserName"])
+    if "authoredAt" in data:
+        judgeTypeFloat(data["authoredAt"])
+    if "reviewedByEmail" in data:
+        judgeTypeStr(data["reviewedByEmail"])
+    if "reviewedByUserName" in data:
+        judgeTypeStr(data["reviewedByUserName"])
+    if "reviewedAt" in data:
+        judgeTypeFloat(data["reviewedAt"])
+    if "url" in data:
+        judgeTypeStr(data["url"])
+    if 'repo' in data:
+        judgeTypeInt(data['repo'])
+        repo = Repository.objects.filter(id=data['repo']).first()
+        if not repo:
+            raise ParamErr(f"wrong repo id.")
+        data['repo'] = repo
+    MergeRequest.objects.filter(id=id).update(**data)
+
+def updateCommit(id:int,datas:dict):
+    rangeWord = ['hash_id', 'repo', 'title', 'message', 'commiter_email', 'commiter_name', 'createdAt', 'url']
+    data = {}
+    for i in datas:
+        if i in rangeWord:
+            data[i] = datas[i]
+    if "hash_id" in data:
+        judgeTypeInt(data["hash_id"])
+    if "title" in data:
+        judgeTypeStr(data["title"])
+    if "message" in data:
+        judgeTypeStr(data["message"])
+    if "commiter_email" in data:
+        judgeTypeStr(data["commiter_email"])
+    if "commiter_name" in data:
+        judgeTypeStr(data["commiter_name"])
+    if "createdAt" in data:
+        judgeTypeFloat(data["createdAt"])
+    if "url" in data:
+        judgeTypeStr(data["url"])
+    if 'repo' in data:
+        judgeTypeInt(data['repo'])
+        repo = Repository.objects.filter(id=data['repo']).first()
+        if not repo:
+            raise ParamErr(f"wrong repo id.")
+        data['repo'] = repo
+    Commit.objects.filter(id=id).update(**data)
+
+def updateIssue(id:int,datas:dict):
+    data = {}
+    rangeWord = ['issue_id', 'repo', 'title', 'description', 'state', 'authoredByUserName', 'authoredAt', 'updateAt', 'closedByUserName', 'closedAt', 'assigneeUserName', 'url']
+    for i in datas:
+        if i in rangeWord:
+            data[i] = datas[i]
+    if "issue_id" in data:
+        judgeTypeInt(data["issue_id"])
+    if "title" in data:
+        judgeTypeStr(data["title"])
+    if "description" in data:
+        judgeTypeStr(data["description"])
+    if "state" in data:
+        if not data["state"] in [i for i in Issue.IssueState]:
+            raise ParamErr(f"wrong type.")
+    if "authoredByUserName" in data:
+        judgeTypeStr(data["authoredByUserName"])
+    if "authoredAt" in data:
+        judgeTypeFloat(data["authoredAt"])
+    if "updateAt" in data:
+        judgeTypeFloat(data["updateAt"])
+    if "closedByUserName" in data:
+        judgeTypeStr(data["closedByUserName"])
+    if "closedAt" in data:
+        judgeTypeFloat(data["closedAt"])
+    if "assigneeUserName" in data:
+        judgeTypeStr(data["assigneeUserName"])
+    if "url" in data:
+        judgeTypeStr(data["url"])
+    if 'repo' in data:
+        judgeTypeInt(data['repo'])
+        repo = Repository.objects.filter(id=data['repo']).first()
+        if not repo:
+            raise ParamErr(f"wrong repo id.")
+        data['repo'] = repo
+    Issue.objects.filter(id = id).update(**data)
+
+def updateOperation(proj:Project,type:str,data:dict):
+    dataList = require(data,'data')
+    if 'repo' in data:
+        repoId = data['repo']
+        judgeTypeInt(repoId)
+    data = require(dataList,'updateData')
+    id = require(dataList,'id')
+    judgeTypeInt(id)
+    updates = {}
+    updates.update(data)
+    if type =='repo':
+        updateRepo(id,data)
+    elif type == 'commit':
+        updateCommit(id,data)
+    elif type == 'mr':
+        updateMR(id,data)
+    elif type == 'issue':
+        updateIssue(id,data)
+    return False
+

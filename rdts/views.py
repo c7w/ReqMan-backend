@@ -1,17 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
-from rdts.utlis import (
-    getCommit,
-    getCommitSR,
-    getIssue,
-    getIssueSR,
-    getMR,
-    getMRSR,
-    getRepo,
-    repoExist,
-    createOpertion,
-)
+from rdts.utlis import *
 from ums.models import Role
 from ums.tests import SUCC
 from ums.utils import in_proj, intify, is_role, proj_exist, require
@@ -71,7 +61,7 @@ class RDTSViewSet(viewsets.ViewSet):
         if operation == "create":
             fail = createOpertion(proj, type, req.data, req.user)
         elif operation == "update":
-            pass
+            fail = updateOperation(proj,type,req.data)
         elif operation == "delete":
             pass
         if fail:
