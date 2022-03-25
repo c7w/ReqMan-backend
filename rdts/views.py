@@ -10,6 +10,7 @@ from rdts.utlis import (
     getMRSR,
     getRepo,
     repoExist,
+    createOpertion,
 )
 from ums.models import Role
 from ums.tests import SUCC
@@ -56,26 +57,27 @@ class RDTSViewSet(viewsets.ViewSet):
         return Response({"code": 0, "data": resu})
 
     def projectPOST(self, req: Request):
-        type = require(req.query_params, "type")
-        proj = intify(require(req.query_params, "project"))
+        type = require(req.data, "type")
+        proj = intify(require(req.data, "project"))
         proj = proj_exist(proj)
 
-        if (not is_role(req.user, proj, Role.SYS)) and (not is_role(req.user,proj,Role.SUPERMASTER)) :
+        if (not is_role(req.user, proj, Role.SYS)) and (
+            not is_role(req.user, proj, Role.SUPERMASTER)
+        ):
             return FAIL
 
         operation = require(req.data, "operation")
         fail = True
-        if operation == 'create':
+        if operation == "create":
+            fail = createOpertion(proj, type, req.data, req.user)
+        elif operation == "update":
             pass
-        elif operation == 'update':
-            pass
-        elif operation == 'delete':
+        elif operation == "delete":
             pass
         if fail:
             return FAIL
         else:
             return SUCC
-
 
     @action(detail=False, methods=["POST", "GET"])
     def project(self, req: Request):
