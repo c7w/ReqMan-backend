@@ -89,12 +89,12 @@ class Issue(models.Model):
         OPENED = "opened"
 
     state = models.TextField(choices=IssueState.choices)
-    authoredByUserName = models.CharField(max_length=255)
+    authoredByUserName = models.CharField(max_length=255,default='')
     authoredAt = models.FloatField(null=True, blank=True)
     updatedAt = models.FloatField(null=True, blank=True)
-    closedByUserName = models.CharField(max_length=255)
+    closedByUserName = models.CharField(max_length=255,default='')
     closedAt = models.FloatField(null=True, blank=True)
-    assigneeUserName = models.CharField(max_length=255)
+    assigneeUserName = models.CharField(max_length=255,default='')
     disabled = models.BooleanField(default=False)
     url = models.TextField()
 

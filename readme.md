@@ -532,7 +532,9 @@ Response:
 
 #### `[POST] /rdts/project/`
 
-* project (id)
+* project (id) 
+
+*  repo （id）（type 为 repo 时可不填）
 
 * type (repo,commit,mr,issue,commit-sr,mr-sr,issue-sr)
 

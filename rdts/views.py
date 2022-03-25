@@ -11,7 +11,9 @@ from rdts.utlis import (
     getRepo,
     repoExist,
 )
-from ums.utils import in_proj, intify, proj_exist, require
+from ums.models import Role
+from ums.tests import SUCC
+from ums.utils import in_proj, intify, is_role, proj_exist, require
 from ums.views import FAIL
 from utils.sessions import SessionAuthentication
 from rest_framework.decorators import action
@@ -54,7 +56,26 @@ class RDTSViewSet(viewsets.ViewSet):
         return Response({"code": 0, "data": resu})
 
     def projectPOST(self, req: Request):
-        pass
+        type = require(req.query_params, "type")
+        proj = intify(require(req.query_params, "project"))
+        proj = proj_exist(proj)
+
+        if (not is_role(req.user, proj, Role.SYS)) and (not is_role(req.user,proj,Role.SUPERMASTER)) :
+            return FAIL
+
+        operation = require(req.data, "operation")
+        fail = True
+        if operation == 'create':
+            pass
+        elif operation == 'update':
+            pass
+        elif operation == 'delete':
+            pass
+        if fail:
+            return FAIL
+        else:
+            return SUCC
+
 
     @action(detail=False, methods=["POST", "GET"])
     def project(self, req: Request):
