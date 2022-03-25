@@ -63,7 +63,7 @@ class RDTSViewSet(viewsets.ViewSet):
         elif operation == "update":
             fail = updateOperation(proj,type,req.data)
         elif operation == "delete":
-            pass
+            fail = deleteOperation(proj,type,req.data)
         if fail:
             return FAIL
         else:

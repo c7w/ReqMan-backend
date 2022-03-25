@@ -375,3 +375,46 @@ def updateOperation(proj:Project,type:str,data:dict):
         updateIssue(id,data)
     return False
 
+def deleteOperation(proj:Project,type:str,data:dict):
+    datas = require(data,"data")
+    if type == 'repo':
+        id = require(datas,'id')
+        judgeTypeInt(id)
+        Repository.objects.filter(id=id).update(disabled=True)
+    elif type == 'mr':
+        id = require(datas,'id')
+        judgeTypeInt(id)
+        MergeRequest.objects.filter(id=id).update(disabled=True)
+    elif type == 'issue':
+        id = require(datas,'id')
+        judgeTypeInt(id)
+        Issue.objects.filter(id = id).update(disabld=True)
+    elif type == 'commit':
+        id = require(datas,'id')
+        judgeTypeInt(id)
+        Commit.objects.filter(id =id).update(disabled=True)
+    elif type == 'mr-sr':
+        mr = require(datas, "MRId")
+        judgeTypeInt(mr)
+        sr = require(datas, "SRId")
+        judgeTypeInt(sr)
+        sr = SR.objects.filter(id=sr).first()
+        mr = MergeRequest.objects.filter(id=mr).first()
+        MRSRAssociation.objects.filter(MR=mr,SR=sr).delete()
+    elif type == 'issue-sr':
+        issue = require(datas,'issueId')
+        judgeTypeInt(issue)
+        sr = require(datas, "SRId")
+        judgeTypeInt(sr)
+        sr = SR.objects.filter(id=sr).first()
+        issue = Issue.objects.filter(id=issue).first()
+        IssueSRAssociation.objects.filter(issue=issue,SR=sr).delete()
+    elif type == 'commit-sr':
+        commit = require(datas,'commit')
+        judgeTypeInt(commit)
+        sr = require(datas, "SRId")
+        judgeTypeInt(sr)
+        sr = SR.objects.filter(id=sr).first()
+        commit = Commit.objects.filter(id=commit).first()
+        CommitSRAssociation.objects.filter(SR=sr,commit=commit).delete()
+    return False
