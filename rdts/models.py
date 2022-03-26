@@ -4,6 +4,7 @@ from secrets import choice
 import pytz
 from backend.settings import TIME_ZONE
 from django.db import models
+import utils.model_date as getTime
 
 
 class Repository(models.Model):
@@ -14,7 +15,7 @@ class Repository(models.Model):
     description = models.TextField()
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     createdAt = models.FloatField(
-        default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
+        default=getTime.get_timestamp()
     )
     disabled = models.BooleanField(default=False)
 
