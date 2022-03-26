@@ -18,3 +18,4 @@ coverage
 pytz~=2021.3
 black
 apscheduler
+requests

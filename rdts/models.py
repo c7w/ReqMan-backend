@@ -15,7 +15,7 @@ class Repository(models.Model):
     description = models.TextField()
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     createdAt = models.FloatField(
-        default=getTime.get_timestamp()
+        default=getTime.get_timestamp
     )
     disabled = models.BooleanField(default=False)
 

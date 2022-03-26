@@ -13,7 +13,7 @@ class Project(models.Model):
     description = models.TextField()
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(
-        default=getTime.get_timestamp()
+        default=getTime.get_timestamp
     )
 
     class Meta:
@@ -30,7 +30,7 @@ class User(models.Model):
     avatar = models.TextField(default="")
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(
-        default=getTime.get_timestamp()
+        default=getTime.get_timestamp
     )
     project = models.ManyToManyField(Project, through="UserProjectAssociation")
 
@@ -45,7 +45,7 @@ class SessionPool(models.Model):
     sessionId = models.CharField(max_length=32)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     expireAt = models.DateTimeField(
-        default=getTime.get_datetime()
+        default=getTime.get_datetime
     )
 
     class Mata:

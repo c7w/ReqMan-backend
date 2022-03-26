@@ -16,7 +16,7 @@ class Iteration(models.Model):
     end = models.FloatField()
     disabled = models.BooleanField(default=False)
     createAt = models.FloatField(
-        default=getTime.get_timestamp()
+        default=getTime.get_timestamp
     )
 
     class Meta:
@@ -44,7 +44,7 @@ class IR(models.Model):
     rank = models.IntegerField()
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     createdAt = models.FloatField(
-        default=getTime.get_timestamp()
+        default=getTime.get_timestamp
     )
     disabled = models.BooleanField(default=False)
 
@@ -78,7 +78,7 @@ class SR(models.Model):
     state = models.TextField(choices=SRState.choices)
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     createdAt = models.FloatField(
-        default=getTime.get_timestamp()
+        default=getTime.get_timestamp
     )
     disabled = models.BooleanField(default=False)
 
@@ -109,7 +109,7 @@ class Service(models.Model):
     rank = models.IntegerField()
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     createdAt = models.FloatField(
-        default=getTime.get_timestamp()
+        default=getTime.get_timestamp
     )
     disabled = models.BooleanField(default=False)
 
@@ -137,5 +137,5 @@ class SR_Changelog(models.Model):
     formerDescription = models.TextField()
     changedBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     changedAt = models.FloatField(
-        default=getTime.get_timestamp()
+        default=getTime.get_timestamp
     )
