@@ -50,7 +50,9 @@ class RMSViewSet(viewsets.ViewSet):
         proj = proj_exist(proj)
         if not proj:
             return FAIL
-        if not is_role(req.user, proj, Role.SYS):
+        if (not is_role(req.user, proj, Role.SYS)) and (
+            not is_role(req.user, proj, Role.SUPERMASTER)
+        ):
             return FAIL
 
         operation = require(req.data, "operation")

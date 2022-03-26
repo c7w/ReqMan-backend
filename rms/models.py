@@ -2,7 +2,7 @@ import datetime as dt
 import pytz
 from backend.settings import TIME_ZONE
 from django.db import models
-
+import utils.model_date as getTime
 
 # Create your models here.
 
@@ -16,7 +16,7 @@ class Iteration(models.Model):
     end = models.FloatField()
     disabled = models.BooleanField(default=False)
     createAt = models.FloatField(
-        default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
+        default=getTime.get_timestamp
     )
 
     class Meta:
@@ -44,7 +44,7 @@ class IR(models.Model):
     rank = models.IntegerField()
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     createdAt = models.FloatField(
-        default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
+        default=getTime.get_timestamp
     )
     disabled = models.BooleanField(default=False)
 
@@ -78,7 +78,7 @@ class SR(models.Model):
     state = models.TextField(choices=SRState.choices)
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     createdAt = models.FloatField(
-        default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
+        default=getTime.get_timestamp
     )
     disabled = models.BooleanField(default=False)
 
@@ -109,7 +109,7 @@ class Service(models.Model):
     rank = models.IntegerField()
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     createdAt = models.FloatField(
-        default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
+        default=getTime.get_timestamp
     )
     disabled = models.BooleanField(default=False)
 
@@ -137,5 +137,5 @@ class SR_Changelog(models.Model):
     formerDescription = models.TextField()
     changedBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     changedAt = models.FloatField(
-        default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
+        default=getTime.get_timestamp
     )

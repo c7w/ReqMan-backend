@@ -2,23 +2,23 @@ from django.db import models
 import datetime as dt
 import pytz
 from backend.settings import TIME_ZONE
+import utils.model_date as getTime
 
-EXPIRE_DAYS = 3
+EXPIRE_DAYS = 2
 
 
 class Project(models.Model):
     id = models.BigAutoField(primary_key=True)
     title = models.CharField(max_length=255)
-    description = models.CharField(max_length=3072)
+    description = models.TextField()
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(
-        default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
+        default=getTime.get_timestamp
     )
 
     class Meta:
         indexes = [
             models.Index(fields=["title"]),
-            models.Index(fields=["description"]),
         ]
 
 
@@ -30,7 +30,7 @@ class User(models.Model):
     avatar = models.TextField(default="")
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(
-        default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
+        default=getTime.get_timestamp
     )
     project = models.ManyToManyField(Project, through="UserProjectAssociation")
 
@@ -45,8 +45,7 @@ class SessionPool(models.Model):
     sessionId = models.CharField(max_length=32)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     expireAt = models.DateTimeField(
-        default=dt.datetime.now(pytz.timezone(TIME_ZONE))
-        + dt.timedelta(days=EXPIRE_DAYS)
+        default=getTime.get_datetime
     )
 
     class Mata:

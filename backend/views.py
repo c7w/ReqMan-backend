@@ -2,5 +2,9 @@ from django.http import JsonResponse
 
 
 def root(req):
-    print(123)
-    return JsonResponse({"status": "ok"})
+    resp = {}
+    for k, v in req.META.items():
+        if type(v) == str:
+            resp[k] = v
+    print(resp)
+    return JsonResponse(resp)
