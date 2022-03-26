@@ -543,10 +543,13 @@ Response:
 * data：
 
   ```python
-    "data" :{ # update
+    "data" :{ # update，
     	id:
     	updateData:{
-    		'title':'TitleText'
+    		 'title':'TitleText',
+           'project':id
+           'repo':id
+           'createdBy':id
     	}
     }
     
@@ -570,7 +573,7 @@ Response:
         }
     }
   ```
-
+  
   
 
 ## Crontab

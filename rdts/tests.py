@@ -86,3 +86,131 @@ class RDTS_Tests(TestCase):
 
         data7 = {"repo": str(self.repo.id), "type": "mit-sr"}
         self.getRequest(c, data7, 1)
+
+    def post_message(self,c,datas,excode):
+        url = '/rdts/project/'
+        resq = c.post(url,data=datas,content_type="application/json")
+        self.assertEqual(resq.json()['code'],excode)
+
+    def test_RDTSPOST(self):
+        c = self.rms.login(self.rms.u4,'302')
+
+        # test update
+        data = {
+            'project':self.rms.ums.p1.id,
+            'type':'repo',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'url':"22333.edu",
+                    'project':self.rms.ums.p1.id,
+                    'title':"repo2",
+                    'description':"a common repo",
+                    'createdBy':self.rms.ums.u1.id,
+                }
+            }
+        }
+        self.post_message(c,data,0)
+
+        data = {
+            'project':self.rms.ums.p1.id,
+            'repo':self.repo.id,
+            'type':'commit',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'hash_id':"ToUseID",
+                    'repo':self.repo.id,
+                    'title':"Test.001.001",
+                    'message':"just a test",
+                    'commiter_email':"admin@233.edu",
+                    'commiter_name':"233",
+                    'createdAt':1.0,
+                    'url':"233.edu",
+                }
+            }
+        }
+        self.post_message(c,data,0)
+
+        data = {
+            'project':self.rms.ums.p1.id,
+            'repo':self.repo.id,
+            'type':'mr',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'merge_id':2,
+                    'repo':self.repo.id,
+                    'title':"Merge",
+                    'description':"98",
+                    'state':"opened",
+                    'url':"98.233.edu",
+                }
+            }
+        }
+        self.post_message(c,data,0)
+
+        
+        data = {
+            'project':self.rms.ums.p1.id,
+            'repo':self.repo.id,
+            'type':'issue',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'issue_id':5,
+                    'repo':self.repo.id,
+                    'title':"First",
+                    'description':"first",
+                    'state':"closed",
+                    'url':"233.edu",
+                }
+            }
+        }
+        self.post_message(c,data,0)
+
+        commit = Commit.objects.filter(hash_id="ToUseID").first()
+        data = {
+            'project':self.rms.ums.p1.id,
+            'repo':self.repo.id,
+            'type':'commit-sr',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'commitId':commit.id,
+                    'SRId':self.rms.SR1.id,
+                }
+            }
+        }
+
+        MR = MergeRequest.objects.filter(merge_id=2).first()
+        data = {
+            'project':self.rms.ums.p1.id,
+            'repo':self.repo.id,
+            'type':'mr-sr',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'MRId':MR.id,
+                    'SRId':self.rms.SR1.id,
+                }
+            }
+        }
+
+        issue = Issue.objects.filter(issue_id=5).first()
+        data2 = {"repo": str(self.repo.id), "type": "issue"}
+        self.getRequest(c, data2, 0)
+        self.test_Get()
+        data = {
+            'project':self.rms.ums.p1.id,
+            'repo':self.repo.id,
+            'type':'issue-sr',
+            'operation':'create',
+            'data':{
+                'updateData':{
+                    'IssueId':issue.id,
+                    'SRId':self.rms.SR1.id,
+                }
+            }
+        }
+

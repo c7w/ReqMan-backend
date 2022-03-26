@@ -3,9 +3,9 @@ from rest_framework.request import Request
 from rest_framework import viewsets
 from rdts.utlis import *
 from ums.models import Role
-from ums.tests import SUCC
 from ums.utils import in_proj, intify, is_role, proj_exist, require
 from ums.views import FAIL
+from ums.views import SUCC
 from utils.sessions import SessionAuthentication
 from rest_framework.decorators import action
 from rms.utils import serialize

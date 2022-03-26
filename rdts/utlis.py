@@ -53,6 +53,7 @@ def createRepo(datas: dict):
     judgeTypeStr(data["url"])
     judgeTypeStr(data["title"])
     judgeTypeStr(data["description"])
+
     Repository.objects.create(**data)
 
 
@@ -152,6 +153,7 @@ def createIssue(datas: dict):
         judgeTypeFloat(data["closedAt"])
     if "assigneeUserName" in data:
         judgeTypeStr(data["assigneeUserName"])
+    Issue.objects.create(**data)
 
 
 def createMRSR(datas: dict):
@@ -195,9 +197,10 @@ def createIssueSR(datas: dict):
 
 def createOpertion(proj: Project, type: str, data: dict, user: User):
     dataList = require(data, "data")
+    repoId = -1
     if "repo" in data:
         repoId = data["repo"]
-    judgeTypeInt(repoId)
+        judgeTypeInt(repoId)
     data = require(dataList, "updateData")
     create = {}
     create.update(data)
