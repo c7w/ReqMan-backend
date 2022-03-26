@@ -53,7 +53,6 @@ def createRepo(datas: dict):
     judgeTypeStr(data["url"])
     judgeTypeStr(data["title"])
     judgeTypeStr(data["description"])
-
     Repository.objects.create(**data)
 
 
@@ -204,8 +203,8 @@ def createOpertion(proj: Project, type: str, data: dict, user: User):
     data = require(dataList, "updateData")
     create = {}
     create.update(data)
-    create["project"] = proj
     create["createdBy"] = user
+    create["project"] = proj
     if repoId > -1:
         repo = Repository.objects.filter(id=repoId).first()
         if not repo:
@@ -228,9 +227,9 @@ def createOpertion(proj: Project, type: str, data: dict, user: User):
     return False
 
 
-def updateRepo(id:int,datas:dict):
+def updateRepo(id: int, datas: dict):
     data = {}
-    rangeWord = ['url', 'project', 'title', 'description', 'createdBy', 'createdAt']
+    rangeWord = ["url", "project", "title", "description", "createdBy", "createdAt"]
     for i in datas:
         if i in rangeWord:
             data[i] = datas[i]
@@ -242,23 +241,37 @@ def updateRepo(id:int,datas:dict):
         judgeTypeStr(data["description"])
     if "createdAt" in data:
         judgeTypeFloat(data["createdAt"])
-    if 'project'in data:
-        judgeTypeInt(data['project'])
-        project = Project.objects.filter(id=data['project']).first()
+    if "project" in data:
+        judgeTypeInt(data["project"])
+        project = Project.objects.filter(id=data["project"]).first()
         if not project:
             raise ParamErr(f"wrong project Id.")
-        data['project'] = project
-    if 'createdBy' in data:
-        judgeTypeInt(data['createdBy'])
-        user = User.objects.filter(id = data['createdBy']).first()
+        data["project"] = project
+    if "createdBy" in data:
+        judgeTypeInt(data["createdBy"])
+        user = User.objects.filter(id=data["createdBy"]).first()
         if not user:
             raise ParamErr(f"wrong user Id.")
-        data['createdBy']=user
+        data["createdBy"] = user
     Repository.objects.filter(id=id).update(**data)
 
-def updateMR(id:int,datas:dict):
+
+def updateMR(id: int, datas: dict):
     data = {}
-    rangeWord = ['merge_id', 'repo', 'title', 'description', 'state', 'authoredByEmail', 'authoredByUserName', 'authoredAt', 'reviewedByEmail', 'reviewedByUserName', 'reviewedAt', 'url']
+    rangeWord = [
+        "merge_id",
+        "repo",
+        "title",
+        "description",
+        "state",
+        "authoredByEmail",
+        "authoredByUserName",
+        "authoredAt",
+        "reviewedByEmail",
+        "reviewedByUserName",
+        "reviewedAt",
+        "url",
+    ]
     for i in datas:
         if i in rangeWord:
             data[i] = datas[i]
@@ -285,22 +298,32 @@ def updateMR(id:int,datas:dict):
         judgeTypeFloat(data["reviewedAt"])
     if "url" in data:
         judgeTypeStr(data["url"])
-    if 'repo' in data:
-        judgeTypeInt(data['repo'])
-        repo = Repository.objects.filter(id=data['repo']).first()
+    if "repo" in data:
+        judgeTypeInt(data["repo"])
+        repo = Repository.objects.filter(id=data["repo"]).first()
         if not repo:
             raise ParamErr(f"wrong repo id.")
-        data['repo'] = repo
+        data["repo"] = repo
     MergeRequest.objects.filter(id=id).update(**data)
 
-def updateCommit(id:int,datas:dict):
-    rangeWord = ['hash_id', 'repo', 'title', 'message', 'commiter_email', 'commiter_name', 'createdAt', 'url']
+
+def updateCommit(id: int, datas: dict):
+    rangeWord = [
+        "hash_id",
+        "repo",
+        "title",
+        "message",
+        "commiter_email",
+        "commiter_name",
+        "createdAt",
+        "url",
+    ]
     data = {}
     for i in datas:
         if i in rangeWord:
             data[i] = datas[i]
     if "hash_id" in data:
-        judgeTypeInt(data["hash_id"])
+        judgeTypeStr(data["hash_id"])
     if "title" in data:
         judgeTypeStr(data["title"])
     if "message" in data:
@@ -313,17 +336,31 @@ def updateCommit(id:int,datas:dict):
         judgeTypeFloat(data["createdAt"])
     if "url" in data:
         judgeTypeStr(data["url"])
-    if 'repo' in data:
-        judgeTypeInt(data['repo'])
-        repo = Repository.objects.filter(id=data['repo']).first()
+    if "repo" in data:
+        judgeTypeInt(data["repo"])
+        repo = Repository.objects.filter(id=data["repo"]).first()
         if not repo:
             raise ParamErr(f"wrong repo id.")
-        data['repo'] = repo
+        data["repo"] = repo
     Commit.objects.filter(id=id).update(**data)
 
-def updateIssue(id:int,datas:dict):
+
+def updateIssue(id: int, datas: dict):
     data = {}
-    rangeWord = ['issue_id', 'repo', 'title', 'description', 'state', 'authoredByUserName', 'authoredAt', 'updateAt', 'closedByUserName', 'closedAt', 'assigneeUserName', 'url']
+    rangeWord = [
+        "issue_id",
+        "repo",
+        "title",
+        "description",
+        "state",
+        "authoredByUserName",
+        "authoredAt",
+        "updateAt",
+        "closedByUserName",
+        "closedAt",
+        "assigneeUserName",
+        "url",
+    ]
     for i in datas:
         if i in rangeWord:
             data[i] = datas[i]
@@ -350,74 +387,76 @@ def updateIssue(id:int,datas:dict):
         judgeTypeStr(data["assigneeUserName"])
     if "url" in data:
         judgeTypeStr(data["url"])
-    if 'repo' in data:
-        judgeTypeInt(data['repo'])
-        repo = Repository.objects.filter(id=data['repo']).first()
+    if "repo" in data:
+        judgeTypeInt(data["repo"])
+        repo = Repository.objects.filter(id=data["repo"]).first()
         if not repo:
             raise ParamErr(f"wrong repo id.")
-        data['repo'] = repo
-    Issue.objects.filter(id = id).update(**data)
+        data["repo"] = repo
+    Issue.objects.filter(id=id).update(**data)
 
-def updateOperation(proj:Project,type:str,data:dict):
-    dataList = require(data,'data')
-    if 'repo' in data:
-        repoId = data['repo']
+
+def updateOperation(proj: Project, type: str, data: dict):
+    dataList = require(data, "data")
+    if "repo" in data:
+        repoId = data["repo"]
         judgeTypeInt(repoId)
-    data = require(dataList,'updateData')
-    id = require(dataList,'id')
+    data = require(dataList, "updateData")
+    id = require(dataList, "id")
     judgeTypeInt(id)
     updates = {}
     updates.update(data)
-    if type =='repo':
-        updateRepo(id,data)
-    elif type == 'commit':
-        updateCommit(id,data)
-    elif type == 'mr':
-        updateMR(id,data)
-    elif type == 'issue':
-        updateIssue(id,data)
+    if type == "repo":
+        updateRepo(id, data)
+    elif type == "commit":
+        updateCommit(id, data)
+    elif type == "mr":
+        updateMR(id, data)
+    elif type == "issue":
+        updateIssue(id, data)
     return False
 
-def deleteOperation(proj:Project,type:str,data:dict):
-    datas = require(data,"data")
-    if type == 'repo':
-        id = require(datas,'id')
+
+def deleteOperation(proj: Project, type: str, data: dict):
+    datas = require(data, "data")
+    if type == "repo":
+        id = require(datas, "id")
         judgeTypeInt(id)
         Repository.objects.filter(id=id).update(disabled=True)
-    elif type == 'mr':
-        id = require(datas,'id')
+    elif type == "mr":
+        id = require(datas, "id")
         judgeTypeInt(id)
         MergeRequest.objects.filter(id=id).update(disabled=True)
-    elif type == 'issue':
-        id = require(datas,'id')
+    elif type == "issue":
+        id = require(datas, "id")
         judgeTypeInt(id)
-        Issue.objects.filter(id = id).update(disabld=True)
-    elif type == 'commit':
-        id = require(datas,'id')
+        Issue.objects.filter(id=id).update(disabled=True)
+    elif type == "commit":
+        id = require(datas, "id")
         judgeTypeInt(id)
-        Commit.objects.filter(id =id).update(disabled=True)
-    elif type == 'mr-sr':
+        Commit.objects.filter(id=id).update(disabled=True)
+    elif type == "mr-sr":
         mr = require(datas, "MRId")
         judgeTypeInt(mr)
         sr = require(datas, "SRId")
         judgeTypeInt(sr)
         sr = SR.objects.filter(id=sr).first()
         mr = MergeRequest.objects.filter(id=mr).first()
-        MRSRAssociation.objects.filter(MR=mr,SR=sr).delete()
-    elif type == 'issue-sr':
-        issue = require(datas,'issueId')
+        MRSRAssociation.objects.filter(MR=mr, SR=sr).delete()
+    elif type == "issue-sr":
+        issue = require(datas, "issueId")
         judgeTypeInt(issue)
         sr = require(datas, "SRId")
         judgeTypeInt(sr)
         sr = SR.objects.filter(id=sr).first()
         issue = Issue.objects.filter(id=issue).first()
-        IssueSRAssociation.objects.filter(issue=issue,SR=sr).delete()
-    elif type == 'commit-sr':
-        commit = require(datas,'commit')
+        IssueSRAssociation.objects.filter(issue=issue, SR=sr).delete()
+    elif type == "commit-sr":
+        commit = require(datas, "commitId")
         judgeTypeInt(commit)
         sr = require(datas, "SRId")
         judgeTypeInt(sr)
         sr = SR.objects.filter(id=sr).first()
         commit = Commit.objects.filter(id=commit).first()
-        CommitSRAssociation.objects.filter(SR=sr,commit=commit).delete()
+        CommitSRAssociation.objects.filter(SR=sr, commit=commit).delete()
     return False

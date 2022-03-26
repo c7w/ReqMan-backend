@@ -12,19 +12,19 @@ class Repository(models.Model):
     project = models.ForeignKey("ums.Project", on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField()
-    createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     createdAt = models.FloatField(
         default=dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
     )
+    createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     disabled = models.BooleanField(default=False)
 
     class Meta:
+        unique_together = ["project", "title"]
         indexes = [
+            models.Index(fields=["title", "project"]),
             models.Index(fields=["project"]),
             models.Index(fields=["title"]),
-            models.Index(fields=["title", "project"]),
         ]
-        unique_together = ["project", "title"]
 
 
 class Commit(models.Model):

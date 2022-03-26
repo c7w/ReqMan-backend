@@ -18,13 +18,13 @@ class RDTSViewSet(viewsets.ViewSet):
         resu = []
         type = require(req.query_params, "type")
         if type == "repo":
-            proj = intify(require(req.query_params, "project"))
-            proj = proj_exist(proj)
-            if not proj:
+            projectId = intify(require(req.query_params, "project"))
+            proje = proj_exist(projectId)
+            if not proje:
                 return FAIL
-            if not in_proj(req.user, proj):
+            if not in_proj(req.user, proje):
                 return FAIL
-            resu = serialize(getRepo(proj))
+            resu = serialize(getRepo(proje))
             return Response({"code": 0, "data": resu})
         repo = intify(require(req.query_params, "repo"))
         repo = repoExist(repo)
@@ -61,15 +61,15 @@ class RDTSViewSet(viewsets.ViewSet):
         if operation == "create":
             fail = createOpertion(proj, type, req.data, req.user)
         elif operation == "update":
-            fail = updateOperation(proj,type,req.data)
+            fail = updateOperation(proj, type, req.data)
         elif operation == "delete":
-            fail = deleteOperation(proj,type,req.data)
-        if fail:
-            return FAIL
-        else:
+            fail = deleteOperation(proj, type, req.data)
+        if not fail:
             return SUCC
+        else:
+            return FAIL
 
-    @action(detail=False, methods=["POST", "GET"])
+    @action(detail=False, methods=["GET", "POST"])
     def project(self, req: Request):
         if req.method == "POST":
             return self.projectPOST(req)
