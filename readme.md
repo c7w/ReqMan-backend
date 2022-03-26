@@ -178,7 +178,7 @@ database:
 + repo: FK
 + title: Text
 + message: Text
-+ createdBy: FK, allow_null
++ commiter_email:string
 + createdAt: float
 + disabled: Boolean
 
@@ -195,11 +195,12 @@ database:
 + id: BigAuto, pk
 + merge_id: Integer
 + repo: FK
-+ message: Text
++ title: Text
++ description:text
 + state: enum
-+ authoredBy: FK, allow_null
++ authoredByEmail: string,allow_null
 + authoredAt: float, allow_null
-+ reviewedBy: FK, allow_null
++ reviewedByEmail: string, allow_null
 + reviewedAt: float, allow_null
 + disabled: Boolean
 
@@ -220,11 +221,12 @@ database:
 + id: BigAuto, pk
 + issue_id: Integer
 + repo: FK
-+ message: Text
++ title: Text
++ description:text
 + state: enum
-+ authoredBy: FK, allow_null
++ authoredByEmail: text, allow_null
 + authoredAt: float, allow_null
-+ reviewedBy: FK, allow_null
++ reviewedByEmail: text, allow_null
 + reviewedAt: float, allow_null
 + disabled: Boolean
 
@@ -433,7 +435,7 @@ Response
 + 用户新建项目，成为系统工程师
 
 #### 统一接口
-+ 这里留一个**统一的接口**，比如 `[GET|POST] /rms/project/`
++ 这里留一个**统一的接口**，`[GET|POST] /rms/project/`
   + 给定某个项目ID，[READ/CREATE/UPDATE/DELETE, 以下简称 CRUD] IR
   + 给定某个项目ID，CRUD 所有的 SR
   + 给定某个项目ID，CRUD 所有的 Iteration
@@ -495,7 +497,7 @@ Explanation
       }
   }
 ```
-  
+
   
 
 Response
@@ -505,31 +507,74 @@ Explanation
 + 创建操作需要提交的数据参数参考前面的数据库设计
 + 部分种类数据无法 update 参考请求上方统一接口定义
 
-// 对于 CRUD，推荐的设计模式是：
-
-+ READ 这个接口，直接返回所有数据
-+ CREATE, UPDATE, DELETE 需要明确指定操作对象的类型，一次更新一条数据。合理的请求体例如：
-
-```json
-{"type": "sr", "project_id": 14, "operation": "update", "data": {"title": "更新后的 title"}, "sessionId": "balabala"}
-{"type": "ir", "project_id": 14, "operation": "create", "sessionId": "balabala", "data": {
-    // DATA HERE
-}}
-```
-
 ### `/rdts/`
 
-以下请求请自行设计并补全本文档的本部分，需要实现以下功能。
-
-这里留一个**统一的接口**，比如 `[GET|POST] /rdts/project/`
+这里留一个**统一的接口**， `[GET|POST] /rdts/project/`
 
 + 给定某个项目ID
 + CRUD 所有的 Repo, Commit, MR
 + CRD 三种 Association
 
-推荐的设计模式同上，方便前端计算渲染。
+#### `[GET] /rdts/project/`
 
+* project (id)
+* type (repo)
 
+other types
+
+* repo (id)
+* type (commit,mr,issue,commit-sr,mr-sr,issue-sr)
+
+Response:
+
+* code 0 if success
+* data: list of data
+
+#### `[POST] /rdts/project/`
+
+* project (id) 
+
+*  repo （id）（type 为 repo 时可不填）
+
+* type (repo,commit,mr,issue,commit-sr,mr-sr,issue-sr)
+
+* operation (update,create,delete)
+
+* data：
+
+  ```python
+    "data" :{ # update，
+    	id:
+    	updateData:{
+    		 'title':'TitleText',
+           'project':id
+           'repo':id
+           'createdBy':id
+    	}
+    }
+    
+    "data" :{ # delete repo commit mr issue
+        id:
+    }
+    
+    "data":{ # delete relation
+        MRId:
+        commitId:
+        SRId:
+        issueId:
+    }
+    
+    "data" :{ # create
+        updateData:{
+            'title':....,
+            ...
+            MRId SRId issueId:
+            commitId
+        }
+    }
+  ```
+  
+  
 
 ## Crontab
 

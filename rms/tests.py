@@ -232,14 +232,16 @@ class RMS_Tests(TestCase):
         }
         self.postMessage(c, data6, 0)
 
+        self.SR2 = SR.objects.filter(title="av").first()
+        self.IR2 = IR.objects.filter(title="aa").first()
         data7 = {
             "project": self.ums.p1.id,
             "type": "ir-sr",
             "operation": "create",
             "data": {
                 "updateData": {
-                    "IRId": 2,
-                    "SRId": 2,
+                    "IRId": self.IR2.id,
+                    "SRId": self.SR2.id,
                 }
             },
         }
@@ -265,7 +267,7 @@ class RMS_Tests(TestCase):
             "data": {
                 "updateData": {
                     "iterationId": self.It1.id,
-                    "SRId": 2,
+                    "SRId": self.SR2.id,
                 }
             },
         }

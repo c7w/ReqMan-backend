@@ -13,19 +13,19 @@ class Repository(models.Model):
     project = models.ForeignKey("ums.Project", on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField()
-    createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     createdAt = models.FloatField(
         default=getTime.get_timestamp
     )
+    createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     disabled = models.BooleanField(default=False)
 
     class Meta:
+        unique_together = ["project", "title"]
         indexes = [
+            models.Index(fields=["title", "project"]),
             models.Index(fields=["project"]),
             models.Index(fields=["title"]),
-            models.Index(fields=["title", "project"]),
         ]
-        unique_together = ["project", "title"]
 
 
 class Commit(models.Model):
@@ -44,6 +44,7 @@ class Commit(models.Model):
         indexes = [
             models.Index(fields=["commiter_email"]),
             models.Index(fields=["commiter_name"]),
+            models.Index(fields=["repo"]),
         ]
 
 
@@ -73,6 +74,7 @@ class MergeRequest(models.Model):
         indexes = [
             models.Index(fields=["authoredByUserName"]),
             models.Index(fields=["reviewedByUserName"]),
+            models.Index(fields=["repo"]),
         ]
 
 
@@ -88,21 +90,23 @@ class Issue(models.Model):
         OPENED = "opened"
 
     state = models.TextField(choices=IssueState.choices)
-    authoredByUserName = models.CharField(max_length=255)
+    authoredByUserName = models.CharField(max_length=255, default="")
     authoredAt = models.FloatField(null=True, blank=True)
     updatedAt = models.FloatField(null=True, blank=True)
-    closedByUserName = models.CharField(max_length=255)
+    closedByUserName = models.CharField(max_length=255, default="")
     closedAt = models.FloatField(null=True, blank=True)
-    assigneeUserName = models.CharField(max_length=255)
+    assigneeUserName = models.CharField(max_length=255, default="")
     disabled = models.BooleanField(default=False)
     url = models.TextField()
     labels = models.TextField(default="[]")  # 以json 形式存下所有label, 频繁用的label直接取出来当布尔键存
     is_bug = models.BooleanField(default=False)
 
+
     class Meta:
         indexes = [
             models.Index(fields=["authoredByUserName"]),
             models.Index(fields=["closedByUserName"]),
+            models.Index(fields=["repo"]),
         ]
 
 

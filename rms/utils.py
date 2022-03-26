@@ -1,7 +1,10 @@
-from faulthandler import disable
 from rms.models import *
 from ums.models import Project
 from ums.utils import *
+
+
+def serialize(resu: dict, excludeList: list = []):
+    return [model_to_dict(p, exclude=excludeList) for p in resu]
 
 
 def getIR(proj: Project):
@@ -46,21 +49,21 @@ def judgeTypeInt(data):
     if type(data) == int:
         return
     else:
-        raise ParamErr(f"wrong Int type.")
+        raise ParamErr(f"wrong Int type in {data}")
 
 
 def judgeTypeStr(data):
     if type(data) == str:
         return
     else:
-        raise ParamErr(f"wrong String type.")
+        raise ParamErr(f"wrong String type in {data}.")
 
 
 def judgeTypeFloat(data):
     if type(data) == float:
         return
     else:
-        raise ParamErr(f"wrong Float type.")
+        raise ParamErr(f"wrong Float type in {data}.")
 
 
 def createIR(datas: dict):
