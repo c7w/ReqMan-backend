@@ -395,6 +395,16 @@ Response:
 + data: 
     + project: proj_to_list
     + users: filter and user_to_list
+    + avatar: BASE64 front previously uploaded
+    
+    
+#### `[POST] /ums/upload_project_avatar/`
++ avatar: base64
+
+Response:
++ code: 0 success
+(other codes like no permission, is previously mentioned)
+
 
 #### `[POST] /ums/modify_project/`
 
