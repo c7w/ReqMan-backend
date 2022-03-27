@@ -33,7 +33,7 @@ class GeneralPermission(BasePermission):
             proj = intify(require(req.data, "project"))
             proj = proj_exist(proj)
             if not proj:
-                raise ParamErr
+                raise ParamErr("proj non-exist")
 
             if pm["role"] == "AnyMember":
                 relation = in_proj(req.user, proj)

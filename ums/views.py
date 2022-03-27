@@ -16,6 +16,10 @@ SUCC = Response({"code": 0})
 FAIL = Response({"code": 1})
 
 
+def STATUS(code: int):
+    return Response({"code": code})
+
+
 class UserViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
     # throttle_classes = [GeneralThrottle]
@@ -34,7 +38,7 @@ class UserViewSet(viewsets.ViewSet):
     @action(
         detail=False,
         methods=["POST"],
-    #    throttle_classes=throttle_classes + [SpecialThrottle("register")],
+        #    throttle_classes=throttle_classes + [SpecialThrottle("register")],
     )
     def register(self, req: Request):
         if req.user:
@@ -124,6 +128,7 @@ class UserViewSet(viewsets.ViewSet):
                     ],
                     "schedule": {"done": [], "wip": [], "todo": []},
                 },
+                "avatar": req.user.avatar,
             }
         )
 
@@ -177,8 +182,11 @@ class UserViewSet(viewsets.ViewSet):
             return FAIL
         title = require(req.data, "title")
         description = require(req.data, "description")
+        avatar = req.data.get(req.data, "avatar")
 
-        proj = Project.objects.create(title=title, description=description)
+        proj = Project.objects.create(
+            title=title, description=description, avatar=avatar
+        )
         UserProjectAssociation.objects.create(
             project=proj, user=req.user, role="supermaster"
         )
@@ -188,19 +196,18 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["POST"])
     def project(self, req: Request):
         proj = req.auth["proj"]
-
-        users = [user_to_list(u) for u in all_users().filter(project=proj)]
+        avatar = proj.avatar
+        users = [user_to_list(u, proj) for u in all_users().filter(project=proj)]
         proj = proj_to_list(proj)
 
-        return Response({"code": 0, "data": {"project": proj, "users": users}})
+        return Response(
+            {"code": 0, "data": {"project": proj, "users": users, "avatar": avatar}}
+        )
 
     @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=["POST"])
     def modify_project(self, req: Request):
         proj = req.auth["proj"]
-
-        if not is_role(req.user, proj, "supermaster"):
-            return FAIL
 
         title = require(req.data, "title")
         desc = require(req.data, "description")
@@ -208,6 +215,17 @@ class UserViewSet(viewsets.ViewSet):
         proj.description = desc
         proj.save()
 
+        return SUCC
+
+    @project_rights(Role.SUPERMASTER)
+    @action(detail=False, methods=["POST"])
+    def upload_project_avatar(self, req: Request):
+        proj = req.auth["proj"]
+        print(req.data)
+        avatar = require(req.data, "avatar")
+
+        proj.avatar = avatar
+        proj.save()
         return SUCC
 
     @project_rights(Role.SUPERMASTER)

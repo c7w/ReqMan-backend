@@ -238,8 +238,10 @@ class UMS_Tests(TestCase):
             "/ums/project/",
             data={"project": self.p1.id},
             content_type="application/json",
-        )
-        self.assertEqual(resp.json()["code"], 0)
+        ).json()
+        self.assertEqual(resp["code"], 0)
+        self.assertNotEqual(resp["data"]["users"][0]["role"], "")
+        self.assertIn("avatar", resp["data"])
 
     """
     /ums/modify_project/
@@ -651,3 +653,19 @@ class UMS_Tests(TestCase):
     #         if resp.json()["code"] == -3:
     #             return
     #     raise AssertionError
+
+    def test_create_proj(self):
+        pass
+
+    def test_upload_project_avatar(self):
+        c = self.login_u1("22")
+        url = "/ums/upload_project_avatar/"
+        avatar = "test_avat"
+
+        resp = c.post(url, data={"avatar": avatar, "project": self.p1.id}).json()
+        print(resp)
+        self.assertEqual(resp["code"], 0)
+
+        resp = c.post("/ums/project/", data={"project": self.p1.id}).json()
+        self.assertEqual(resp["code"], 0)
+        self.assertEqual(resp["data"]["avatar"], avatar)
