@@ -12,9 +12,7 @@ class Project(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     disabled = models.BooleanField(default=False)
-    createdAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    createdAt = models.FloatField(default=getTime.get_timestamp)
 
     class Meta:
         indexes = [
@@ -29,9 +27,7 @@ class User(models.Model):
     email = models.CharField(max_length=255, unique=True)
     avatar = models.TextField(default="")
     disabled = models.BooleanField(default=False)
-    createdAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    createdAt = models.FloatField(default=getTime.get_timestamp)
     project = models.ManyToManyField(Project, through="UserProjectAssociation")
 
     class Meta:
@@ -44,9 +40,7 @@ class User(models.Model):
 class SessionPool(models.Model):
     sessionId = models.CharField(max_length=32)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    expireAt = models.DateTimeField(
-        default=getTime.get_datetime
-    )
+    expireAt = models.DateTimeField(default=getTime.get_datetime)
 
     class Mata:
         indexes = [models.Index(fields=["sessionId"])]

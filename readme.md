@@ -366,6 +366,19 @@ Response:
 
 + code 0 if successful, 1 otherwise
 
+#### `[POST] /ums/upload_project_avatar/`
++ project
++ avatar
+
+#### `[POST] /ums/upload_user_avatar/`
++ avatar
+0 : success
+
+#### `[POST] /ums/modify_user_password/`
++ prev
++ curr
+0 : success, 2: prev incorrect
+
 #### `[POST] /ums/project_rm_user/`
 
 + project: int, project_id
