@@ -39,11 +39,24 @@ def intify(inp):
         raise ParamErr(f"{inp} cannot be convert to an integer")
 
 
-def user_to_list(user: User):
+def user_to_list(user: User, proj: Project = None):
     """
     convert user instance into a dict
     """
-    return model_to_dict(user, exclude=["password", "disabled", "project"])
+
+    data = model_to_dict(user, exclude=["password", "disabled", "project"])
+    if not proj:
+        return data
+
+    relation = UserProjectAssociation.objects.filter(project=proj, user=user).first()
+
+    if not relation:
+        # note this SHOULD NEVER HAPPEN, but it should run anyway
+        print("getting relation for non-existing user")
+        return data
+
+    data["role"] = relation.role
+    return data
 
 
 def proj_to_list(proj: Project):

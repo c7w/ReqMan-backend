@@ -13,6 +13,7 @@ class Project(models.Model):
     description = models.TextField()
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(default=getTime.get_timestamp)
+    avatar = models.TextField(default="")
 
     class Meta:
         indexes = [
