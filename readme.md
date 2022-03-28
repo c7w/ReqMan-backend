@@ -366,6 +366,12 @@ Response:
 
 + code 0 if successful, 1 otherwise
 
+#### `[POST] /ums/create_project/`
+
++ title
++ description, 
++ avatar(optional)
+
 #### `[POST] /ums/project_rm_user/`
 
 + project: int, project_id
@@ -395,6 +401,16 @@ Response:
 + data: 
     + project: proj_to_list
     + users: filter and user_to_list
+    + avatar: BASE64 front previously uploaded
+    
+    
+#### `[POST] /ums/upload_project_avatar/`
++ avatar: base64
+
+Response:
++ code: 0 success
+(other codes like no permission, is previously mentioned)
+
 
 #### `[POST] /ums/modify_project/`
 
@@ -459,6 +475,8 @@ Response
 Explanation
 
 + 这里的 list 是对应种类数据的 List, 每个是一个对象
+
+
 
 #### `[POST] /rms/project/`
 
