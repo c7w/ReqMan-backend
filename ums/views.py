@@ -34,7 +34,7 @@ class UserViewSet(viewsets.ViewSet):
     @action(
         detail=False,
         methods=["POST"],
-    #    throttle_classes=throttle_classes + [SpecialThrottle("register")],
+        #    throttle_classes=throttle_classes + [SpecialThrottle("register")],
     )
     def register(self, req: Request):
         if req.user:
@@ -235,3 +235,31 @@ class UserViewSet(viewsets.ViewSet):
             inv = create_inv(proj, DEFAULT_INVITED_ROLE)
 
         return Response({"code": 0, "data": {"invitation": inv.invitation}})
+
+    @action(detail=False, methods=["POST"])
+    def modify_password(self, req: Request):
+        if not req.user:
+            return FAIL
+
+        prev = require(req.data, "prev")
+        curr = require(req.data, "curr")
+
+        if prev != req.user.password:
+            return Response({"code": 2})
+
+        req.user.password = curr
+        req.user.save()
+        return SUCC
+
+    @action(detail=False, methods=["POST"])
+    def upload_user_avatar(self, req: Request):
+        if not req.user:
+            return FAIL
+
+        avatar = require(req.data, "avatar")
+
+        req.user.avatar = avatar
+        # TODO: safety check: size
+
+        req.user.save()
+        return SUCC

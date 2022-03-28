@@ -651,3 +651,36 @@ class UMS_Tests(TestCase):
     #         if resp.json()["code"] == -3:
     #             return
     #     raise AssertionError
+
+    def test_modify_password(self):
+        c = self.login_u1("20")
+        url = "/ums/modify_password/"
+
+        # fail because password do not match
+
+        resp = c.post(
+            url, data={"prev": self.u1.password + "_", "curr": "none sense"}
+        ).json()
+        self.assertEqual(2, resp["code"])
+
+        # succ
+        now = self.u1.password + "_"
+        resp = c.post(url, data={"prev": self.u1.password, "curr": now}).json()
+        self.assertEqual(0, resp["code"])
+        self.u1.refresh_from_db()
+        self.assertEqual(self.u1.password, now)
+
+        # fail because has not logged in
+        c = Client()
+        c.cookies["sessionId"] = "21"
+        resp = c.post(url, data={"prev": self.u1.password, "curr": "none sense"}).json()
+        self.assertEqual(1, resp["code"])
+
+    def test_upload_user_avatar(self):
+        c = self.login_u1("20")
+        url = "/ums/upload_user_avatar/"
+
+        resp = c.post(url, data={"avatar": "test_avatar"}).json()
+        self.assertEqual(0, resp["code"])
+        self.u1 = User.objects.get(id=self.u1.id)
+        self.assertEqual(self.u1.avatar, "test_avatar")
