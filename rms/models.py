@@ -51,7 +51,6 @@ class IR(models.Model):
             models.Index(fields=["title"]),
             models.Index(fields=["title", "project"]),
         ]
-        unique_together = ["project", "title"]
 
 
 class SR(models.Model):
@@ -83,7 +82,6 @@ class SR(models.Model):
             models.Index(fields=["title"]),
             models.Index(fields=["title", "project"]),
         ]
-        unique_together = ["project", "title"]
 
 
 class IRSRAssociation(models.Model):
@@ -112,7 +110,6 @@ class Service(models.Model):
             models.Index(fields=["title"]),
             models.Index(fields=["title", "project"]),
         ]
-        unique_together = ["project", "title"]
 
 
 class SR_Changelog(models.Model):
