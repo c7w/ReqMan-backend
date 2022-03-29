@@ -182,7 +182,7 @@ class UserViewSet(viewsets.ViewSet):
             return FAIL
         title = require(req.data, "title")
         description = require(req.data, "description")
-        avatar = req.data.get(req.data, "avatar")
+        avatar = req.data.get("avatar")
 
         proj = Project.objects.create(
             title=title, description=description, avatar=avatar
