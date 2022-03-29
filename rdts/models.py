@@ -20,7 +20,6 @@ class Repository(models.Model):
     disabled = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ["project", "title"]
         indexes = [
             models.Index(fields=["title", "project"]),
             models.Index(fields=["project"]),
