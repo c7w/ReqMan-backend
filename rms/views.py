@@ -1,5 +1,4 @@
 import sys
-
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -38,6 +37,16 @@ class RMSViewSet(viewsets.ViewSet):
             resu = serialize(getService(proj))
         elif type == "user-iteration":
             resu = serialize(getUserIteration(proj))
+        elif type == "service-sr":
+            resu = serialize(getServiceSR(proj))
+        elif type == "serviceOfSR":
+            SRId = intify(require(req.query_params, "SRId"))
+            judgeTypeInt(SRId)
+            resu = serialize(getServiceOfSR(proj, SRId))
+        elif type == "SROfService":
+            serviceId = intify(require(req.query_params, "serviceId"))
+            judgeTypeInt(serviceId)
+            resu = serialize(getSROfService(proj, serviceId), ["IR"])
         else:
             return FAIL
         return Response({"code": 0, "data": resu})

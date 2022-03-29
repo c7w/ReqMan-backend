@@ -52,6 +52,7 @@ class RMS_Tests(TestCase):
         UserIterationAssociation.objects.create(user=self.ums.u1, iteration=self.It1)
         self.ass = IRSRAssociation.objects.create(IR=self.IR1, SR=self.SR1)
         SRIterationAssociation.objects.create(SR=self.SR1, iteration=self.It1)
+        ServiceSRAssociation.objects.create(SR=self.SR1, service=self.service1)
 
     def login(self, user, sess):
         c = Client()
@@ -104,6 +105,25 @@ class RMS_Tests(TestCase):
 
         type = "user-iteration"
         resp = c.get(url, data={"project": str(id), "type": type})
+        self.assertEqual(resp.json()["code"], 0)
+
+        type = "service-sr"
+        resp = c.get(url, data={"project": str(id), "type": type})
+        print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+
+        type = "serviceOfSR"
+        resp = c.get(
+            url, data={"project": str(id), "type": type, "SRId": int(self.SR1.id)}
+        )
+        print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+
+        type = "SROfService"
+        resp = c.get(
+            url, data={"project": str(id), "type": type, "serviceId": self.service1.id}
+        )
+        print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
 
         # no type
@@ -447,3 +467,21 @@ class RMS_Tests(TestCase):
             "data": {"iterationId": 2},
         }
         self.postMessage(c, data153, 0)
+
+        data154 = {
+            "project": self.ums.p1.id,
+            "type": "service-sr",
+            "operation": "create",
+            "data": {
+                "updateData": {"SRId": self.SR2.id, "serviceId": self.service1.id}
+            },
+        }
+        self.postMessage(c, data154, 0)
+
+        data154 = {
+            "project": self.ums.p1.id,
+            "type": "service-sr",
+            "operation": "delete",
+            "data": {"SRId": self.SR2.id, "serviceId": self.service1.id},
+        }
+        self.postMessage(c, data154, 0)

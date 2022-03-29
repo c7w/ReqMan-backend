@@ -1,3 +1,4 @@
+from tkinter.tix import Tree
 from rms.models import *
 from ums.models import Project
 from ums.utils import *
@@ -45,6 +46,11 @@ def getIRSR(proj: Project):
     return IRSRAssociation.objects.filter(IR__in=IRs, SR__in=SRs)
 
 
+def getServiceSR(proj: Project):
+    SRs = getSR(proj)
+    return ServiceSRAssociation.objects.filter(SR__in=SRs)
+
+
 def judgeTypeInt(data):
     if type(data) == int:
         return
@@ -64,6 +70,21 @@ def judgeTypeFloat(data):
         return
     else:
         raise ParamErr(f"wrong Float type in {data}.")
+
+
+def getServiceOfSR(proj: Project, SRId: int):
+    sr = SR.objects.filter(id=SRId).first()
+    relation = ServiceSRAssociation.objects.filter(SR=sr).first()
+    return [relation.service]
+
+
+def getSROfService(proj: Project, ServiceId: int):
+    service = Service.objects.filter(id=ServiceId).first()
+    relation = ServiceSRAssociation.objects.filter(service=service).all()
+    services = []
+    for i in relation:
+        services.append(i.SR)
+    return services
 
 
 def createIR(datas: dict):
@@ -163,6 +184,23 @@ def createSRIterationAssociation(datas: dict):
     SRIterationAssociation.objects.create(**data)
 
 
+def createServiceSRAssociation(datas: dict):
+    sr = require(datas, "SRId")
+    judgeTypeInt(sr)
+    sr = SR.objects.filter(id=sr).first()
+    exist = ServiceSRAssociation.objects.filter(SR=sr).first()
+    if exist:
+        raise ParamErr(f"SR connected!")
+    service = require(datas, "serviceId")
+    judgeTypeInt(service)
+    service = Service.objects.filter(id=service).first()
+    data = {
+        "SR": sr,
+        "service": service,
+    }
+    ServiceSRAssociation.objects.create(**data)
+
+
 def createOperation(proj: Project, type: string, data: dict, user: User):
     dataList = require(data, "data")
     data = require(dataList, "updateData")
@@ -185,6 +223,10 @@ def createOperation(proj: Project, type: string, data: dict, user: User):
         createService(create)
     elif type == "user-iteration":
         createUserIterationAssociation(create)
+    elif type == "service-sr":
+        createServiceSRAssociation(create)
+    else:
+        return True
     return False
 
 
@@ -270,6 +312,8 @@ def updateOperation(proj: Project, type: string, data: dict):
         updateIteration(id, data)
     elif type == "service":
         updateService(id, data)
+    else:
+        return True
     return False
 
 
@@ -312,4 +356,12 @@ def deleteOperation(proj: Project, type: string, data: dict):
         judgeTypeInt(iterationId)
         iteration = Iteration.objects.filter(id=iterationId).first()
         UserIterationAssociation.objects.filter(iteration=iteration).delete()
+    elif type == "service-sr":
+        sr = require(dataList, "SRId")
+        judgeTypeInt(sr)
+        sr = SR.objects.filter(id=sr).first()
+        service = require(dataList, "serviceId")
+        judgeTypeInt(service)
+        service = Service.objects.filter(id=service).first()
+        ServiceSRAssociation.objects.filter(SR=sr, service=service).delete()
     return False
