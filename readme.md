@@ -478,7 +478,7 @@ Response
 #### `[GET] /rms/project/`
 
 + project (id)
-+ type (sr,ir,iteration,ir-sr,sr-iteration,service,user-iteration)
++ type (sr,ir,iteration,ir-sr,sr-iteration,service,user-iteration,service-sr)
 
 
 Response
@@ -490,13 +490,29 @@ Explanation
 
 + 这里的 list 是对应种类数据的 List, 每个是一个对象
 
++ 单条数据接口 (获得 sr 对应的 service)
+  + project:project_id,int
+  + type:"serviceOfSR"
+  + SRId:int
 
+  Response
+  + code: 0 if success, 1 if not log in
+  + data: list of service(only one)
+
++ 单条数据接口 (获得 service 对应的 sr)
+  + project:project_id,int
+  + type:"SROfService"
+  + serviceId:int
+
+  Response
+  + code: 0 if success, 1 if not log in
+  + data: list of SR
 
 #### `[POST] /rms/project/`
 
 + project (id)
 
-+ type (sr,ir,iteration,ir-sr,sr-iteration,service,user-iteration) (string)
++ type (sr,ir,iteration,ir-sr,sr-iteration,service,user-iteration,service-sr) (string)
 
 + operation (update,create,delete) (string)
 
@@ -518,6 +534,7 @@ Explanation
       iterationId:
       IRId:
       SRId:
+      serviceId:
   }
   
   "data" :{ # create
@@ -526,6 +543,7 @@ Explanation
           ...
           IRId SRId iterationId:
           userId
+          serviceId:
       }
   }
 ```

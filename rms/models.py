@@ -1,4 +1,5 @@
 import datetime as dt
+from pyexpat import model
 import pytz
 from backend.settings import TIME_ZONE
 from django.db import models
@@ -15,9 +16,7 @@ class Iteration(models.Model):
     begin = models.FloatField()
     end = models.FloatField()
     disabled = models.BooleanField(default=False)
-    createAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    createAt = models.FloatField(default=getTime.get_timestamp)
 
     class Meta:
         indexes = [models.Index(fields=["project"])]
@@ -43,9 +42,7 @@ class IR(models.Model):
     description = models.TextField()
     rank = models.IntegerField()
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
-    createdAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    createdAt = models.FloatField(default=getTime.get_timestamp)
     disabled = models.BooleanField(default=False)
 
     class Meta:
@@ -77,9 +74,7 @@ class SR(models.Model):
 
     state = models.TextField(choices=SRState.choices)
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
-    createdAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    createdAt = models.FloatField(default=getTime.get_timestamp)
     disabled = models.BooleanField(default=False)
 
     class Meta:
@@ -108,9 +103,7 @@ class Service(models.Model):
     description = models.TextField()
     rank = models.IntegerField()
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
-    createdAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    createdAt = models.FloatField(default=getTime.get_timestamp)
     disabled = models.BooleanField(default=False)
 
     class Meta:
@@ -136,6 +129,9 @@ class SR_Changelog(models.Model):
     formerState = models.TextField(choices=SRState.choices)
     formerDescription = models.TextField()
     changedBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
-    changedAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    changedAt = models.FloatField(default=getTime.get_timestamp)
+
+
+class ServiceSRAssociation(models.Model):
+    SR = models.ForeignKey(SR, on_delete=models.CASCADE, unique=True)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
