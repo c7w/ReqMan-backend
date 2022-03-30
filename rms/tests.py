@@ -53,6 +53,10 @@ class RMS_Tests(TestCase):
         self.ass = IRSRAssociation.objects.create(IR=self.IR1, SR=self.SR1)
         SRIterationAssociation.objects.create(SR=self.SR1, iteration=self.It1)
         ServiceSRAssociation.objects.create(SR=self.SR1, service=self.service1)
+        ProjectIterationAssociation.objects.create(
+            project=self.ums.p1, iteration=self.It1
+        )
+        IRIterationAssociation.objects.create(IR=self.IR1, iteration=self.It1)
 
     def login(self, user, sess):
         c = Client()
@@ -126,6 +130,28 @@ class RMS_Tests(TestCase):
         print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
 
+        type = "ir-iteration"
+        resp = c.get(
+            url,
+            data={
+                "project": str(id),
+                "type": type,
+            },
+        )
+        print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+
+        type = "project-iteration"
+        resp = c.get(
+            url,
+            data={
+                "project": str(id),
+                "type": type,
+            },
+        )
+        print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+
         # no type
         type = "iteration"
         resp = c.get(
@@ -155,6 +181,7 @@ class RMS_Tests(TestCase):
     def postMessage(self, c, datas, excode):
         url = "/rms/project/"
         resp = c.post(url, data=datas, content_type="application/json")
+        print(resp.json())
         self.assertEqual(resp.json()["code"], excode)
 
     def test_Post(self):
@@ -483,5 +510,43 @@ class RMS_Tests(TestCase):
             "type": "service-sr",
             "operation": "delete",
             "data": {"SRId": self.SR2.id, "serviceId": self.service1.id},
+        }
+        self.postMessage(c, data154, 0)
+
+        data154 = {
+            "project": self.ums.p1.id,
+            "type": "ir-iteration",
+            "operation": "create",
+            "data": {"updateData": {"IRId": self.IR2.id, "iterationId": self.It1.id}},
+        }
+
+        data154 = {
+            "project": self.ums.p1.id,
+            "type": "ir-iteration",
+            "operation": "delete",
+            "data": {
+                "IRId": self.IR2.id,
+                "iterationId": self.It1.id,
+                "updateData": {"IRId": self.IR2.id, "iterationId": self.It1.id},
+            },
+        }
+        self.postMessage(c, data154, 0)
+
+        data154 = {
+            "project": self.ums.p1.id,
+            "type": "project-iteration",
+            "operation": "delete",
+            "data": {
+                "iterationId": self.It1.id,
+                "updateData": {"IRId": self.IR2.id, "iterationId": self.It1.id},
+            },
+        }
+        self.postMessage(c, data154, 0)
+
+        data154 = {
+            "project": self.ums.p1.id,
+            "type": "project-iteration",
+            "operation": "create",
+            "data": {"updateData": {"IRId": self.IR2.id, "iterationId": self.It1.id}},
         }
         self.postMessage(c, data154, 0)

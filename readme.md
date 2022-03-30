@@ -478,7 +478,7 @@ Response
 #### `[GET] /rms/project/`
 
 + project (id)
-+ type (sr,ir,iteration,ir-sr,sr-iteration,service,user-iteration,service-sr)
++ type (sr,ir,iteration,ir-sr,sr-iteration,service,user-iteration,service-sr,ir-iteration,project-iteration)
 
 
 Response
