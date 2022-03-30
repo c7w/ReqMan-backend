@@ -136,13 +136,15 @@ class ServiceSRAssociation(models.Model):
     SR = models.ForeignKey(SR, on_delete=models.CASCADE, unique=True)
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
 
+
 class IRIterationAssociation(models.Model):
-    IR = models.ForeignKey(IR,on_delete=models.CASCADE)
-    iteration = models.ForeignKey(Iteration,on_delete=models.CASCADE)
+    IR = models.ForeignKey(IR, on_delete=models.CASCADE)
+    iteration = models.ForeignKey(Iteration, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ("IR","iteration")
+        unique_together = ("IR", "iteration")
+
 
 class ProjectIterationAssociation(models.Model):
-    project = models.ForeignKey("ums.Project",on_delete=models.CASCADE)
-    iteration = models.ForeignKey(Iteration,on_delete=models.CASCADE)
+    project = models.ForeignKey("ums.Project", on_delete=models.CASCADE)
+    iteration = models.ForeignKey(Iteration, on_delete=models.CASCADE)

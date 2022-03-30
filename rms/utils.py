@@ -86,12 +86,15 @@ def getSROfService(proj: Project, ServiceId: int):
         services.append(i.SR)
     return services
 
-def getIRIteration(proj:Project):
+
+def getIRIteration(proj: Project):
     IR = getIR(proj)
     return IRIterationAssociation.objects.filter(IR__in=IR)
 
-def getProjectIteration(proj:Project):
+
+def getProjectIteration(proj: Project):
     return ProjectIterationAssociation.objects.filter(project=proj)
+
 
 def createIR(datas: dict):
     data = {}
@@ -206,34 +209,31 @@ def createServiceSRAssociation(datas: dict):
     }
     ServiceSRAssociation.objects.create(**data)
 
-def createIRIteration(datas:dict):
-    ir = require(datas,"IRId")
+
+def createIRIteration(datas: dict):
+    ir = require(datas, "IRId")
     judgeTypeInt(ir)
     ir = IR.objects.filter(id=ir).first()
-    it = require(datas,"iterationId")
+    it = require(datas, "iterationId")
     judgeTypeInt(it)
     it = Iteration.objects.filter(id=it).first()
-    exist = IRIterationAssociation.objects.filter(IR=ir,iteration=it).first()
+    exist = IRIterationAssociation.objects.filter(IR=ir, iteration=it).first()
     if exist:
         return
-    data = {
-        "IR":ir,
-        "iteration":it
-    }
+    data = {"IR": ir, "iteration": it}
     IRIterationAssociation.objects.create(**data)
 
-def createProjectIteration(datas:dict):
-    it = require(datas,"iterationId")
+
+def createProjectIteration(datas: dict):
+    it = require(datas, "iterationId")
     judgeTypeInt(it)
     it = Iteration.objects.filter(id=it).first()
-    exist = ProjectIterationAssociation.objects.filter(project=datas['project']).first()
+    exist = ProjectIterationAssociation.objects.filter(project=datas["project"]).first()
     if exist:
         raise ParamErr(f"Project connected!")
-    data = {
-        'project':datas['project'],
-        'iteration':it
-    }
+    data = {"project": datas["project"], "iteration": it}
     ProjectIterationAssociation.objects.create(**data)
+
 
 def createOperation(proj: Project, type: string, data: dict, user: User):
     dataList = require(data, "data")
@@ -403,16 +403,16 @@ def deleteOperation(proj: Project, type: string, data: dict):
         service = Service.objects.filter(id=service).first()
         ServiceSRAssociation.objects.filter(SR=sr, service=service).delete()
     elif type == "ir-iteration":
-        ir = require(dataList,"IRId")
+        ir = require(dataList, "IRId")
         judgeTypeInt(ir)
         ir = IR.objects.filter(id=ir).first()
-        it = require(dataList,"iterationId")
+        it = require(dataList, "iterationId")
         judgeTypeInt(it)
-        it = Iteration.objects.filter(id =it).first()
-        IRIterationAssociation.objects.filter(IR=ir,iteration=it).delete()
+        it = Iteration.objects.filter(id=it).first()
+        IRIterationAssociation.objects.filter(IR=ir, iteration=it).delete()
     elif type == "project-iteration":
-        it = require(dataList,"iterationId")
+        it = require(dataList, "iterationId")
         judgeTypeInt(it)
-        it = Iteration.objects.filter(id =it).first()
-        ProjectIterationAssociation.objects.filter(project=proj,iteration=it).delete()
+        it = Iteration.objects.filter(id=it).first()
+        ProjectIterationAssociation.objects.filter(project=proj, iteration=it).delete()
     return False
