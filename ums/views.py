@@ -289,3 +289,36 @@ class UserViewSet(viewsets.ViewSet):
         )
 
         return SUCC
+
+    @project_rights([Role.SUPERMASTER, Role.SYS])
+    @action(detail=False, methods=["POST"])
+    def user_exist(self, req: Request):
+        identity = require(req.data, "identity")
+
+        supported = ["id", "name", "email"]
+        print(req.data)
+        print(identity, type(identity))
+        if type(identity) is not dict or "type" not in identity:
+            raise ParamErr("no identity type")
+        if identity["type"] not in supported:
+            raise ParamErr("invalid identity type, only support " + supported.__str__())
+        if "key" not in identity:
+            raise ParamErr("no identity key")
+
+        user = None
+        try:
+            if identity["type"] == "id":
+                user = all_users().filter(id=intify(identity["key"])).first()
+            elif identity["type"] == "name":
+                user = all_users().filter(name=str(identity["key"])).first()
+            elif identity["type"] == "email":
+                user = all_users().filter(email=str(identity["key"]).lower()).first()
+        except Exception as e:
+            raise ParamErr("unmatched type and key" + e.__str__())
+
+        if user and not user.disabled:
+            return Response(
+                {"code": 0, "data": {"exist": True, **user_and_projects(user)}}
+            )
+        else:
+            return Response({"code": 0, "data": {"exist": False}})
