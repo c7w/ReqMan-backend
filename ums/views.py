@@ -9,6 +9,7 @@ from ums.utils import *
 from django.forms.models import model_to_dict
 from utils.throttle import GeneralThrottle, SpecialThrottle
 from utils.permissions import GeneralPermission, project_rights
+from django.conf import settings
 
 DEFAULT_INVITED_ROLE = "member"
 
@@ -56,7 +57,7 @@ class UserViewSet(viewsets.ViewSet):
             if not relation:
                 return Response({"code": 2})
 
-        print(name_valid(name))
+        # print(name_valid(name))
         if (
             name_valid(name)
             and not name_exist(name)
@@ -108,27 +109,21 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["POST"])
     def logout(self, req: Request):
         if not req.user:
-            return Response({"code": 1})
+            return Response({"code": 1})  # convention in API
 
         disable_session_id(req.auth["sessionId"])
         return Response({"code": 0})
 
     @action(detail=False)
+    @require_login
     def user(self, req: Request):
-        if not req.user:
-            return FAIL
         return Response(
             {
                 "code": 0,
                 "data": {
-                    "user": user_to_list(req.user),
-                    "projects": [
-                        model_to_dict(p, exclude=["disabled"])
-                        for p in req.user.project.all()
-                    ],
                     "schedule": {"done": [], "wip": [], "todo": []},
+                    **user_and_projects(req.user),
                 },
-                "avatar": req.user.avatar,
             }
         )
 
@@ -158,7 +153,7 @@ class UserViewSet(viewsets.ViewSet):
         relation.delete()
         return SUCC
 
-    @project_rights(Role.SUPERMASTER)
+    @project_rights([Role.SUPERMASTER, Role.SYS])
     @action(detail=False, methods=["POST"])
     def project_add_user(self, req: Request):
         info = proj_user_assoc(req)
@@ -177,15 +172,14 @@ class UserViewSet(viewsets.ViewSet):
         return SUCC
 
     @action(detail=False, methods=["POST"])
+    @require_login
     def create_project(self, req: Request):
-        if not req.user:
-            return FAIL
         title = require(req.data, "title")
         description = require(req.data, "description")
         avatar = req.data.get("avatar")
 
         proj = Project.objects.create(
-            title=title, description=description, avatar=avatar
+            title=title, description=description, avatar=avatar if avatar else ""
         )
         UserProjectAssociation.objects.create(
             project=proj, user=req.user, role="supermaster"
@@ -221,7 +215,7 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["POST"])
     def upload_project_avatar(self, req: Request):
         proj = req.auth["proj"]
-        print(req.data)
+        # print(req.data)
         avatar = require(req.data, "avatar")
 
         proj.avatar = avatar
@@ -236,6 +230,7 @@ class UserViewSet(viewsets.ViewSet):
 
         if inv:
             inv.invitation = gen_invitation()
+            inv.save()
         else:
             inv = ProjectInvitationAssociation.objects.create(
                 project=proj, role=DEFAULT_INVITED_ROLE, invitation=gen_invitation()
@@ -255,10 +250,8 @@ class UserViewSet(viewsets.ViewSet):
         return Response({"code": 0, "data": {"invitation": inv.invitation}})
 
     @action(detail=False, methods=["POST"])
+    @require_login
     def modify_password(self, req: Request):
-        if not req.user:
-            return FAIL
-
         prev = require(req.data, "prev")
         curr = require(req.data, "curr")
 
@@ -270,10 +263,8 @@ class UserViewSet(viewsets.ViewSet):
         return SUCC
 
     @action(detail=False, methods=["POST"])
+    @require_login
     def upload_user_avatar(self, req: Request):
-        if not req.user:
-            return FAIL
-
         avatar = require(req.data, "avatar")
 
         req.user.avatar = avatar
@@ -281,3 +272,61 @@ class UserViewSet(viewsets.ViewSet):
 
         req.user.save()
         return SUCC
+
+    @action(detail=False, methods=["POST"])
+    @require_login
+    def user_join_project_invitation(self, req: Request):
+        invitation = require(req.data, "invitation")
+
+        relation = ProjectInvitationAssociation.objects.filter(
+            invitation=invitation
+        ).first()
+        if not relation:
+            return Response({"code": 2})
+
+        if (
+            UserProjectAssociation.objects.filter(
+                user=req.user, project=relation.project
+            ).first()
+            is not None
+        ):
+            return Response({"code": 1})
+
+        UserProjectAssociation.objects.create(
+            user=req.user, project=relation.project, role=relation.role
+        )
+
+        return SUCC
+
+    @project_rights([Role.SUPERMASTER, Role.SYS])
+    @action(detail=False, methods=["POST"])
+    def user_exist(self, req: Request):
+        identity = require(req.data, "identity")
+
+        supported = ["id", "name", "email"]
+        print(req.data)
+        print(identity, type(identity))
+        if type(identity) is not dict or "type" not in identity:
+            raise ParamErr("no identity type")
+        if identity["type"] not in supported:
+            raise ParamErr("invalid identity type, only support " + supported.__str__())
+        if "key" not in identity:
+            raise ParamErr("no identity key")
+
+        user = None
+        try:
+            if identity["type"] == "id":
+                user = all_users().filter(id=intify(identity["key"])).first()
+            elif identity["type"] == "name":
+                user = all_users().filter(name=str(identity["key"])).first()
+            elif identity["type"] == "email":
+                user = all_users().filter(email=str(identity["key"]).lower()).first()
+        except Exception as e:
+            raise ParamErr("unmatched type and key" + e.__str__())
+
+        if user and not user.disabled:
+            return Response(
+                {"code": 0, "data": {"exist": True, **user_and_projects(user)}}
+            )
+        else:
+            return Response({"code": 0, "data": {"exist": False}})

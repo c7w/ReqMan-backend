@@ -1,6 +1,7 @@
 import re
 from random import sample
 import string
+from functools import wraps
 
 from rest_framework.request import Request
 from utils.exceptions import ParamErr
@@ -12,6 +13,7 @@ from ums.models import (
     Role,
 )
 from django.forms.models import model_to_dict
+from rest_framework.exceptions import PermissionDenied
 
 
 def require(lst, attr_name):
@@ -41,7 +43,7 @@ def intify(inp):
 
 def user_to_list(user: User, proj: Project = None):
     """
-    convert user instance into a dict
+    convert user instance into a dict, or contain its role in a single project
     """
 
     data = model_to_dict(user, exclude=["password", "disabled", "project"])
@@ -217,3 +219,43 @@ def name_valid(name: str):
     check if name valid
     """
     return re.match(r"^[a-zA-Z0-9_]{3,16}$", name) is not None
+
+
+def require_login(func):
+    @wraps(func)
+    def wrapper(*args, **kw):
+        req = args[1]
+        if not req.user or req.user.disabled:
+            raise PermissionDenied
+        return func(*args, **kw)
+
+    return wrapper
+
+
+def run(func):
+    print("outside")
+
+    @wraps(func)
+    def wrapper(*args, **kw):
+        print(args)
+        print("insider")
+        return func(*args, **kw)
+
+    return wrapper
+
+
+def user_and_projects(x: User):
+    """
+    convert user object to a list, include all the projects and its roles respectively
+    """
+    return {
+        "user": user_to_list(x),
+        "projects": [
+            {
+                **model_to_dict(r.project, exclude=["disabled"]),
+                "role": r.role,
+            }
+            for r in UserProjectAssociation.objects.filter(user=x)
+        ],
+        "avatar": x.avatar,
+    }

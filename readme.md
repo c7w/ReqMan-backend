@@ -300,6 +300,38 @@ Response:
     + wip: {}
     + todo: {}
 
+UPDATED example:
+```json
+{
+    "code": 0,
+    "data": {
+        "schedule": {
+            "done": [],
+            "wip": [],
+            "todo": []
+        },
+        "user": {
+            "id": 1,
+            "name": "c7w",
+            "email": "admin@cc7w.cf",
+            "avatar": "",
+            "createdAt": 1648050909.599101
+        },
+        "projects": [
+            {
+                "id": 1,
+                "title": "雷克曼",
+                "description": "ReqMan",
+                "createdAt": 1648278867.751802,
+                "avatar": "",
+                "role": "supermaster"
+            }
+        ],
+        "avatar": ""
+    }
+}
+```
+
 #### `[POST] /ums/login/`
 
 Request Body:
@@ -396,6 +428,7 @@ Response:
 + code 0 if successful, 1 otherwise
 
 #### `[POST] /ums/project_add_user/`
+Rights: [Role.SUPERMASTER, Role.SYS]
 
 + project: int, project_id
 + user: int, user_id, user to be added
@@ -417,6 +450,32 @@ Response:
     + users: filter and user_to_list
     + avatar: BASE64 front previously uploaded
     
+UPDATEDED example
+```json
+{
+    "code": 0,
+    "data": {
+        "project": {
+            "id": 1,
+            "title": "雷克曼",
+            "description": "ReqMan",
+            "createdAt": 1648278867.751802,
+            "avatar": ""
+        },
+        "users": [
+            {
+                "id": 1,
+                "name": "c7w",
+                "email": "admin@cc7w.cf",
+                "avatar": "",
+                "createdAt": 1648050909.599101,
+                "role": "supermaster"
+            }
+        ],
+        "avatar": ""
+    }
+}
+```
     
 #### `[POST] /ums/upload_project_avatar/`
 + avatar: base64
@@ -456,6 +515,33 @@ Response
 + data 
     + invitation
 
+#### `[POST] /ums/user_exist`
+Rights:Role.SUPERMASTER, Role.SYS
+
+Request
++ project: project_id
++ identity:
+    + type: enum : id, name, email
+    + key: the corresponding id, username or email
+
+Response
+successful:
+存在
+```json
+{'code': 0, 'data': {'exist': True, 'user': {'id': 3, 'name': 'Caorl', 'email': 'carol@secoder.net', 'avatar': '', 'createdAt': 1648657063.809653}, 'projects': [{'project': {'id': 2, 'title': 'ProjTit2', 'description': 'Desc2', 'createdAt': 1648657064.187037, 'avatar': ''}, 'role': 'supermaster'}], 'avatar': ''}}
+```
+不存在：
+
+```json
+{'code':0, 'data':{'exist':  False}}
+```
+
+#### `[POST] /ums/user_join_project_invitation/`
+Request:
++ invitation: the inviation code
+
+Response:
++ code: 0, succ; 1: already in project; 2: invalid invitaion
 
 
 ### `/rms/`
