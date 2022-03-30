@@ -10,10 +10,11 @@ rights = {}
 
 def project_rights(role):
     def decorator(func):
+        r = role if type(role) == list else [role]
         if func.__name__ in rights and rights[func.__name__]["type"] == "project":
-            rights[func.__name__]["role"] += [role]
+            rights[func.__name__]["role"] += r
         else:
-            rights[func.__name__] = {"type": "project", "role": [role]}
+            rights[func.__name__] = {"type": "project", "role": r}
 
         @wraps(func)
         def wrapper(*args, **kw):
@@ -43,7 +44,9 @@ class GeneralPermission(BasePermission):
                 if not relation:
                     return False
             else:
-                relation = UserProjectAssociation.objects.filter(user=req.user, project=proj).first()
+                relation = UserProjectAssociation.objects.filter(
+                    user=req.user, project=proj
+                ).first()
                 if not relation or relation.role not in pm["role"]:
                     return False
 
