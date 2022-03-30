@@ -654,7 +654,6 @@ class UMS_Tests(TestCase):
     #             return
     #     raise AssertionError
 
-
     def test_modify_password(self):
         c = self.login_u1("20")
         url = "/ums/modify_password/"

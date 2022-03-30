@@ -281,3 +281,26 @@ class UserViewSet(viewsets.ViewSet):
 
         req.user.save()
         return SUCC
+
+    @action(detail=False, methods=["POST"])
+    def user_join_project_invitation(self, req: Request):
+        if not req.user:
+            return FAIL
+
+        invitation = require(req.data, "invitation")
+
+        relation = ProjectInvitationAssociation.objects.filter(
+            invitation=invitation
+        ).first()
+        if not relation:
+            return Response({"code": 2})
+
+        UserProjectAssociation.objects.create(
+            user=req.user, project=invitation.project, role=invitation.role
+        )
+
+        return SUCC
+
+    @action(detail=False, methods=["POST"])
+    def user_exist(self, req: Request):
+        pass

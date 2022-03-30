@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 from rest_framework import exceptions
 from ums.utils import is_role, in_proj, intify, require, proj_exist
-from ums.models import Role
+from ums.models import Role, UserProjectAssociation
 from functools import wraps
 from utils.exceptions import ParamErr, Failure
 
@@ -10,7 +10,10 @@ rights = {}
 
 def project_rights(role):
     def decorator(func):
-        rights[func.__name__] = {"type": "project", "role": role}
+        if func.__name__ in rights and rights[func.__name__]["type"] == "project":
+            rights[func.__name__]["role"] += [role]
+        else:
+            rights[func.__name__] = {"type": "project", "role": [role]}
 
         @wraps(func)
         def wrapper(*args, **kw):
@@ -35,14 +38,14 @@ class GeneralPermission(BasePermission):
             if not proj:
                 raise ParamErr("proj non-exist")
 
-            if pm["role"] == "AnyMember":
+            if "AnyMember" in pm["role"]:
                 relation = in_proj(req.user, proj)
+                if not relation:
+                    return False
             else:
-                assert pm["role"] in Role
-                relation = is_role(req.user, proj, pm["role"])
-
-            if not relation:
-                return False
+                relation = UserProjectAssociation.objects.filter(user=req.user, project=proj).first()
+                if not relation or relation.role not in pm["role"]:
+                    return False
 
             req.auth["proj"] = proj
             req.auth["relation"] = relation

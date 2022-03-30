@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ums', '0003_project_avatar'),
-        ('ums', '0004_alter_project_createdat_alter_sessionpool_expireat_and_more'),
+        ("ums", "0003_project_avatar"),
+        ("ums", "0004_alter_project_createdat_alter_sessionpool_expireat_and_more"),
     ]
 
-    operations = [
-    ]
+    operations = []
