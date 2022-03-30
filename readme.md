@@ -300,6 +300,38 @@ Response:
     + wip: {}
     + todo: {}
 
+UPDATED example:
+```json
+{
+    "code": 0,
+    "data": {
+        "schedule": {
+            "done": [],
+            "wip": [],
+            "todo": []
+        },
+        "user": {
+            "id": 1,
+            "name": "c7w",
+            "email": "admin@cc7w.cf",
+            "avatar": "",
+            "createdAt": 1648050909.599101
+        },
+        "projects": [
+            {
+                "id": 1,
+                "title": "雷克曼",
+                "description": "ReqMan",
+                "createdAt": 1648278867.751802,
+                "avatar": "",
+                "role": "supermaster"
+            }
+        ],
+        "avatar": ""
+    }
+}
+```
+
 #### `[POST] /ums/login/`
 
 Request Body:
@@ -396,6 +428,7 @@ Response:
 + code 0 if successful, 1 otherwise
 
 #### `[POST] /ums/project_add_user/`
+Rights: [Role.SUPERMASTER, Role.SYS]
 
 + project: int, project_id
 + user: int, user_id, user to be added
@@ -417,6 +450,32 @@ Response:
     + users: filter and user_to_list
     + avatar: BASE64 front previously uploaded
     
+UPDATEDED example
+```json
+{
+    "code": 0,
+    "data": {
+        "project": {
+            "id": 1,
+            "title": "雷克曼",
+            "description": "ReqMan",
+            "createdAt": 1648278867.751802,
+            "avatar": ""
+        },
+        "users": [
+            {
+                "id": 1,
+                "name": "c7w",
+                "email": "admin@cc7w.cf",
+                "avatar": "",
+                "createdAt": 1648050909.599101,
+                "role": "supermaster"
+            }
+        ],
+        "avatar": ""
+    }
+}
+```
     
 #### `[POST] /ums/upload_project_avatar/`
 + avatar: base64
