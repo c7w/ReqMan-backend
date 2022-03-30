@@ -323,6 +323,7 @@ class UMS_Tests(TestCase):
         resp = self.get_inv_for(c, self.p1.id)
         self.assertEqual(resp.json()["code"], 0)
         self.assertEqual(resp.json()["data"]["invitation"], inv)
+        ProjectInvitationAssociation.objects.filter(project=self.p1).delete()
 
     """
     /ums/refresh_invitation/
@@ -367,8 +368,7 @@ class UMS_Tests(TestCase):
             },
             content_type="application/json",
         )
-        self.assertEqual(resp.json()["code"], 0)
-        self.assertEqual(len(resp.json()["data"]["invitation"]), 8)
+        inv2 = self.inv_legal_check(resp)
         self.assertNotEqual(resp.json()["data"]["invitation"], inv)
 
     """
@@ -687,8 +687,16 @@ class UMS_Tests(TestCase):
         self.u1 = User.objects.get(id=self.u1.id)
         self.assertEqual(self.u1.avatar, "test_avatar")
 
-    def test_create_proj(self):
-        pass
+    def test_create_project(self):
+        c = self.login_u1("21")
+        data = {
+            "title": "test_title_create_project",
+            "description": "test_desc_create_project",
+        }
+        resp = c.post("/ums/create_project/", data=data.copy()).json()
+
+        self.assertEqual(resp["code"], 0)
+        self.assertNotEqual(Project.objects.filter(**data).first(), None)
 
     def test_upload_project_avatar(self):
         c = self.login_u1("22")
@@ -696,7 +704,7 @@ class UMS_Tests(TestCase):
         avatar = "test_avat"
 
         resp = c.post(url, data={"avatar": avatar, "project": self.p1.id}).json()
-        print(resp)
+        # print(resp)
         self.assertEqual(resp["code"], 0)
 
         resp = c.post("/ums/project/", data={"project": self.p1.id}).json()
