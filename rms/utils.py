@@ -28,7 +28,7 @@ def getUserIteration(proj: Project):
     Itera = getIeration(proj)
     association = []
     for i in Itera:
-        association.append(UserIterationAssociation.objects.filter(iteration=i).first())
+        association.extend(UserIterationAssociation.objects.filter(iteration=i))
     return association
 
 
