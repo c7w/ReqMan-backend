@@ -776,3 +776,68 @@ class UMS_Tests(TestCase):
             },
         ).json()
         self.assertEqual(resp["code"], -2)
+
+    def test_user_exist(self):
+        c = self.login_u1("23")
+        d = DefaultClient()
+        url = "/ums/user_exist/"
+
+        # parameter failures
+        print(1)
+        resp = c.post(url, data={"project": self.p1.id, "identity": ""}).json()
+        self.assertEqual(resp["code"], -1)
+        print(2)
+        resp = d.post(
+            url,
+            json.dumps(
+                {
+                    "project": self.p1.id,
+                    "identity": {"type": "unsupported"},
+                    "sessionId": "23",
+                }
+            ),
+            content_type="application/json",
+        ).json()
+        self.assertEqual(resp["code"], -1)
+        resp = d.post(
+            url,
+            json.dumps(
+                {"project": self.p1.id, "identity": {"type": "id"}, "sessionId": "23"}
+            ),
+            content_type="application/json",
+        ).json()
+        self.assertEqual(resp["code"], -1)
+
+        # non-exist
+        resp = d.post(
+            url,
+            json.dumps(
+                {
+                    "project": self.p1.id,
+                    "identity": {"type": "id", "key": 999999},
+                    "sessionId": "23",
+                }
+            ),
+            content_type="application/json",
+        ).json()
+        self.assertEqual(resp["code"], 0)
+        self.assertEqual(resp["data"]["exist"], False)
+
+        # exist
+        def successful_judge(data):
+            data["sessionId"] = "23"
+            resp = d.post(url, json.dumps(data), content_type="application/json").json()
+            print(resp)
+            self.assertEqual(resp["code"], 0)
+            self.assertEqual(resp["data"]["exist"], True)
+            self.assertEqual(resp["data"]["user"]["id"], self.u3.id)
+
+        successful_judge(
+            {"project": self.p1.id, "identity": {"type": "id", "key": self.u3.id}}
+        )
+        successful_judge(
+            {"project": self.p1.id, "identity": {"type": "email", "key": self.u3.email}}
+        )
+        successful_judge(
+            {"project": self.p1.id, "identity": {"type": "name", "key": self.u3.name}}
+        )
