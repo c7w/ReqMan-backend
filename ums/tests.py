@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.test import Client as DefaultClient
 from ums.models import *
+import json
 
 SUCC = {"code": 0}
 FAIL = {"code": 1}
@@ -38,6 +39,9 @@ class UMS_Tests(TestCase):
         )
         self.u3 = User.objects.create(
             name="Caorl", password="159357", email="carol@secoder.net"
+        )
+        self.u4 = User.objects.create(
+            name="Fra", password="159357", email="fra@secoder.net"
         )
 
         self.p1 = Project.objects.create(title="ProjTit1", description="Desc1")
@@ -162,7 +166,7 @@ class UMS_Tests(TestCase):
         # logout leads to fail
         c.post("/ums/logout/")
         resp = c.get("/ums/user/")
-        self.assertEqual(resp.json()["code"], 1)
+        self.assertEqual(resp.json()["code"], -2)
 
     """
     /ums/check_username_available
@@ -676,7 +680,7 @@ class UMS_Tests(TestCase):
         c = Client()
         c.cookies["sessionId"] = "21"
         resp = c.post(url, data={"prev": self.u1.password, "curr": "none sense"}).json()
-        self.assertEqual(1, resp["code"])
+        self.assertEqual(-2, resp["code"])
 
     def test_upload_user_avatar(self):
         c = self.login_u1("20")
@@ -710,3 +714,65 @@ class UMS_Tests(TestCase):
         resp = c.post("/ums/project/", data={"project": self.p1.id}).json()
         self.assertEqual(resp["code"], 0)
         self.assertEqual(resp["data"]["avatar"], avatar)
+
+    def test_user_join_project_invitation(self):
+        c = self.login_u1("24")
+        url = "/ums/user_join_project_invitation/"
+        self.get_inv_for(c, self.p1.id)
+
+        # reject already in
+        resp = c.post(
+            url,
+            data={
+                "invitation": ProjectInvitationAssociation.objects.filter(
+                    project=self.p1
+                )
+                .first()
+                .invitation
+            },
+        ).json()
+        self.assertEqual(resp["code"], 1)
+
+        # invalid inviatation
+        resp = c.post(url, data={"invitation": "invalid"}).json()
+        self.assertEqual(resp["code"], 2)
+
+        c = Client()
+        c.cookies["sessionId"] = "25"
+        c.post(
+            "/ums/login/",
+            data={"identity": self.u4.name, "password": self.u4.password},
+            content_type="application/json",
+        )
+        resp = c.post(
+            url,
+            data={
+                "invitation": ProjectInvitationAssociation.objects.filter(
+                    project=self.p1
+                )
+                .first()
+                .invitation
+            },
+        ).json()
+        self.assertEqual(resp["code"], 0)
+        self.assertNotEqual(
+            UserProjectAssociation.objects.filter(
+                user=self.u4, project=self.p1
+            ).first(),
+            None,
+        )
+
+        # unlogin, rej
+        c = Client()
+        c.cookies["sessionId"] = "26"
+        resp = c.post(
+            url,
+            data={
+                "invitation": ProjectInvitationAssociation.objects.filter(
+                    project=self.p1
+                )
+                .first()
+                .invitation
+            },
+        ).json()
+        self.assertEqual(resp["code"], -2)
