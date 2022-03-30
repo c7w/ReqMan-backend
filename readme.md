@@ -456,6 +456,33 @@ Response
 + data 
     + invitation
 
+#### `[POST] /ums/user_exist`
+Rights:Role.SUPERMASTER, Role.SYS
+
+Request
++ project: project_id
++ identity:
+    + type: enum : id, name, email
+    + key: the corresponding id, username or email
+
+Response
+successful:
+存在
+```json
+{'code': 0, 'data': {'exist': True, 'user': {'id': 3, 'name': 'Caorl', 'email': 'carol@secoder.net', 'avatar': '', 'createdAt': 1648657063.809653}, 'projects': [{'project': {'id': 2, 'title': 'ProjTit2', 'description': 'Desc2', 'createdAt': 1648657064.187037, 'avatar': ''}, 'role': 'supermaster'}], 'avatar': ''}}
+```
+不存在：
+
+```json
+{'code':0, 'data':{'exist':  False}}
+```
+
+#### `[POST] /ums/user_join_project_invitation/`
+Request:
++ invitation: the inviation code
+
+Response:
++ code: 0, succ; 1: already in project; 2: invalid invitaion
 
 
 ### `/rms/`

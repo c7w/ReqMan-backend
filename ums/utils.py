@@ -245,27 +245,17 @@ def run(func):
 
 
 def user_and_projects(x: User):
+    """
+    convert user object to a list, include all the projects and its roles respectively
+    """
     return {
         "user": user_to_list(x),
         "projects": [
             {
-                "project": model_to_dict(r.project, exclude=["disabled"]),
+                **model_to_dict(r.project, exclude=["disabled"]),
                 "role": r.role,
             }
             for r in UserProjectAssociation.objects.filter(user=x)
         ],
         "avatar": x.avatar,
-    }
-
-
-def user_detail(x: User):
-    """
-    convert user object to a list, include all the projects and its roles respectively
-    """
-    return {
-        "code": 0,
-        "data": {
-            "schedule": {"done": [], "wip": [], "todo": []},
-            **user_and_projects(x),
-        },
     }

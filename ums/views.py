@@ -117,7 +117,15 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False)
     @require_login
     def user(self, req: Request):
-        return Response(user_detail(req.user))
+        return Response(
+            {
+                "code": 0,
+                "data": {
+                    "schedule": {"done": [], "wip": [], "todo": []},
+                    **user_and_projects(req.user),
+                },
+            }
+        )
 
     @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=["POST"])
