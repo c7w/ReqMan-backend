@@ -47,6 +47,10 @@ class RMSViewSet(viewsets.ViewSet):
             serviceId = intify(require(req.query_params, "serviceId"))
             judgeTypeInt(serviceId)
             resu = serialize(getSROfService(proj, serviceId), ["IR"])
+        elif type == "ir-iteration":
+            resu = serialize(getIRIteration(proj))
+        elif type == "project-iteration":
+            resu = serialize(getProjectIteration(proj))
         else:
             return FAIL
         return Response({"code": 0, "data": resu})
