@@ -368,3 +368,34 @@ class RDTS_Tests(TestCase):
             },
         }
         self.post_message(c, data, 0)
+
+
+class ScheduleFunctionTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(name="bla", password="****", email="e@e.e")
+        self.proj = Project.objects.create(title="proj title", description="desc")
+        self.repo = Repository.objects.create(
+            project=self.proj,
+            title="repo title",
+            description="repo desc",
+            createdBy=self.user,
+            url="https://gitlab.secoder.net/2020011156/unittest_repo",
+        )
+        self.remote = RemoteRepo.objects.create(
+            repo=self.repo,
+            remote_id="791",
+            type="gitlab",
+            access_token="vzDY55aaS-5rjeeYYxxn",
+            info='{"base_url": "https://gitlab.secoder.net"}',
+        )
+
+    def test_fetch_function(self):
+        from rdts.management.commands.schedule import Command
+
+        cmd = Command()
+        cmd.crawl_all()
+
+        self.assertEqual(CrawlLog.objects.all().__len__(), 3)
+        self.assertNotEqual(Commit.objects.all().__len__(), 0)
+        self.assertNotEqual(Issue.objects.all().__len__(), 0)
+        self.assertNotEqual(MergeRequest.objects.all().__len__(), 0)
