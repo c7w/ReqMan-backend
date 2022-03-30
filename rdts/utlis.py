@@ -165,6 +165,9 @@ def createMRSR(datas: dict):
     if not mr or not sr:
         raise ParamErr(f"wrong MR/SR Id.")
     data = {"MR": mr, "SR": sr}
+    exist = MRSRAssociation.objects.filter(MR=mr,SR=sr).first()
+    if exist:
+        raise ParamErr("Association Exist")
     MRSRAssociation.objects.create(**data)
 
 
@@ -178,6 +181,9 @@ def createCommitSR(datas: dict):
     if not commit or not sr:
         raise ParamErr(f"wrong Commit/SR Id.")
     data = {"commit": commit, "SR": sr}
+    exist = CommitSRAssociation.objects.filter(commit=commit,SR=sr).first()
+    if exist:
+        raise ParamErr("Association Exist")
     CommitSRAssociation.objects.create(**data)
 
 
@@ -191,6 +197,9 @@ def createIssueSR(datas: dict):
     if not issue or not sr:
         raise ParamErr(f"wrong Issue/SR Id.")
     data = {"issue": issue, "SR": sr}
+    exist = IssueSRAssociation.objects.filter(issue=issue,SR=sr).first()
+    if exist:
+        raise ParamErr("Association Exist")
     IssueSRAssociation.objects.create(**data)
 
 

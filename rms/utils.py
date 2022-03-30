@@ -164,6 +164,9 @@ def createIRSRAssociation(datas: dict):
     if not ir or not sr:
         raise ParamErr(f"wrong IR/SR Id.")
     data = {"IR": ir, "SR": sr}
+    exist = IRSRAssociation.objects.filter(IR=ir,SR=sr).first()
+    if exist:
+        raise ParamErr("Association Exist")
     IRSRAssociation.objects.create(**data)
 
 
@@ -177,6 +180,9 @@ def createUserIterationAssociation(datas: dict):
     if not user or not it:
         raise ParamErr(f"wrong It/User Id.")
     data = {"user": user, "iteration": it}
+    exist = UserIterationAssociation.objects.filter(user=user,iteration=it).first()
+    if exist:
+        raise ParamErr("Association Exist")
     UserIterationAssociation.objects.create(**data)
 
 
@@ -190,6 +196,9 @@ def createSRIterationAssociation(datas: dict):
     if not it or not sr:
         raise ParamErr(f"wrong It/SR Id.")
     data = {"SR": sr, "iteration": it}
+    exist = SRIterationAssociation.objects.filter(SR=sr,iteration=it).first()
+    if exist:
+        raise ParamErr("Association Exist")
     SRIterationAssociation.objects.create(**data)
 
 
@@ -207,6 +216,9 @@ def createServiceSRAssociation(datas: dict):
         "SR": sr,
         "service": service,
     }
+    exist = ServiceSRAssociation.objects.filter(SR=sr,service=service).first()
+    if exist:
+        raise ParamErr("Association Exist")
     ServiceSRAssociation.objects.create(**data)
 
 
@@ -221,6 +233,9 @@ def createIRIteration(datas: dict):
     if exist:
         return
     data = {"IR": ir, "iteration": it}
+    exist = IRIterationAssociation.objects.filter(IR=ir,iteration=it).first()
+    if exist:
+        raise ParamErr("Association Exist")
     IRIterationAssociation.objects.create(**data)
 
 
@@ -232,6 +247,9 @@ def createProjectIteration(datas: dict):
     if exist:
         raise ParamErr(f"Project connected!")
     data = {"project": datas["project"], "iteration": it}
+    exist = ProjectIterationAssociation.objects.filter(project=datas['project'],iteration=it).first()
+    if exist:
+        raise ParamErr("Association Exist")
     ProjectIterationAssociation.objects.create(**data)
 
 

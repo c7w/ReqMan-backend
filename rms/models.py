@@ -88,10 +88,16 @@ class IRSRAssociation(models.Model):
     IR = models.ForeignKey(IR, on_delete=models.CASCADE)
     SR = models.ForeignKey(SR, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ["IR","SR"]
+
 
 class SRIterationAssociation(models.Model):
     SR = models.ForeignKey(SR, on_delete=models.CASCADE)
     iteration = models.ForeignKey(Iteration, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ["iteration","SR"]
 
 
 class Service(models.Model):
@@ -133,6 +139,8 @@ class ServiceSRAssociation(models.Model):
     SR = models.ForeignKey(SR, on_delete=models.CASCADE, unique=True)
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ["service","SR"]
 
 class IRIterationAssociation(models.Model):
     IR = models.ForeignKey(IR, on_delete=models.CASCADE)
@@ -145,3 +153,6 @@ class IRIterationAssociation(models.Model):
 class ProjectIterationAssociation(models.Model):
     project = models.ForeignKey("ums.Project", on_delete=models.CASCADE)
     iteration = models.ForeignKey(Iteration, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ["iteration","project"]
