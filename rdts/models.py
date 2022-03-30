@@ -113,15 +113,24 @@ class CommitSRAssociation(models.Model):
     commit = models.ForeignKey(Commit, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ['commit','SR']
+
 
 class MRSRAssociation(models.Model):
     MR = models.ForeignKey(MergeRequest, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ['MR','SR']
+
 
 class IssueSRAssociation(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ['issue','SR']
 
 
 class RemoteRepo(models.Model):
