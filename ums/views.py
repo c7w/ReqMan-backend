@@ -330,3 +330,19 @@ class UserViewSet(viewsets.ViewSet):
             )
         else:
             return Response({"code": 0, "data": {"exist": False}})
+
+    @action(detail=False, methods=["POST"])
+    def minor_email_request(self):  # add and verify or simply verify
+        pass
+
+    @action(detail=False, methods=["POST"])
+    def verify_email_callback(self):
+        pass
+
+    @action(detail=False, methods=["POST"])
+    def email_modify_password_request(self):  #
+        pass
+
+    @action(detail=False, methods=["POST"])
+    def email_modify_password_callback(self):
+        pass

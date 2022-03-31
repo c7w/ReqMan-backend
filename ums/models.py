@@ -88,13 +88,26 @@ class PendingModifyPasswordEmail(models.Model):
     hash1 = models.CharField(max_length=100, unique=True)
     hash2 = models.CharField(max_length=100, unique=True)
     createdAt = models.FloatField(default=getTime.get_timestamp)
-    verified = models.BooleanField(default=False)
+    hash1_verified = models.BooleanField(default=False)
+    hash2_verified = models.BooleanField(default=False)
 
     class Meta:
         indexes = [
             models.Index(fields=["hash1"]),
             models.Index(fields=["hash2"]),
         ]
+
+
+class PendingVerifyEmail(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    email = models.TextField()
+    hash = models.CharField(max_length=100, unique=True)
+    createdAt = models.FloatField(default=getTime.get_timestamp)
+    verified = models.BooleanField(default=False)
+    is_major = models.BooleanField()
+
+    class Meta:
+        indexes = [models.Index(fields=["hash"])]
 
 
 class UserMinorEmailAssociation(models.Model):
