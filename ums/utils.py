@@ -14,6 +14,8 @@ from ums.models import (
 )
 from django.forms.models import model_to_dict
 from rest_framework.exceptions import PermissionDenied
+import smtplib
+from email.mime.text import MIMEText
 
 
 def require(lst, attr_name):
@@ -259,3 +261,31 @@ def user_and_projects(x: User):
         ],
         "avatar": x.avatar,
     }
+
+
+def send_mail_cc7w(receiver: str, content: str = "", subject: str = ""):
+    if content == "":
+        content = """
+        the content of this email has not been configured yet ...
+        maybe you can contact the administrator for help.
+        """
+
+    if subject == "":
+        subject = "subject not yet configured"
+
+    username = "tangentnightydegree@foxmail.com"
+    host = "smtp.qq.com"
+    auth = "hfeiqimfqxkegbci"
+
+    msg = MIMEText(content)
+    msg["Subject"] = subject
+    msg["To"] = receiver
+
+    try:
+        server = smtplib.SMTP_SSL(host, 465)
+        server.login(username, auth)
+        server.sendmail(username, [receiver], msg.as_string())
+        server.close()
+        return "successfully"
+    except Exception as e:
+        return "failed to send mail", e
