@@ -411,7 +411,10 @@ def deleteOperation(proj: Project, type: string, data: dict):
         iterationId = require(dataList, "iterationId")
         judgeTypeInt(iterationId)
         iteration = Iteration.objects.filter(id=iterationId).first()
-        UserIterationAssociation.objects.filter(iteration=iteration).delete()
+        userId = require(dataList,"userId")
+        judgeTypeInt(userId)
+        user = User.objects.filter(id=userId).first()
+        UserIterationAssociation.objects.filter(iteration=iteration,user=user).delete()
     elif type == "service-sr":
         sr = require(dataList, "SRId")
         judgeTypeInt(sr)

@@ -491,7 +491,9 @@ class RMS_Tests(TestCase):
             "project": self.ums.p1.id,
             "type": "user-iteration",
             "operation": "delete",
-            "data": {"iterationId": 2},
+            "data": {"iterationId": 2,
+                    "userId":999,
+            },
         }
         self.postMessage(c, data153, 0)
 
