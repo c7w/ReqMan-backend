@@ -95,6 +95,8 @@ def getIRIteration(proj: Project):
 def getProjectIteration(proj: Project):
     return ProjectIterationAssociation.objects.filter(project=proj)
 
+def getSRChangeLog(srId:int):
+    return SR_Changelog.objects.filter(SR__id=srId)
 
 def createIR(datas: dict):
     data = {}
@@ -301,9 +303,20 @@ def updateIR(id: int, datas: dict):
     IR.objects.filter(id=id).update(**data)
 
 
-def updateSR(id: int, datas: dict):
+def updateSR(id: int, datas: dict,user:User):
+    print("HERE")
     rangeWord = ["title", "description", "rank", "priority", "state"]
     data = {}
+    log = {}
+    sr = SR.objects.filter(id=id).first()
+    if not sr:
+        raise ParamErr(f"Wrong SR Id.")
+    log['SR'] = sr
+    log['project'] = sr.project
+    log['formerState'] = sr.state
+    log['formerDescription'] = sr.description
+    log['changedBy'] = user
+    log['description'] = 'Changed by '+user.name
     for i in datas:
         if i in rangeWord:
             data[i] = datas[i]
@@ -319,6 +332,7 @@ def updateSR(id: int, datas: dict):
         if not data["state"] in ["TODO", "WIP", "Reviewing", "Done"]:
             raise ParamErr(f"wrong type.")
     SR.objects.filter(id=id).update(**data)
+    SR_Changelog.objects.create(**log)
 
 
 def updateIteration(id: int, datas: dict):
@@ -353,7 +367,7 @@ def updateService(id: int, datas: dict):
     Service.objects.filter(id=id).update(**data)
 
 
-def updateOperation(proj: Project, type: string, data: dict):
+def updateOperation(proj: Project, type: string, data: dict,user:User):
     dataList = require(data, "data")
     data = require(dataList, "updateData")
     updates = {}
@@ -363,7 +377,7 @@ def updateOperation(proj: Project, type: string, data: dict):
     if type == "ir":
         updateIR(id, data)
     elif type == "sr":
-        updateSR(id, data)
+        updateSR(id, data,user)
     elif type == "iteration":
         updateIteration(id, data)
     elif type == "service":

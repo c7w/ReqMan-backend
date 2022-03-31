@@ -119,7 +119,7 @@ class Service(models.Model):
 
 
 class SR_Changelog(models.Model):
-    id = models.BigIntegerField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     project = models.ForeignKey("ums.Project", on_delete=models.CASCADE)
     SR = models.ForeignKey(SR, on_delete=models.CASCADE)
     description = models.TextField()
