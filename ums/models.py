@@ -30,6 +30,7 @@ class User(models.Model):
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(default=getTime.get_timestamp)
     project = models.ManyToManyField(Project, through="UserProjectAssociation")
+    email_verified = models.BooleanField(default=False)
 
     class Meta:
         indexes = [
@@ -78,4 +79,31 @@ class ProjectInvitationAssociation(models.Model):
         indexes = [
             models.Index(fields=["project"]),
             models.Index(fields=["invitation"]),
+        ]
+
+
+class PendingModifyPasswordEmail(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    email = models.TextField()
+    hash1 = models.CharField(max_length=100, unique=True)
+    hash2 = models.CharField(max_length=100, unique=True)
+    createdAt = models.FloatField(default=getTime.get_timestamp)
+    verified = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["hash1"]),
+            models.Index(fields=["hash2"]),
+        ]
+
+
+class UserMinorEmailAssociation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    email = models.TextField()
+    verified = models.BooleanField()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["email"]),
         ]
