@@ -81,6 +81,7 @@ class RMS_Tests(TestCase):
         type = "ir"
         url = "/rms/project/"
         resp = c.get(url, data={"project": str(id), "type": type})
+        print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
 
         type = "sr"
@@ -374,7 +375,7 @@ class RMS_Tests(TestCase):
             "type": "sr",
             "operation": "update",
             "data": {
-                "id": 2,
+                "id": self.SR2.id,
                 "updateData": {
                     "title": "aas",
                     "description": "sbb",
@@ -383,6 +384,14 @@ class RMS_Tests(TestCase):
             },
         }
         self.postMessage(c, data12, 0)
+
+        data12 = {
+            "project": self.ums.p1.id,
+            "type": "SR_changeLog",
+            "SRId":2,
+        }
+        resp=c.get('/rms/project/',data=data12)
+        self.assertEqual(resp.json()['code'],0)
 
         data13 = {
             "project": self.ums.p1.id,

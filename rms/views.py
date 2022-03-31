@@ -1,4 +1,3 @@
-import sys
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -51,6 +50,10 @@ class RMSViewSet(viewsets.ViewSet):
             resu = serialize(getIRIteration(proj))
         elif type == "project-iteration":
             resu = serialize(getProjectIteration(proj))
+        elif type == "SR_changeLog":
+            srId = intify(require(req.query_params,"SRId"))
+            judgeTypeInt(srId)
+            resu = serialize(getSRChangeLog(srId))
         else:
             return FAIL
         return Response({"code": 0, "data": resu})
@@ -73,7 +76,7 @@ class RMSViewSet(viewsets.ViewSet):
         if operation == "create":
             isFail = createOperation(proj, type, req.data, req.user)
         elif operation == "update":
-            isFail = updateOperation(proj, type, req.data)
+            isFail = updateOperation(proj, type, req.data,req.user)
         if operation == "delete":
             isFail = deleteOperation(proj, type, req.data)
         if isFail:
