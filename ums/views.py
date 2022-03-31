@@ -6,9 +6,12 @@ from utils.exceptions import ParamErr
 from ums.models import *
 from utils.sessions import *
 from ums.utils import *
-from django.forms.models import model_to_dict
-from utils.throttle import GeneralThrottle, SpecialThrottle
-from utils.permissions import GeneralPermission, project_rights
+from utils.permissions import (
+    GeneralPermission,
+    project_rights,
+    require_login,
+    require_not_login,
+)
 from django.conf import settings
 import hashlib
 from utils.model_date import get_timestamp
@@ -17,9 +20,6 @@ DEFAULT_INVITED_ROLE = "member"
 
 SUCC = Response({"code": 0})
 FAIL = Response({"code": 1})
-
-EMAIL_EXPIRE_SECONDS = 120
-RESETTING_STATUS_EXPIRE_SECONDS = 120
 
 
 def STATUS(code: int):
@@ -337,25 +337,21 @@ class UserViewSet(viewsets.ViewSet):
             return Response({"code": 0, "data": {"exist": False}})
 
     @action(detail=False, methods=["POST"])
-    def minor_email_request(self):  # add and verify or simply verify
+    def email_callback(self, req: Request):
         pass
 
     @action(detail=False, methods=["POST"])
-    def verify_email_callback(self):
-        pass
-
-    @action(detail=False, methods=["POST"])
-    def email_modify_password_request(self, req: Request):  #
+    def email_modify_password_request(self, req: Request):
         email = require(req.data, "email").lower()
         user = User.objects.filter(email=email).first()
-        if user:
+        if user and user.email_verified:
             hash1 = hashlib.sha256(str(get_timestamp()).encode()).hexdigest()
             PendingModifyPasswordEmail.objects.create(
                 user=user,
                 email=email,
                 hash1=hash1,
             )
-            if email_password_reset(email, hash1, EMAIL_EXPIRE_SECONDS):
+            if email_password_reset(email, hash1):
                 return SUCC
             return FAIL  # mail service unavailable
         return SUCC  # unconditional success
@@ -374,7 +370,8 @@ class UserViewSet(viewsets.ViewSet):
                 return STATUS(1)  # 1: invalid hash1 or verified hash1
 
             now = get_timestamp()
-            if now - relation.createdAt > EMAIL_EXPIRE_SECONDS:
+            stat = (now - relation.createdAt) > EMAIL_EXPIRE_SECONDS
+            if stat:
                 return STATUS(2)  # 2: expired
 
             hash2 = hashlib.sha256(str(get_timestamp()).encode()).hexdigest()
@@ -382,7 +379,6 @@ class UserViewSet(viewsets.ViewSet):
             relation.hash2 = hash2
             relation.beginAt = get_timestamp()
             relation.save()
-
             return Response({"code": 0, "data": {"hash2": hash2}})
 
         elif stage == 2:
@@ -401,11 +397,13 @@ class UserViewSet(viewsets.ViewSet):
 
             now = get_timestamp()
 
-            if now - relation.createdAt > RESETTING_STATUS_EXPIRE_SECONDS:
+            if (now - relation.beginAt) > RESETTING_STATUS_EXPIRE_SECONDS:
                 return STATUS(2)  # 2: expired
 
             relation.user.password = curr_password
             relation.user.save()
             relation.delete()
+
+            return SUCC
 
         raise ParamErr("invalid stage")

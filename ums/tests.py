@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.test import Client as DefaultClient
 from ums.models import *
 import json
+from ums.views import EMAIL_EXPIRE_SECONDS, RESETTING_STATUS_EXPIRE_SECONDS
 
 SUCC = {"code": 0}
 FAIL = {"code": 1}
@@ -841,3 +842,60 @@ class UMS_Tests(TestCase):
         successful_judge(
             {"project": self.p1.id, "identity": {"type": "name", "key": self.u3.name}}
         )
+
+    def test_email_modify_password(self):
+        c = Client()
+        c.cookies["sessionId"] = "26"
+
+        url1 = "/ums/email_modify_password_request/"
+        url2 = "/ums/email_modify_password_callback/"
+
+        PendingModifyPasswordEmail.objects.all().delete()
+
+        # non-exist email
+        resp = c.post(url1, data={"email": "invalid"}).json()
+        self.assertEqual(resp["code"], 0)
+        self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
+
+        # non-verified email
+        resp = c.post(url1, data={"email": self.u1.email}).json()
+        self.assertEqual(resp["code"], 0)
+        self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
+
+        # add verified tag
+        self.u1.email_verified = True
+        self.u1.save()
+
+        # request successful
+        # as a unit test, I do not judge if the mail has been sent or not
+        resp = c.post(url1, data={"email": self.u1.email}).json()
+        # self.assertEqual(resp['code'], 0)
+        self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 1)
+
+        # stage 1: email expired
+        relation = PendingModifyPasswordEmail.objects.filter(
+            email=self.u1.email
+        ).first()
+        original_createdAt = float(relation.createdAt)
+        print("before", relation.createdAt)
+        relation.createdAt -= EMAIL_EXPIRE_SECONDS * 2
+        relation.save()
+        print("after", relation.createdAt)
+        hash1 = relation.hash1
+        resp = c.post(url2, data={"hash1": hash1, "stage": 1}).json()
+        self.assertEqual(resp["code"], 2)
+        relation.createdAt = original_createdAt
+        relation.save()
+
+        # stage 1: successful
+        hash1 = (
+            PendingModifyPasswordEmail.objects.filter(email=self.u1.email).first().hash1
+        )
+        resp = c.post(url2, data={"hash1": hash1, "stage": 1}).json()
+        self.assertEqual(resp["code"], 0)
+        print(resp)
+        hash2 = resp["data"]["hash2"]
+
+        # stage1: hash1 verified
+        resp = c.post(url2, data={"hash1": hash1, "stage": 1}).json()
+        self.assertEqual(resp["code"], 1)
