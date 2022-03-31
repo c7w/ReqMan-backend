@@ -438,8 +438,35 @@ class UserViewSet(viewsets.ViewSet):
         raise ParamErr("unsupported operation for minor email")
 
     @action(detail=False, methods=["POST"])
-    def email_callback(self, req: Request):
-        pass
+    def email_verify_callback(self, req: Request):
+        hashcode = require(req.data, "hash")
+        relation = PendingVerifyEmail.objects.filter(hash=hashcode).first()
+        if not relation:
+            return FAIL
+
+        now = get_timestamp()
+        if now - relation.createdAt > EMAIL_EXPIRE_SECONDS:
+            return STATUS(2)
+
+        # major email
+        if relation.is_major:
+            if relation.email != User.email:
+                relation.delete()
+                return STATUS(3)  # record inconsistent with user table
+            relation.user.email_verified = True
+            relation.user.save()
+            relation.delete()
+            return SUCC
+
+        # minor email
+        minor_relation = UserMinorEmailAssociation.objects.filter(
+            email=relation.email
+        ).first()
+        if not minor_relation:
+            return STATUS(3)
+        minor_relation.verified = True
+        minor_relation.save()
+        return SUCC
 
     @action(detail=False, methods=["POST"])
     def email_modify_password_request(self, req: Request):

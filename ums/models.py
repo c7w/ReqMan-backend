@@ -103,7 +103,6 @@ class PendingVerifyEmail(models.Model):
     email = models.TextField()
     hash = models.CharField(max_length=100, unique=True)
     createdAt = models.FloatField(default=getTime.get_timestamp)
-    verified = models.BooleanField(default=False)
     is_major = models.BooleanField()
 
     class Meta:
