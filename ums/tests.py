@@ -899,3 +899,54 @@ class UMS_Tests(TestCase):
         # stage1: hash1 verified
         resp = c.post(url2, data={"hash1": hash1, "stage": 1}).json()
         self.assertEqual(resp["code"], 1)
+
+        # stage2: resetting status expired
+        relation = PendingModifyPasswordEmail.objects.filter(
+            email=self.u1.email
+        ).first()
+        original_beginAt = relation.beginAt
+        relation.beginAt -= RESETTING_STATUS_EXPIRE_SECONDS + 1
+        relation.save()
+        resp = c.post(
+            url2,
+            data={
+                "hash1": hash1,
+                "hash2": hash2,
+                "stage": 2,
+                "password": "new_password",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 2)
+        relation.beginAt = original_beginAt
+        relation.save()
+
+        # stage2: successful
+        resp = c.post(
+            url2,
+            data={
+                "hash1": hash1,
+                "hash2": hash2,
+                "stage": 2,
+                "password": "new_password",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 0)
+        self.u1.refresh_from_db()
+        self.assertEqual(self.u1.password, "new_password")
+        self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
+
+        # stage2: no relation
+        resp = c.post(
+            url2,
+            data={
+                "hash1": hash1,
+                "hash2": hash2,
+                "stage": 2,
+                "password": "new_password",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 1)
+
+        # invalid stage
+        resp = c.post(url2, data={"hash1": hash1, "stage": -1}).json()
+        self.assertEqual(resp["code"], -1)
