@@ -86,10 +86,10 @@ class PendingModifyPasswordEmail(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     email = models.TextField()
     hash1 = models.CharField(max_length=100, unique=True)
-    hash2 = models.CharField(max_length=100, unique=True)
+    hash2 = models.CharField(max_length=100, unique=True, default="")
     createdAt = models.FloatField(default=getTime.get_timestamp)
+    beginAt = models.FloatField(default=-1)
     hash1_verified = models.BooleanField(default=False)
-    hash2_verified = models.BooleanField(default=False)
 
     class Meta:
         indexes = [

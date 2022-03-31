@@ -263,7 +263,7 @@ def user_and_projects(x: User):
     }
 
 
-def send_mail_cc7w(receiver: str, content: str = "", subject: str = ""):
+def send_mail(receiver: str, content: str = "", subject: str = "") -> bool:
     if content == "":
         content = """
         the content of this email has not been configured yet ...
@@ -286,6 +286,16 @@ def send_mail_cc7w(receiver: str, content: str = "", subject: str = ""):
         server.login(username, auth)
         server.sendmail(username, [receiver], msg.as_string())
         server.close()
-        return "successfully"
+        return True
     except Exception as e:
-        return "failed to send mail", e
+        return False
+
+
+def email_password_reset(email: str, hash1: str, expire: int):
+    return send_mail(
+        email,
+        f"""
+    now, your hash1 to modify password is {hash1}, it will be expired in {expire}.
+    """,
+        "ReqMan: Password Reset",
+    )
