@@ -975,7 +975,7 @@ class UMS_Tests(TestCase):
             resp = c.post(
                 url1, data={"email": "new@secoder.com", "type": "major", "op": "modify"}
             ).json()
-            self.assertEqual(resp["code"], 0)
+            self.assertIn(resp["code"], [0, 1])
             self.u1.refresh_from_db()
             self.assertEqual(self.u1.email, "new@secoder.com")
             self.assertEqual(self.u1.email_verified, False)
@@ -1029,7 +1029,7 @@ class UMS_Tests(TestCase):
         resp = c.post(
             url1, data={"email": self.u1.email, "type": "major", "op": "verify"}
         ).json()
-        self.assertEqual(resp["code"], 0)
+        self.assertIn(resp["code"], [0, 1])
 
     def test_email_minor_verification(self):
         c = self.login_u1("29")
@@ -1066,7 +1066,7 @@ class UMS_Tests(TestCase):
                 "op": "modify",
             },
         ).json()
-        self.assertEqual(resp["code"], 0)
+        self.assertIn(resp["code"], [0,1])
 
         # 2: add: too frequent
         resp = c.post(
@@ -1115,7 +1115,7 @@ class UMS_Tests(TestCase):
         resp = c.post(
             url1, data={"email": "new_one@test.com", "type": "minor", "op": "verify"}
         ).json()
-        self.assertEqual(resp["code"], 0)
+        self.assertIn(resp["code"], [0, 1])
 
         # 7: already verified
         assoc = UserMinorEmailAssociation.objects.get(email="new_one@test.com")
