@@ -376,6 +376,57 @@ class UserViewSet(viewsets.ViewSet):
 
             raise ParamErr("unsupported operation for major email")
 
+        # minor email
+        def rm(e):
+            relation = UserMinorEmailAssociation.objects.filter(email=e).first()
+            if not relation:
+                return 5  # 5: non-exist
+            relation.delete()
+            return 0
+
+        def add(e):
+            if email == req.user.email:
+                return 3  # 3: minor and major should not be the same
+            relation = UserMinorEmailAssociation.objects.filter(email=email).first()
+            if relation:
+                return 4  # 4: minor already exist
+
+            UserMinorEmailAssociation.objects.create(user=req.user, email=email)
+            return 0 if new_verify_email(req.user, e) else 1
+
+        if op == "add":
+            return STATUS(add(email))
+        elif op == "rm":
+            return STATUS(rm(email))
+        elif op == "modify":
+            prev = require(req.data, "previous")
+
+            # email check
+            if not email_valid(prev):
+                return STATUS(6)
+
+            # remove
+            rm_state = rm(prev)
+            if rm_state != 0:
+                return STATUS(rm_state)
+
+            # then add
+            add_state = add(email)
+            return STATUS(add_state)
+        elif op == "verify":
+            minor_relation = UserMinorEmailAssociation.objects.filter(
+                email=email
+            ).first()
+            if not minor_relation:
+                return STATUS(5)
+
+            if minor_relation.verified:
+                return STATUS(7)
+
+            return SUCC if new_verify_email(req.user, email) else FAIL
+
+        raise ParamErr("unsupported operation for minor email")
+
     @action(detail=False, methods=["POST"])
     def email_callback(self, req: Request):
         pass
