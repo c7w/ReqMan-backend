@@ -339,7 +339,7 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["POST"])
     @require_login
     def email_request(self, req: Request):  # add and verify or simply verify
-        email = require(req.data, "email").lower()
+        email = require(req.data, "email").lower()  # to be stripped by frontend
         op = require(req.data, "op")
 
         # parameter check
@@ -363,6 +363,8 @@ class UserViewSet(viewsets.ViewSet):
                 return FAIL  # mail service unavailable
 
             if op == "modify":
+                if email == req.user.email:
+                    return STATUS(8)
                 req.user.email = email
                 req.user.email_verified = False
                 req.user.save()
@@ -418,12 +420,13 @@ class UserViewSet(viewsets.ViewSet):
             # then add
             add_state = add(email)
             return STATUS(add_state)
+
         elif op == "verify":
             minor_relation = UserMinorEmailAssociation.objects.filter(
                 email=email
             ).first()
             if not minor_relation:
-                return STATUS(5)
+                return STATUS(10)
 
             if minor_relation.verified:
                 return STATUS(7)  # already verified
@@ -450,7 +453,7 @@ class UserViewSet(viewsets.ViewSet):
 
         # major email
         if relation.is_major:
-            if relation.email != User.email:
+            if relation.email != relation.user.email:
                 relation.delete()
                 return STATUS(3)  # record inconsistent with user table
             relation.user.email_verified = True
@@ -466,6 +469,7 @@ class UserViewSet(viewsets.ViewSet):
             return STATUS(3)
         minor_relation.verified = True
         minor_relation.save()
+        relation.delete()
         return SUCC
 
     @action(detail=False, methods=["POST"])
