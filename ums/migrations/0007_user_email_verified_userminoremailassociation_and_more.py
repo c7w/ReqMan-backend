@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("email", models.TextField()),
+                ("email", models.CharField(max_length=255)),
                 ("verified", models.BooleanField()),
                 (
                     "user",
