@@ -113,7 +113,7 @@ class PendingVerifyEmail(models.Model):
 class UserMinorEmailAssociation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     email = models.CharField(max_length=255)
-    verified = models.BooleanField()
+    verified = models.BooleanField(default=False)
 
     class Meta:
         indexes = [

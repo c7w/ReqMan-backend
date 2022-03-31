@@ -287,6 +287,7 @@ def send_mail(receiver: str, content: str = "", subject: str = "") -> bool:
         server.close()
         return True
     except Exception as e:
+        print(e.__str__())
         return False
 
 

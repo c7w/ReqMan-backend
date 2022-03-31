@@ -349,7 +349,7 @@ class UserViewSet(viewsets.ViewSet):
             raise ParamErr("invalid email type")
 
         if not email_valid(email):
-            return STATUS(6)  # invalid email
+            return STATUS(6)  # invalid email %%%
 
         # major email
         if email_type == "major":
@@ -357,7 +357,7 @@ class UserViewSet(viewsets.ViewSet):
             def send_verify_major():
                 state, info = new_verify_email(req.user, req.user.email, major=True)
                 if not state and info == "freq_exceed":
-                    return STATUS(2)  # 2: frequency exceed
+                    return STATUS(2)  # 2: frequency exceed %%%
                 if state:
                     return SUCC
                 return FAIL  # mail service unavailable
@@ -371,7 +371,7 @@ class UserViewSet(viewsets.ViewSet):
 
             if op == "verify":
                 if req.user.email_verified:
-                    return STATUS(7)  # already verified
+                    return STATUS(7)  # already verified %%%
                 return send_verify_major()
 
             raise ParamErr("unsupported operation for major email")
@@ -386,13 +386,18 @@ class UserViewSet(viewsets.ViewSet):
 
         def add(e):
             if email == req.user.email:
-                return 3  # 3: minor and major should not be the same
+                return 3  # 3: minor and major should not be the same %%%
             relation = UserMinorEmailAssociation.objects.filter(email=email).first()
             if relation:
-                return 4  # 4: minor already exist
+                return 4  # 4: minor already exist %%%
 
             UserMinorEmailAssociation.objects.create(user=req.user, email=email)
-            return 0 if new_verify_email(req.user, e) else 1
+            state, info = new_verify_email(req.user, e)
+            if not state and info == "freq_exceed":
+                return 2  # 2: frequency exceed
+            if state:
+                return 0
+            return 1  # mail service unavailable
 
         if op == "add":
             return STATUS(add(email))
@@ -421,9 +426,14 @@ class UserViewSet(viewsets.ViewSet):
                 return STATUS(5)
 
             if minor_relation.verified:
-                return STATUS(7)
+                return STATUS(7)  # already verified
 
-            return SUCC if new_verify_email(req.user, email) else FAIL
+            state, info = new_verify_email(req.user, email)
+            if not state and info == "freq_exceed":
+                return STATUS(2)  # 2: frequency exceed
+            if state:
+                return SUCC
+            return FAIL  # mail service unavailable
 
         raise ParamErr("unsupported operation for minor email")
 
