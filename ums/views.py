@@ -337,6 +337,46 @@ class UserViewSet(viewsets.ViewSet):
             return Response({"code": 0, "data": {"exist": False}})
 
     @action(detail=False, methods=["POST"])
+    @require_login
+    def email_request(self, req: Request):  # add and verify or simply verify
+        email = require(req.data, "email").lower()
+        op = require(req.data, "op")
+
+        # parameter check
+        email_type = require(req.data, "type")
+
+        if email_type not in ["major", "minor"]:
+            raise ParamErr("invalid email type")
+
+        if not email_valid(email):
+            return STATUS(6)  # invalid email
+
+        # major email
+        if email_type == "major":
+
+            def send_verify_major():
+                state, info = new_verify_email(req.user, req.user.email, major=True)
+                if not state and info == "freq_exceed":
+                    return STATUS(2)  # 2: frequency exceed
+                if state:
+                    return SUCC
+                return FAIL  # mail service unavailable
+
+            if op == "modify":
+                req.user.email = email
+                req.user.email_verified = False
+                req.user.save()
+                req.user.refresh_from_db()
+                return send_verify_major()  # already a response
+
+            if op == "verify":
+                if req.user.email_verified:
+                    return STATUS(7)  # already verified
+                return send_verify_major()
+
+            raise ParamErr("unsupported operation for major email")
+
+    @action(detail=False, methods=["POST"])
     def email_callback(self, req: Request):
         pass
 
