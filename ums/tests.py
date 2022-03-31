@@ -1030,3 +1030,120 @@ class UMS_Tests(TestCase):
             url1, data={"email": self.u1.email, "type": "major", "op": "verify"}
         ).json()
         self.assertEqual(resp["code"], 0)
+
+    def test_email_minor_verification(self):
+        c = self.login_u1("29")
+        url1 = "/ums/email_request/"
+        url2 = "/ums/email_verify_callback/"
+        PendingVerifyEmail.objects.all().delete()
+
+        # 5: rm: non-exist
+        resp = c.post(
+            url1, data={"email": self.u1.email, "type": "minor", "op": "rm"}
+        ).json()
+        self.assertEqual(resp["code"], 5)
+
+        # 3: add: same with major
+        resp = c.post(
+            url1, data={"email": self.u1.email, "type": "minor", "op": "add"}
+        ).json()
+        self.assertEqual(resp["code"], 3)
+
+        # 4: add: already exist
+        UserMinorEmailAssociation.objects.create(user=self.u1, email="test@test.com")
+        resp = c.post(
+            url1, data={"email": "test@test.com", "type": "minor", "op": "add"}
+        ).json()
+        self.assertEqual(resp["code"], 4)
+
+        # 0: modify: successful
+        resp = c.post(
+            url1,
+            data={
+                "previous": "test@test.com",
+                "email": "test2@test.com",
+                "type": "minor",
+                "op": "modify",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 0)
+
+        # 2: add: too frequent
+        resp = c.post(
+            url1, data={"email": "new_one@test.com", "type": "minor", "op": "add"}
+        ).json()
+        self.assertEqual(resp["code"], 2)
+
+        # 5: modify: non-exist
+        resp = c.post(
+            url1,
+            data={
+                "previous": "test@test.com",
+                "email": "test3@test.com",
+                "type": "minor",
+                "op": "modify",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 5)
+
+        # 6: modify: ill_email
+        resp = c.post(
+            url1,
+            data={
+                "previous": "test.com",
+                "email": "ii@test.com",
+                "type": "minor",
+                "op": "modify",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 6)
+
+        # 2: verify: frequency
+        resp = c.post(
+            url1, data={"email": "new_one@test.com", "type": "minor", "op": "verify"}
+        ).json()
+        self.assertEqual(resp["code"], 2)
+
+        # 10: verify: non-exist
+        resp = c.post(
+            url1, data={"email": "none@test.com", "type": "minor", "op": "verify"}
+        ).json()
+        self.assertEqual(resp["code"], 10)
+
+        # 0: verify: successful
+        PendingVerifyEmail.objects.all().delete()
+        resp = c.post(
+            url1, data={"email": "new_one@test.com", "type": "minor", "op": "verify"}
+        ).json()
+        self.assertEqual(resp["code"], 0)
+
+        # 7: already verified
+        assoc = UserMinorEmailAssociation.objects.get(email="new_one@test.com")
+        assoc.verified = True
+        assoc.save()
+        resp = c.post(
+            url1, data={"email": "new_one@test.com", "type": "minor", "op": "verify"}
+        ).json()
+        self.assertEqual(resp["code"], 7)
+
+        # verifications
+        PendingVerifyEmail.objects.all().delete()
+        UserMinorEmailAssociation.objects.create(user=self.u1, email="verify@test.com")
+        relation = PendingVerifyEmail.objects.create(
+            user=self.u1, email="verify2@test.com", hash="test_hash", is_major=False
+        )
+
+        # 1: non-exist hash
+        resp = c.post(url2, data={"hash": "non-exist"}).json()
+        self.assertEqual(resp["code"], 1)
+
+        # 3: no matching minor email
+        resp = c.post(url2, data={"hash": "test_hash"}).json()
+        self.assertEqual(resp["code"], 3)
+
+        relation.email = "verify@test.com"
+        relation.save()
+
+        # 0: successful
+        resp = c.post(url2, data={"hash": "test_hash"}).json()
+        self.assertEqual(resp["code"], 0)
