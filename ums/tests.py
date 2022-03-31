@@ -784,10 +784,8 @@ class UMS_Tests(TestCase):
         url = "/ums/user_exist/"
 
         # parameter failures
-        print(1)
         resp = c.post(url, data={"project": self.p1.id, "identity": ""}).json()
         self.assertEqual(resp["code"], -1)
-        print(2)
         resp = d.post(
             url,
             json.dumps(
@@ -828,7 +826,6 @@ class UMS_Tests(TestCase):
         def successful_judge(data):
             data["sessionId"] = "23"
             resp = d.post(url, json.dumps(data), content_type="application/json").json()
-            print(resp)
             self.assertEqual(resp["code"], 0)
             self.assertEqual(resp["data"]["exist"], True)
             self.assertEqual(resp["data"]["user"]["id"], self.u3.id)
@@ -877,10 +874,8 @@ class UMS_Tests(TestCase):
             email=self.u1.email
         ).first()
         original_createdAt = float(relation.createdAt)
-        print("before", relation.createdAt)
         relation.createdAt -= EMAIL_EXPIRE_SECONDS * 2
         relation.save()
-        print("after", relation.createdAt)
         hash1 = relation.hash1
         resp = c.post(url2, data={"hash1": hash1, "stage": 1}).json()
         self.assertEqual(resp["code"], 2)
@@ -950,3 +945,88 @@ class UMS_Tests(TestCase):
         # invalid stage
         resp = c.post(url2, data={"hash1": hash1, "stage": -1}).json()
         self.assertEqual(resp["code"], -1)
+
+    def test_email_request_bad_parameters(self):
+        c = self.login_u1("27")
+        url = "/ums/email_request/"
+        resp = c.post(
+            url, data={"email": "ill_email", "op": "ill_op", "type": "ill_type"}
+        ).json()
+        self.assertEqual(resp["code"], -1)
+        resp = c.post(
+            url, data={"email": "ill_email", "op": "ill_op", "type": "major"}
+        ).json()
+        self.assertEqual(resp["code"], 6)
+
+    def test_email_major_verification(self):
+        c = self.login_u1("28")
+        url1 = "/ums/email_request/"
+        url2 = "/ums/email_verify_callback/"
+        self.u1.email_verified = True
+
+        # 8 modify: same
+        resp = c.post(
+            url1, data={"email": self.u1.email, "type": "major", "op": "modify"}
+        ).json()
+        self.assertEqual(resp["code"], 8)
+
+        # 0 modify: success
+        def succ():
+            resp = c.post(
+                url1, data={"email": "new@secoder.com", "type": "major", "op": "modify"}
+            ).json()
+            self.assertEqual(resp["code"], 0)
+            self.u1.refresh_from_db()
+            self.assertEqual(self.u1.email, "new@secoder.com")
+            self.assertEqual(self.u1.email_verified, False)
+
+        succ()
+
+        # 0 modify: too freq
+        resp = c.post(
+            url1, data={"email": "new2@secoder.com", "type": "major", "op": "modify"}
+        ).json()
+        self.assertEqual(resp["code"], 2)
+        self.u1.refresh_from_db()
+        self.assertEqual(self.u1.email, "new2@secoder.com")
+        self.assertEqual(self.u1.email_verified, False)
+
+        # 2 verify expire
+        relation = PendingVerifyEmail.objects.filter(
+            email="new@secoder.com"  # the previous one
+        ).first()
+        original_createdAt = float(relation.createdAt)
+        relation.createdAt -= EMAIL_EXPIRE_SECONDS * 2
+        relation.save()
+        resp = c.post(url2, data={"hash": relation.hash}).json()
+        self.assertEqual(resp["code"], 2)
+        relation.createdAt = original_createdAt
+        relation.save()
+
+        # 3 verify collision
+        resp = c.post(url2, data={"hash": relation.hash}).json()
+        self.assertEqual(resp["code"], 3)
+        self.assertEqual(PendingVerifyEmail.objects.all().__len__(), 0)
+
+        # 0 modify: success
+        succ()
+        relation = PendingVerifyEmail.objects.filter(email=self.u1.email).first()
+        resp = c.post(url2, data={"hash": relation.hash}).json()
+        self.assertEqual(PendingVerifyEmail.objects.all().__len__(), 0)
+        self.assertEqual(resp["code"], 0)
+        self.u1.refresh_from_db()
+        self.assertEqual(self.u1.email_verified, True)
+
+        # 7: verify: already verified
+        resp = c.post(
+            url1, data={"email": self.u1.email, "type": "major", "op": "verify"}
+        ).json()
+        self.assertEqual(resp["code"], 7)
+
+        # 0: verify: successful
+        self.u1.email_verified = False
+        self.u1.save()
+        resp = c.post(
+            url1, data={"email": self.u1.email, "type": "major", "op": "verify"}
+        ).json()
+        self.assertEqual(resp["code"], 0)
