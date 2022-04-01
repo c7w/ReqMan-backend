@@ -6,10 +6,15 @@ from utils.exceptions import ParamErr
 from ums.models import *
 from utils.sessions import *
 from ums.utils import *
-from django.forms.models import model_to_dict
-from utils.throttle import GeneralThrottle, SpecialThrottle
-from utils.permissions import GeneralPermission, project_rights
+from utils.permissions import (
+    GeneralPermission,
+    project_rights,
+    require_login,
+    require_not_login,
+)
 from django.conf import settings
+import hashlib
+from utils.model_date import get_timestamp
 
 DEFAULT_INVITED_ROLE = "member"
 
@@ -330,3 +335,207 @@ class UserViewSet(viewsets.ViewSet):
             )
         else:
             return Response({"code": 0, "data": {"exist": False}})
+
+    @action(detail=False, methods=["POST"])
+    @require_login
+    def email_request(self, req: Request):  # add and verify or simply verify
+        email = require(req.data, "email").lower()  # to be stripped by frontend
+        op = require(req.data, "op")
+
+        # parameter check
+        email_type = require(req.data, "type")
+
+        if email_type not in ["major", "minor"]:
+            raise ParamErr("invalid email type")
+
+        if not email_valid(email):
+            return STATUS(6)  # invalid email %%%
+
+        # major email
+        if email_type == "major":
+
+            def send_verify_major():
+                state, info = new_verify_email(req.user, req.user.email, major=True)
+                if not state and info == "freq_exceed":
+                    return STATUS(2)  # 2: frequency exceed %%%
+                if state:
+                    return SUCC
+                return FAIL  # mail service unavailable
+
+            if op == "modify":
+                if email == req.user.email:
+                    return STATUS(8)
+                req.user.email = email
+                req.user.email_verified = False
+                req.user.save()
+                req.user.refresh_from_db()
+                return send_verify_major()  # already a response
+
+            if op == "verify":
+                if req.user.email_verified:
+                    return STATUS(7)  # already verified %%%
+                return send_verify_major()
+
+            raise ParamErr("unsupported operation for major email")
+
+        # minor email
+        def rm(e):
+            relation = UserMinorEmailAssociation.objects.filter(email=e).first()
+            if not relation:
+                return 5  # 5: non-exist
+            relation.delete()
+            return 0
+
+        def add(e):
+            if email == req.user.email:
+                return 3  # 3: minor and major should not be the same %%%
+            relation = UserMinorEmailAssociation.objects.filter(email=email).first()
+            if relation:
+                return 4  # 4: minor already exist %%%
+
+            UserMinorEmailAssociation.objects.create(user=req.user, email=email)
+            state, info = new_verify_email(req.user, e)
+            if not state and info == "freq_exceed":
+                return 2  # 2: frequency exceed
+            if state:
+                return 0
+            return 1  # mail service unavailable
+
+        if op == "add":
+            return STATUS(add(email))
+        elif op == "rm":
+            return STATUS(rm(email))
+        elif op == "modify":
+            prev = require(req.data, "previous")
+
+            # email check
+            if not email_valid(prev):
+                return STATUS(6)
+
+            # remove
+            rm_state = rm(prev)
+            if rm_state != 0:
+                return STATUS(rm_state)
+
+            # then add
+            add_state = add(email)
+            return STATUS(add_state)
+
+        elif op == "verify":
+            minor_relation = UserMinorEmailAssociation.objects.filter(
+                email=email
+            ).first()
+            if not minor_relation:
+                return STATUS(10)
+
+            if minor_relation.verified:
+                return STATUS(7)  # already verified
+
+            state, info = new_verify_email(req.user, email)
+            if not state and info == "freq_exceed":
+                return STATUS(2)  # 2: frequency exceed
+            if state:
+                return SUCC
+            return FAIL  # mail service unavailable
+
+        raise ParamErr("unsupported operation for minor email")
+
+    @action(detail=False, methods=["POST"])
+    def email_verify_callback(self, req: Request):
+        hashcode = require(req.data, "hash")
+        relation = PendingVerifyEmail.objects.filter(hash=hashcode).first()
+        if not relation:
+            return FAIL
+
+        now = get_timestamp()
+        if now - relation.createdAt > EMAIL_EXPIRE_SECONDS:
+            return STATUS(2)
+
+        # major email
+        if relation.is_major:
+            if relation.email != relation.user.email:
+                relation.delete()
+                return STATUS(3)  # record inconsistent with user table
+            relation.user.email_verified = True
+            relation.user.save()
+            relation.delete()
+            return SUCC
+
+        # minor email
+        minor_relation = UserMinorEmailAssociation.objects.filter(
+            email=relation.email
+        ).first()
+        if not minor_relation:
+            return STATUS(3)
+        minor_relation.verified = True
+        minor_relation.save()
+        relation.delete()
+        return SUCC
+
+    @action(detail=False, methods=["POST"])
+    def email_modify_password_request(self, req: Request):
+        email = require(req.data, "email").lower()
+        user = User.objects.filter(email=email).first()
+        if user and user.email_verified:
+            hash1 = hashlib.sha256(str(get_timestamp()).encode()).hexdigest()
+            PendingModifyPasswordEmail.objects.create(
+                user=user,
+                email=email,
+                hash1=hash1,
+            )
+            if email_password_reset(email, hash1):
+                return SUCC
+            return FAIL  # mail service unavailable
+        return SUCC  # unconditional success
+
+    @action(detail=False, methods=["POST"])
+    def email_modify_password_callback(self, req: Request):
+        stage = intify(require(req.data, "stage"))
+
+        if stage == 1:
+            hash1 = require(req.data, "hash1")
+            relation: PendingModifyPasswordEmail = (
+                PendingModifyPasswordEmail.objects.filter(hash1=hash1).first()
+            )
+
+            if not relation or relation.hash1_verified:
+                return STATUS(1)  # 1: invalid hash1 or verified hash1
+
+            now = get_timestamp()
+            stat = (now - relation.createdAt) > EMAIL_EXPIRE_SECONDS
+            if stat:
+                return STATUS(2)  # 2: expired
+
+            hash2 = hashlib.sha256(str(get_timestamp()).encode()).hexdigest()
+            relation.hash1_verified = True
+            relation.hash2 = hash2
+            relation.beginAt = get_timestamp()
+            relation.save()
+            return Response({"code": 0, "data": {"hash2": hash2}})
+
+        elif stage == 2:
+            hash1 = require(req.data, "hash1")
+            hash2 = require(req.data, "hash2")
+            curr_password = require(req.data, "password")
+
+            relation: PendingModifyPasswordEmail = (
+                PendingModifyPasswordEmail.objects.filter(
+                    hash1=hash1, hash2=hash2
+                ).first()
+            )
+
+            if not relation:
+                return STATUS(1)
+
+            now = get_timestamp()
+
+            if (now - relation.beginAt) > RESETTING_STATUS_EXPIRE_SECONDS:
+                return STATUS(2)  # 2: expired
+
+            relation.user.password = curr_password
+            relation.user.save()
+            relation.delete()
+
+            return SUCC
+
+        raise ParamErr("invalid stage")

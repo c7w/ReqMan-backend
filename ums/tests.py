@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.test import Client as DefaultClient
 from ums.models import *
 import json
+from ums.views import EMAIL_EXPIRE_SECONDS, RESETTING_STATUS_EXPIRE_SECONDS
 
 SUCC = {"code": 0}
 FAIL = {"code": 1}
@@ -783,10 +784,8 @@ class UMS_Tests(TestCase):
         url = "/ums/user_exist/"
 
         # parameter failures
-        print(1)
         resp = c.post(url, data={"project": self.p1.id, "identity": ""}).json()
         self.assertEqual(resp["code"], -1)
-        print(2)
         resp = d.post(
             url,
             json.dumps(
@@ -827,7 +826,6 @@ class UMS_Tests(TestCase):
         def successful_judge(data):
             data["sessionId"] = "23"
             resp = d.post(url, json.dumps(data), content_type="application/json").json()
-            print(resp)
             self.assertEqual(resp["code"], 0)
             self.assertEqual(resp["data"]["exist"], True)
             self.assertEqual(resp["data"]["user"]["id"], self.u3.id)
@@ -841,3 +839,311 @@ class UMS_Tests(TestCase):
         successful_judge(
             {"project": self.p1.id, "identity": {"type": "name", "key": self.u3.name}}
         )
+
+    def test_email_modify_password(self):
+        c = Client()
+        c.cookies["sessionId"] = "26"
+
+        url1 = "/ums/email_modify_password_request/"
+        url2 = "/ums/email_modify_password_callback/"
+
+        PendingModifyPasswordEmail.objects.all().delete()
+
+        # non-exist email
+        resp = c.post(url1, data={"email": "invalid"}).json()
+        self.assertEqual(resp["code"], 0)
+        self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
+
+        # non-verified email
+        resp = c.post(url1, data={"email": self.u1.email}).json()
+        self.assertEqual(resp["code"], 0)
+        self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
+
+        # add verified tag
+        self.u1.email_verified = True
+        self.u1.save()
+
+        # request successful
+        # as a unit test, I do not judge if the mail has been sent or not
+        resp = c.post(url1, data={"email": self.u1.email}).json()
+        # self.assertEqual(resp['code'], 0)
+        self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 1)
+
+        # stage 1: email expired
+        relation = PendingModifyPasswordEmail.objects.filter(
+            email=self.u1.email
+        ).first()
+        original_createdAt = float(relation.createdAt)
+        relation.createdAt -= EMAIL_EXPIRE_SECONDS * 2
+        relation.save()
+        hash1 = relation.hash1
+        resp = c.post(url2, data={"hash1": hash1, "stage": 1}).json()
+        self.assertEqual(resp["code"], 2)
+        relation.createdAt = original_createdAt
+        relation.save()
+
+        # stage 1: successful
+        hash1 = (
+            PendingModifyPasswordEmail.objects.filter(email=self.u1.email).first().hash1
+        )
+        resp = c.post(url2, data={"hash1": hash1, "stage": 1}).json()
+        self.assertEqual(resp["code"], 0)
+        print(resp)
+        hash2 = resp["data"]["hash2"]
+
+        # stage1: hash1 verified
+        resp = c.post(url2, data={"hash1": hash1, "stage": 1}).json()
+        self.assertEqual(resp["code"], 1)
+
+        # stage2: resetting status expired
+        relation = PendingModifyPasswordEmail.objects.filter(
+            email=self.u1.email
+        ).first()
+        original_beginAt = relation.beginAt
+        relation.beginAt -= RESETTING_STATUS_EXPIRE_SECONDS + 1
+        relation.save()
+        resp = c.post(
+            url2,
+            data={
+                "hash1": hash1,
+                "hash2": hash2,
+                "stage": 2,
+                "password": "new_password",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 2)
+        relation.beginAt = original_beginAt
+        relation.save()
+
+        # stage2: successful
+        resp = c.post(
+            url2,
+            data={
+                "hash1": hash1,
+                "hash2": hash2,
+                "stage": 2,
+                "password": "new_password",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 0)
+        self.u1.refresh_from_db()
+        self.assertEqual(self.u1.password, "new_password")
+        self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
+
+        # stage2: no relation
+        resp = c.post(
+            url2,
+            data={
+                "hash1": hash1,
+                "hash2": hash2,
+                "stage": 2,
+                "password": "new_password",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 1)
+
+        # invalid stage
+        resp = c.post(url2, data={"hash1": hash1, "stage": -1}).json()
+        self.assertEqual(resp["code"], -1)
+
+    def test_email_request_bad_parameters(self):
+        c = self.login_u1("27")
+        url = "/ums/email_request/"
+        resp = c.post(
+            url, data={"email": "ill_email", "op": "ill_op", "type": "ill_type"}
+        ).json()
+        self.assertEqual(resp["code"], -1)
+        resp = c.post(
+            url, data={"email": "ill_email", "op": "ill_op", "type": "major"}
+        ).json()
+        self.assertEqual(resp["code"], 6)
+
+    def test_email_major_verification(self):
+        c = self.login_u1("28")
+        url1 = "/ums/email_request/"
+        url2 = "/ums/email_verify_callback/"
+        self.u1.email_verified = True
+
+        # 8 modify: same
+        resp = c.post(
+            url1, data={"email": self.u1.email, "type": "major", "op": "modify"}
+        ).json()
+        self.assertEqual(resp["code"], 8)
+
+        # 0 modify: success
+        def succ():
+            resp = c.post(
+                url1, data={"email": "new@secoder.com", "type": "major", "op": "modify"}
+            ).json()
+            self.assertIn(resp["code"], [0, 1])
+            self.u1.refresh_from_db()
+            self.assertEqual(self.u1.email, "new@secoder.com")
+            self.assertEqual(self.u1.email_verified, False)
+
+        succ()
+
+        # 0 modify: too freq
+        resp = c.post(
+            url1, data={"email": "new2@secoder.com", "type": "major", "op": "modify"}
+        ).json()
+        self.assertEqual(resp["code"], 2)
+        self.u1.refresh_from_db()
+        self.assertEqual(self.u1.email, "new2@secoder.com")
+        self.assertEqual(self.u1.email_verified, False)
+
+        # 2 verify expire
+        relation = PendingVerifyEmail.objects.filter(
+            email="new@secoder.com"  # the previous one
+        ).first()
+        original_createdAt = float(relation.createdAt)
+        relation.createdAt -= EMAIL_EXPIRE_SECONDS * 2
+        relation.save()
+        resp = c.post(url2, data={"hash": relation.hash}).json()
+        self.assertEqual(resp["code"], 2)
+        relation.createdAt = original_createdAt
+        relation.save()
+
+        # 3 verify collision
+        resp = c.post(url2, data={"hash": relation.hash}).json()
+        self.assertEqual(resp["code"], 3)
+        self.assertEqual(PendingVerifyEmail.objects.all().__len__(), 0)
+
+        # 0 modify: success
+        succ()
+        relation = PendingVerifyEmail.objects.filter(email=self.u1.email).first()
+        resp = c.post(url2, data={"hash": relation.hash}).json()
+        self.assertEqual(PendingVerifyEmail.objects.all().__len__(), 0)
+        self.assertEqual(resp["code"], 0)
+        self.u1.refresh_from_db()
+        self.assertEqual(self.u1.email_verified, True)
+
+        # 7: verify: already verified
+        resp = c.post(
+            url1, data={"email": self.u1.email, "type": "major", "op": "verify"}
+        ).json()
+        self.assertEqual(resp["code"], 7)
+
+        # 0: verify: successful
+        self.u1.email_verified = False
+        self.u1.save()
+        resp = c.post(
+            url1, data={"email": self.u1.email, "type": "major", "op": "verify"}
+        ).json()
+        self.assertIn(resp["code"], [0, 1])
+
+    def test_email_minor_verification(self):
+        c = self.login_u1("29")
+        url1 = "/ums/email_request/"
+        url2 = "/ums/email_verify_callback/"
+        PendingVerifyEmail.objects.all().delete()
+
+        # 5: rm: non-exist
+        resp = c.post(
+            url1, data={"email": self.u1.email, "type": "minor", "op": "rm"}
+        ).json()
+        self.assertEqual(resp["code"], 5)
+
+        # 3: add: same with major
+        resp = c.post(
+            url1, data={"email": self.u1.email, "type": "minor", "op": "add"}
+        ).json()
+        self.assertEqual(resp["code"], 3)
+
+        # 4: add: already exist
+        UserMinorEmailAssociation.objects.create(user=self.u1, email="test@test.com")
+        resp = c.post(
+            url1, data={"email": "test@test.com", "type": "minor", "op": "add"}
+        ).json()
+        self.assertEqual(resp["code"], 4)
+
+        # 0: modify: successful
+        resp = c.post(
+            url1,
+            data={
+                "previous": "test@test.com",
+                "email": "test2@test.com",
+                "type": "minor",
+                "op": "modify",
+            },
+        ).json()
+        self.assertIn(resp["code"], [0,1])
+
+        # 2: add: too frequent
+        resp = c.post(
+            url1, data={"email": "new_one@test.com", "type": "minor", "op": "add"}
+        ).json()
+        self.assertEqual(resp["code"], 2)
+
+        # 5: modify: non-exist
+        resp = c.post(
+            url1,
+            data={
+                "previous": "test@test.com",
+                "email": "test3@test.com",
+                "type": "minor",
+                "op": "modify",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 5)
+
+        # 6: modify: ill_email
+        resp = c.post(
+            url1,
+            data={
+                "previous": "test.com",
+                "email": "ii@test.com",
+                "type": "minor",
+                "op": "modify",
+            },
+        ).json()
+        self.assertEqual(resp["code"], 6)
+
+        # 2: verify: frequency
+        resp = c.post(
+            url1, data={"email": "new_one@test.com", "type": "minor", "op": "verify"}
+        ).json()
+        self.assertEqual(resp["code"], 2)
+
+        # 10: verify: non-exist
+        resp = c.post(
+            url1, data={"email": "none@test.com", "type": "minor", "op": "verify"}
+        ).json()
+        self.assertEqual(resp["code"], 10)
+
+        # 0: verify: successful
+        PendingVerifyEmail.objects.all().delete()
+        resp = c.post(
+            url1, data={"email": "new_one@test.com", "type": "minor", "op": "verify"}
+        ).json()
+        self.assertIn(resp["code"], [0, 1])
+
+        # 7: already verified
+        assoc = UserMinorEmailAssociation.objects.get(email="new_one@test.com")
+        assoc.verified = True
+        assoc.save()
+        resp = c.post(
+            url1, data={"email": "new_one@test.com", "type": "minor", "op": "verify"}
+        ).json()
+        self.assertEqual(resp["code"], 7)
+
+        # verifications
+        PendingVerifyEmail.objects.all().delete()
+        UserMinorEmailAssociation.objects.create(user=self.u1, email="verify@test.com")
+        relation = PendingVerifyEmail.objects.create(
+            user=self.u1, email="verify2@test.com", hash="test_hash", is_major=False
+        )
+
+        # 1: non-exist hash
+        resp = c.post(url2, data={"hash": "non-exist"}).json()
+        self.assertEqual(resp["code"], 1)
+
+        # 3: no matching minor email
+        resp = c.post(url2, data={"hash": "test_hash"}).json()
+        self.assertEqual(resp["code"], 3)
+
+        relation.email = "verify@test.com"
+        relation.save()
+
+        # 0: successful
+        resp = c.post(url2, data={"hash": "test_hash"}).json()
+        self.assertEqual(resp["code"], 0)
