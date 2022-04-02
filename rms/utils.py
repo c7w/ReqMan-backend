@@ -48,7 +48,8 @@ def getIRSR(proj: Project):
 
 def getServiceSR(proj: Project):
     SRs = getSR(proj)
-    return ServiceSRAssociation.objects.filter(SR__in=SRs)
+    services = getService(proj)
+    return ServiceSRAssociation.objects.filter(SR__in=SRs,service__in=services)
 
 
 def judgeTypeInt(data):
@@ -224,6 +225,8 @@ def createServiceSRAssociation(datas: dict):
     service = require(datas, "serviceId")
     judgeTypeInt(service)
     service = Service.objects.filter(id=service).first()
+    if not sr or not service:
+        raise ParamErr(f"wrong service/SR Id.")
     data = {
         "SR": sr,
         "service": service,
@@ -241,6 +244,8 @@ def createIRIteration(datas: dict):
     it = require(datas, "iterationId")
     judgeTypeInt(it)
     it = Iteration.objects.filter(id=it).first()
+    if not ir or not it:
+        raise ParamErr(f"wrong It/IR Id.")
     exist = IRIterationAssociation.objects.filter(IR=ir, iteration=it).first()
     if exist:
         return
@@ -255,6 +260,8 @@ def createProjectIteration(datas: dict):
     it = require(datas, "iterationId")
     judgeTypeInt(it)
     it = Iteration.objects.filter(id=it).first()
+    if not it:
+        raise ParamErr(f"wrong It Id.")
     exist = ProjectIterationAssociation.objects.filter(project=datas["project"]).first()
     if exist:
         raise ParamErr(f"Project connected!")
