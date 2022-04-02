@@ -12,9 +12,8 @@ class Project(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     disabled = models.BooleanField(default=False)
-    createdAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    createdAt = models.FloatField(default=getTime.get_timestamp)
+    avatar = models.TextField(default="")
 
     class Meta:
         indexes = [
@@ -29,10 +28,9 @@ class User(models.Model):
     email = models.CharField(max_length=255, unique=True)
     avatar = models.TextField(default="")
     disabled = models.BooleanField(default=False)
-    createdAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    createdAt = models.FloatField(default=getTime.get_timestamp)
     project = models.ManyToManyField(Project, through="UserProjectAssociation")
+    email_verified = models.BooleanField(default=False)
 
     class Meta:
         indexes = [
@@ -44,9 +42,7 @@ class User(models.Model):
 class SessionPool(models.Model):
     sessionId = models.CharField(max_length=32)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    expireAt = models.DateTimeField(
-        default=getTime.get_datetime
-    )
+    expireAt = models.DateTimeField(default=getTime.get_datetime)
 
     class Mata:
         indexes = [models.Index(fields=["sessionId"])]
@@ -83,4 +79,43 @@ class ProjectInvitationAssociation(models.Model):
         indexes = [
             models.Index(fields=["project"]),
             models.Index(fields=["invitation"]),
+        ]
+
+
+class PendingModifyPasswordEmail(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    email = models.TextField()
+    hash1 = models.CharField(max_length=100, unique=True)
+    hash2 = models.CharField(max_length=100, unique=True, default="")
+    createdAt = models.FloatField(default=getTime.get_timestamp)
+    beginAt = models.FloatField(default=-1)
+    hash1_verified = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["hash1"]),
+            models.Index(fields=["hash2"]),
+        ]
+
+
+class PendingVerifyEmail(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    email = models.TextField()
+    hash = models.CharField(max_length=100, unique=True)
+    createdAt = models.FloatField(default=getTime.get_timestamp)
+    is_major = models.BooleanField()
+
+    class Meta:
+        indexes = [models.Index(fields=["hash"])]
+
+
+class UserMinorEmailAssociation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    email = models.CharField(max_length=255)
+    verified = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["email"]),
         ]

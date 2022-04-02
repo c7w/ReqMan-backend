@@ -1,5 +1,3 @@
-import sys
-
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -14,9 +12,6 @@ from rms.utils import *
 class RMSViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
 
-    def serialize(self, resu: dict, excludeList: list = []):
-        return [model_to_dict(p, exclude=excludeList) for p in resu]
-
     def projectGET(self, req: Request):
         proj = intify(require(req.query_params, "project"))
         proj = proj_exist(proj)
@@ -28,19 +23,37 @@ class RMSViewSet(viewsets.ViewSet):
 
         resu = []
         if type == "ir":
-            resu = self.serialize(getIR(proj), ["SR"])
+            resu = serialize(getIR(proj), ["SR"])
         elif type == "sr":
-            resu = self.serialize(getSR(proj), ["IR"])
+            resu = serialize(getSR(proj), ["IR"])
         elif type == "iteration":
-            resu = self.serialize(getIeration(proj))
+            resu = serialize(getIeration(proj))
         elif type == "ir-sr":
-            resu = self.serialize(getIRSR(proj))
+            resu = serialize(getIRSR(proj))
         elif type == "sr-iteration":
-            resu = self.serialize(getSRIteration(proj))
+            resu = serialize(getSRIteration(proj))
         elif type == "service":
-            resu = self.serialize(getService(proj))
+            resu = serialize(getService(proj))
         elif type == "user-iteration":
-            resu = self.serialize(getUserIteration(proj))
+            resu = serialize(getUserIteration(proj))
+        elif type == "service-sr":
+            resu = serialize(getServiceSR(proj))
+        elif type == "serviceOfSR":
+            SRId = intify(require(req.query_params, "SRId"))
+            judgeTypeInt(SRId)
+            resu = serialize(getServiceOfSR(proj, SRId))
+        elif type == "SROfService":
+            serviceId = intify(require(req.query_params, "serviceId"))
+            judgeTypeInt(serviceId)
+            resu = serialize(getSROfService(proj, serviceId), ["IR"])
+        elif type == "ir-iteration":
+            resu = serialize(getIRIteration(proj))
+        elif type == "project-iteration":
+            resu = serialize(getProjectIteration(proj))
+        elif type == "SR_changeLog":
+            srId = intify(require(req.query_params,"SRId"))
+            judgeTypeInt(srId)
+            resu = serialize(getSRChangeLog(srId))
         else:
             return FAIL
         return Response({"code": 0, "data": resu})
@@ -63,7 +76,7 @@ class RMSViewSet(viewsets.ViewSet):
         if operation == "create":
             isFail = createOperation(proj, type, req.data, req.user)
         elif operation == "update":
-            isFail = updateOperation(proj, type, req.data)
+            isFail = updateOperation(proj, type, req.data,req.user)
         if operation == "delete":
             isFail = deleteOperation(proj, type, req.data)
         if isFail:

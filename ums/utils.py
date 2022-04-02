@@ -1,6 +1,7 @@
 import re
 from random import sample
 import string
+from functools import wraps
 
 from rest_framework.request import Request
 from utils.exceptions import ParamErr
@@ -12,6 +13,15 @@ from ums.models import (
     Role,
 )
 from django.forms.models import model_to_dict
+import smtplib
+from email.mime.text import MIMEText
+import hashlib
+from utils.model_date import get_timestamp
+from ums.models import *
+
+EMAIL_EXPIRE_SECONDS = 3600
+RESETTING_STATUS_EXPIRE_SECONDS = 3000
+EMAIL_MIN_INTERVAL = 30
 
 
 def require(lst, attr_name):
@@ -39,11 +49,24 @@ def intify(inp):
         raise ParamErr(f"{inp} cannot be convert to an integer")
 
 
-def user_to_list(user: User):
+def user_to_list(user: User, proj: Project = None):
     """
-    convert user instance into a dict
+    convert user instance into a dict, or contain its role in a single project
     """
-    return model_to_dict(user, exclude=["password", "disabled", "project"])
+
+    data = model_to_dict(user, exclude=["password", "disabled", "project"])
+    if not proj:
+        return data
+
+    relation = UserProjectAssociation.objects.filter(project=proj, user=user).first()
+
+    if not relation:
+        # note this SHOULD NEVER HAPPEN, but it should run anyway
+        print("getting relation for non-existing user")
+        return data
+
+    data["role"] = relation.role
+    return data
 
 
 def proj_to_list(proj: Project):
@@ -204,3 +227,107 @@ def name_valid(name: str):
     check if name valid
     """
     return re.match(r"^[a-zA-Z0-9_]{3,16}$", name) is not None
+
+
+def run(func):
+    print("outside")
+
+    @wraps(func)
+    def wrapper(*args, **kw):
+        print(args)
+        print("insider")
+        return func(*args, **kw)
+
+    return wrapper
+
+
+def user_and_projects(x: User):
+    """
+    convert user object to a list, include all the projects and its roles respectively
+    """
+    return {
+        "user": user_to_list(x),
+        "projects": [
+            {
+                **model_to_dict(r.project, exclude=["disabled"]),
+                "role": r.role,
+            }
+            for r in UserProjectAssociation.objects.filter(user=x)
+        ],
+        "avatar": x.avatar,
+    }
+
+
+def send_mail(receiver: str, content: str = "", subject: str = "") -> bool:
+    """
+    send an email in the name of ReqMan
+    """
+    if content == "":
+        content = """
+        the content of this email has not been configured yet ...
+        maybe you can contact the administrator for help.
+        """
+
+    if subject == "":
+        subject = "subject not yet configured"
+
+    username = "tangentnightydegree@foxmail.com"
+    host = "smtp.qq.com"
+    auth = "hfeiqimfqxkegbci"
+
+    msg = MIMEText(content)
+    msg["From"] = "ReqMan"
+    msg["Subject"] = subject
+    msg["To"] = receiver
+
+    try:
+        server = smtplib.SMTP_SSL(host, 465)
+        server.login(username, auth)
+        server.sendmail(username, [receiver], msg.as_string())
+        server.close()
+        return True
+    except Exception as e:
+        print(e.__str__())
+        return False
+
+
+def email_password_reset(email: str, hash1: str):
+    return send_mail(
+        email,
+        f"""
+    now, your hash1 to modify password is {hash1}, it will be expired in {EMAIL_EXPIRE_SECONDS}.
+    """,
+        "ReqMan: Password Reset",
+    )
+
+
+def email_verify(email: str, hash: str):
+    return send_mail(
+        email,
+        f"""
+    now, your hash to verify email is {hash}, it will be expired in {EMAIL_EXPIRE_SECONDS}.
+    """,
+        "ReqMan: Email Verify",
+    )
+
+
+def new_verify_email(user: User, email: str, major: bool = False):
+    """
+    check user's email sending frequency and send out verify email
+    """
+    hashcode = hashlib.sha256(str(get_timestamp()).encode()).hexdigest()
+    now = get_timestamp()
+
+    # frequency check
+    recent = PendingVerifyEmail.objects.filter(user=user).order_by("-createdAt").first()
+    if recent and (now - recent.createdAt) < EMAIL_MIN_INTERVAL:
+        return False, "freq_exceed"
+
+    # new record
+    PendingVerifyEmail.objects.filter(
+        user=user, email=email
+    ).delete()  # previous should be removed
+    PendingVerifyEmail.objects.create(
+        user=user, email=email, hash=hashcode, is_major=major
+    )
+    return email_verify(email, hashcode), "mail"
