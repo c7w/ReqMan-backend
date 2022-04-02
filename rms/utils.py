@@ -72,8 +72,8 @@ def judgeTypeFloat(data):
     else:
         raise ParamErr(f"wrong Float type in {data}.")
 
-def judgeStrLen(data,len):
-    if(len(data)>len):
+def judgeStrLen(data,lens):
+    if(len(data)>lens):
         raise ParamErr(f"Beyond length limite in {data} .")
     else:
         return 
