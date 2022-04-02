@@ -71,6 +71,12 @@ def judgeTypeFloat(data):
     else:
         raise ParamErr(f"wrong Float type in {data}.")
 
+def judgeStrLen(data,len):
+    if(len(data)>len):
+        raise ParamErr(f"Beyond length limite in {data} .")
+    else:
+        return 
+
 
 def getServiceOfSR(proj: Project, SRId: int):
     sr = SR.objects.filter(id=SRId).first()
@@ -103,6 +109,7 @@ def createIR(datas: dict):
     data["project"] = require(datas, "project")
     data["title"] = require(datas, "title")
     judgeTypeStr(data["title"])
+    judgeStrLen(data['title'],255)
     data["description"] = require(datas, "description")
     judgeTypeStr(data["description"])
     data["rank"] = require(datas, "rank")
@@ -118,6 +125,7 @@ def createSR(datas: dict):
     judgeTypeStr(data["title"])
     data["description"] = require(datas, "description")
     judgeTypeStr(data["description"])
+    judgeStrLen(data['title'],255)
     data["rank"] = require(datas, "rank")
     judgeTypeInt(data["rank"])
     data["priority"] = require(datas, "priority")
@@ -140,6 +148,7 @@ def createIteration(datas: dict):
     judgeTypeFloat(data["begin"])
     data["end"] = require(datas, "end")
     judgeTypeFloat(data["end"])
+    judgeStrLen(data['title'],255)
     Iteration.objects.create(**data)
 
 
@@ -149,6 +158,7 @@ def createService(datas: dict):
     data["title"] = require(datas, "title")
     judgeTypeStr(data["title"])
     data["description"] = require(datas, "description")
+    judgeStrLen(data['title'],255)
     judgeTypeStr(data["description"])
     data["rank"] = require(datas, "rank")
     judgeTypeInt(data["rank"])
@@ -294,6 +304,7 @@ def updateIR(id: int, datas: dict):
         if i == "title":
             data["title"] = datas[i]
             judgeTypeStr(data["title"])
+            judgeStrLen(data['title'],255)
         elif i == "description":
             data["description"] = datas[i]
             judgeTypeStr(data["description"])
@@ -322,6 +333,7 @@ def updateSR(id: int, datas: dict,user:User):
             data[i] = datas[i]
     if "title" in data:
         judgeTypeStr(data["title"])
+        judgeStrLen(data['title'],255)
     if "description" in data:
         judgeTypeStr(data["description"])
     if "rank" in data:
@@ -343,6 +355,7 @@ def updateIteration(id: int, datas: dict):
             data[i] = datas[i]
     if "title" in data:
         judgeTypeStr(data["title"])
+        judgeStrLen(data['title'],255)
     if "sid" in data:
         judgeTypeInt(data["sid"])
     if "begin" in data:
@@ -358,6 +371,7 @@ def updateService(id: int, datas: dict):
         if i == "title":
             data["title"] = datas[i]
             judgeTypeStr(data["title"])
+            judgeStrLen(data['title'],255)
         elif i == "description":
             data["description"] = datas[i]
             judgeTypeStr(data["description"])
