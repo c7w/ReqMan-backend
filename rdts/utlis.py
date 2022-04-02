@@ -1,5 +1,5 @@
 from rdts.models import *
-from rms.utils import judgeTypeFloat, judgeTypeInt, judgeTypeStr
+from rms.utils import judgeTypeFloat, judgeTypeInt, judgeTypeStr,judgeStrLen
 from ums.models import *
 from rms.models import *
 from ums.utils import require
@@ -51,7 +51,9 @@ def createRepo(datas: dict):
     data["description"] = require(datas, "description")
     data["createdBy"] = require(datas, "createdBy")
     judgeTypeStr(data["url"])
+    judgeStrLen(data['url'],255)
     judgeTypeStr(data["title"])
+    judgeStrLen(data['title'],255)
     judgeTypeStr(data["description"])
     Repository.objects.create(**data)
 
@@ -59,15 +61,20 @@ def createRepo(datas: dict):
 def createCommit(datas: dict):
     data = {}
     data["hash_id"] = require(datas, "hash_id")
+    judgeTypeStr(data['hash_id'])
+    judgeStrLen(data['hash_id'],255)
     data["repo"] = require(datas, "repo")
     data["title"] = require(datas, "title")
     judgeTypeStr(data["title"])
+    judgeStrLen(data['title'],255)
     data["message"] = require(datas, "message")
     judgeTypeStr(data["message"])
     data["commiter_email"] = require(datas, "commiter_email")
     judgeTypeStr(data["commiter_email"])
+    judgeStrLen(data['commiter_email'],255)
     data["commiter_name"] = require(datas, "commiter_name")
     judgeTypeStr(data["commiter_name"])
+    judgeStrLen(data['commiter_name'],255)
     data["createdAt"] = require(datas, "createdAt")
     judgeTypeFloat(data["createdAt"])
     data["url"] = require(datas, "url")
@@ -82,6 +89,7 @@ def createMR(datas: dict):
     data["repo"] = require(datas, "repo")
     data["title"] = require(datas, "title")
     judgeTypeStr(data["title"])
+    judgeStrLen(data['title'],255)
     data["description"] = require(datas, "description")
     judgeTypeStr(data["description"])
     data["state"] = require(datas, "state")
@@ -102,14 +110,18 @@ def createMR(datas: dict):
             data[i] = datas[i]
     if "authoredByEmail" in data:
         judgeTypeStr(data["authoredByEmail"])
+        judgeStrLen(data['authoredByEmail'],255)
     if "authoredByUserName" in data:
         judgeTypeStr(data["authoredByUserName"])
+        judgeStrLen(data['authoredByUserName'],255)
     if "authoredAt" in data:
         judgeTypeFloat(data["authoredAt"])
     if "reviewedByEmail" in data:
         judgeTypeStr(data["reviewedByEmail"])
+        judgeStrLen(data['reviewedByEmail'],255)
     if "reviewedByUserName" in data:
         judgeTypeStr(data["reviewedByUserName"])
+        judgeStrLen(data['reviewedByUserName'],255)
     if "reviewedAt" in data:
         judgeTypeFloat(data["reviewedAt"])
     MergeRequest.objects.create(**data)
@@ -124,6 +136,7 @@ def createIssue(datas: dict):
     judgeTypeStr(data["description"])
     data["title"] = require(datas, "title")
     judgeTypeStr(data["title"])
+    judgeStrLen(data['title'],255)
     data["url"] = require(datas, "url")
     judgeTypeStr(data["url"])
     data["state"] = require(datas, "state")
@@ -142,16 +155,19 @@ def createIssue(datas: dict):
             data[i] = datas[i]
     if "authoredByUserName" in data:
         judgeTypeStr(data["authoredByUserName"])
+        judgeStrLen(data['authoredByUserName'],255)
     if "authoredAt" in data:
         judgeTypeFloat(data["authoredAt"])
     if "updateAt" in data:
         judgeTypeFloat(data["updateAt"])
     if "closedByUserName" in data:
         judgeTypeStr(data["closedByUserName"])
+        judgeStrLen(data['closedByUserName'],255)
     if "closedAt" in data:
         judgeTypeFloat(data["closedAt"])
     if "assigneeUserName" in data:
         judgeTypeStr(data["assigneeUserName"])
+        judgeStrLen(data['assigneeUserName'],255)
     Issue.objects.create(**data)
 
 
@@ -244,8 +260,10 @@ def updateRepo(id: int, datas: dict):
             data[i] = datas[i]
     if "url" in data:
         judgeTypeStr(data["url"])
+        judgeStrLen(data['url'],255)
     if "title" in data:
         judgeTypeStr(data["title"])
+        judgeStrLen(data['title'],255)
     if "description" in data:
         judgeTypeStr(data["description"])
     if "createdAt" in data:
@@ -288,6 +306,7 @@ def updateMR(id: int, datas: dict):
         judgeTypeInt(data["merge_id"])
     if "title" in data:
         judgeTypeStr(data["title"])
+        judgeStrLen(data['title'],255)
     if "description" in data:
         judgeTypeStr(data["description"])
     if "state" in data:
@@ -295,14 +314,18 @@ def updateMR(id: int, datas: dict):
             raise ParamErr(f"wrong state type.")
     if "authoredByEmail" in data:
         judgeTypeStr(data["authoredByEmail"])
+        judgeStrLen(data['authoredByEmail'],255)
     if "authoredByUserName" in data:
         judgeTypeStr(data["authoredByUserName"])
+        judgeStrLen(data['authoredByUserName'],255)
     if "authoredAt" in data:
         judgeTypeFloat(data["authoredAt"])
     if "reviewedByEmail" in data:
         judgeTypeStr(data["reviewedByEmail"])
+        judgeStrLen(data['reviewedByEmail'],255)
     if "reviewedByUserName" in data:
         judgeTypeStr(data["reviewedByUserName"])
+        judgeStrLen(data['reviewedByUserName'],255)
     if "reviewedAt" in data:
         judgeTypeFloat(data["reviewedAt"])
     if "url" in data:
@@ -333,14 +356,18 @@ def updateCommit(id: int, datas: dict):
             data[i] = datas[i]
     if "hash_id" in data:
         judgeTypeStr(data["hash_id"])
+        judgeStrLen(data['hash_id'],255)
     if "title" in data:
         judgeTypeStr(data["title"])
+        judgeStrLen(data['title'],255)
     if "message" in data:
         judgeTypeStr(data["message"])
     if "commiter_email" in data:
         judgeTypeStr(data["commiter_email"])
+        judgeStrLen(data['commiter_email'],255)
     if "commiter_name" in data:
         judgeTypeStr(data["commiter_name"])
+        judgeStrLen(data['commiter_name'],255)
     if "createdAt" in data:
         judgeTypeFloat(data["createdAt"])
     if "url" in data:
@@ -377,6 +404,7 @@ def updateIssue(id: int, datas: dict):
         judgeTypeInt(data["issue_id"])
     if "title" in data:
         judgeTypeStr(data["title"])
+        judgeStrLen(data['title'],255)
     if "description" in data:
         judgeTypeStr(data["description"])
     if "state" in data:
@@ -384,16 +412,19 @@ def updateIssue(id: int, datas: dict):
             raise ParamErr(f"wrong type.")
     if "authoredByUserName" in data:
         judgeTypeStr(data["authoredByUserName"])
+        judgeStrLen(data['authoredByUserName'],255)
     if "authoredAt" in data:
         judgeTypeFloat(data["authoredAt"])
     if "updateAt" in data:
         judgeTypeFloat(data["updateAt"])
     if "closedByUserName" in data:
         judgeTypeStr(data["closedByUserName"])
+        judgeStrLen(data['closedByUserName'],255)
     if "closedAt" in data:
         judgeTypeFloat(data["closedAt"])
     if "assigneeUserName" in data:
         judgeTypeStr(data["assigneeUserName"])
+        judgeStrLen(data['assigneeUserName'],255)
     if "url" in data:
         judgeTypeStr(data["url"])
     if "repo" in data:
