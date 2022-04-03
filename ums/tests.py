@@ -282,6 +282,28 @@ class UMS_Tests(TestCase):
         self.assertEqual(self.p1.title, "NewTitle")
         self.assertEqual(self.p1.description, "NewDesc")
 
+        resp = c.post(
+            "/ums/modify_project/",
+            data={
+                "project": self.p1.id,
+                "title": "t" * PROJECT_TITLE_LEN + "t",
+                "description": "NewDesc",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.json()["code"], 1)
+
+        resp = c.post(
+            "/ums/modify_project/",
+            data={
+                "project": self.p1.id,
+                "title": "NewTitle",
+                "description": "d" * PROJECT_DESC_LEN + "d",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.json()["code"], 2)
+
     def inv_legal_check(self, resp):
         inv = resp.json()["data"]["invitation"]
         self.assertEqual(resp.json()["code"], 0)
@@ -452,6 +474,14 @@ class UMS_Tests(TestCase):
             content_type="application/json",
         )
         self.assertNotEqual(resp.json()["code"], 0)
+
+        # invalid user id
+        resp = c.post(
+            url,
+            data={"project": self.p1.id, "user": 9999999, "role": Role.SUPERMASTER},
+            content_type="application/json",
+        )
+        self.assertEqual(resp.json()["code"], 3)
 
         # invalid role
         resp = c.post(
@@ -703,6 +733,22 @@ class UMS_Tests(TestCase):
         self.assertEqual(resp["code"], 0)
         self.assertNotEqual(Project.objects.filter(**data).first(), None)
 
+        data = {
+            "title": "test_title_create_project",
+            "description": "t" * PROJECT_DESC_LEN + "t",
+        }
+        resp = c.post("/ums/create_project/", data=data.copy()).json()
+
+        self.assertEqual(resp["code"], 2)
+
+        data = {
+            "title": "t" * PROJECT_TITLE_LEN + "t",
+            "description": "t",
+        }
+        resp = c.post("/ums/create_project/", data=data.copy()).json()
+
+        self.assertEqual(resp["code"], 1)
+
     def test_upload_project_avatar(self):
         c = self.login_u1("22")
         url = "/ums/upload_project_avatar/"
@@ -851,12 +897,12 @@ class UMS_Tests(TestCase):
 
         # non-exist email
         resp = c.post(url1, data={"email": "invalid"}).json()
-        self.assertEqual(resp["code"], 0)
+        self.assertEqual(resp["code"], 2)
         self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
 
         # non-verified email
         resp = c.post(url1, data={"email": self.u1.email}).json()
-        self.assertEqual(resp["code"], 0)
+        self.assertEqual(resp["code"], 2)
         self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
 
         # add verified tag
@@ -1066,7 +1112,7 @@ class UMS_Tests(TestCase):
                 "op": "modify",
             },
         ).json()
-        self.assertIn(resp["code"], [0,1])
+        self.assertIn(resp["code"], [0, 1])
 
         # 2: add: too frequent
         resp = c.post(
@@ -1147,3 +1193,9 @@ class UMS_Tests(TestCase):
         # 0: successful
         resp = c.post(url2, data={"hash": "test_hash"}).json()
         self.assertEqual(resp["code"], 0)
+
+        # 0: verify: successful
+        resp = c.post(
+            url1, data={"email": "verify@test.com", "type": "major", "op": "modify"}
+        ).json()
+        self.assertEqual(resp["code"], 12)

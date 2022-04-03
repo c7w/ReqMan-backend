@@ -99,7 +99,7 @@ class UserViewSet(viewsets.ViewSet):
             else:
                 return Response({"code": 2})
         elif email_valid(identity):
-            usr = email_exist(identity)
+            usr = get_user_by_major_email(identity)
             if usr:
                 if usr.password == password:
                     bind_session_id(get_session_id(req), usr)
@@ -167,6 +167,9 @@ class UserViewSet(viewsets.ViewSet):
         if role not in Role:
             return FAIL
 
+        if not info["user"]:
+            return STATUS(3)
+
         # cannot add a user that already exist
         if info["relation"]:
             return FAIL
@@ -182,6 +185,13 @@ class UserViewSet(viewsets.ViewSet):
         title = require(req.data, "title")
         description = require(req.data, "description")
         avatar = req.data.get("avatar")
+
+        # check length
+        if len(title) > PROJECT_TITLE_LEN:
+            return STATUS(1)
+
+        if len(description) > PROJECT_DESC_LEN:
+            return STATUS(2)
 
         proj = Project.objects.create(
             title=title, description=description, avatar=avatar if avatar else ""
@@ -210,6 +220,14 @@ class UserViewSet(viewsets.ViewSet):
 
         title = require(req.data, "title")
         desc = require(req.data, "description")
+
+        # check length
+        if len(title) > PROJECT_TITLE_LEN:
+            return STATUS(1)
+
+        if len(desc) > PROJECT_DESC_LEN:
+            return STATUS(2)
+
         proj.title = title
         proj.description = desc
         proj.save()
@@ -365,6 +383,10 @@ class UserViewSet(viewsets.ViewSet):
             if op == "modify":
                 if email == req.user.email:
                     return STATUS(8)
+
+                if email_exist(email):
+                    return STATUS(12)
+
                 req.user.email = email
                 req.user.email_verified = False
                 req.user.save()
@@ -380,7 +402,9 @@ class UserViewSet(viewsets.ViewSet):
 
         # minor email
         def rm(e):
-            relation = UserMinorEmailAssociation.objects.filter(email=e).first()
+            relation = UserMinorEmailAssociation.objects.filter(
+                email=e, user=req.user
+            ).first()
             if not relation:
                 return 5  # 5: non-exist
             relation.delete()
@@ -475,7 +499,7 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["POST"])
     def email_modify_password_request(self, req: Request):
         email = require(req.data, "email").lower()
-        user = User.objects.filter(email=email).first()
+        user = all_users().filter(email=email).first()
         if user and user.email_verified:
             hash1 = hashlib.sha256(str(get_timestamp()).encode()).hexdigest()
             PendingModifyPasswordEmail.objects.create(
@@ -486,7 +510,8 @@ class UserViewSet(viewsets.ViewSet):
             if email_password_reset(email, hash1):
                 return SUCC
             return FAIL  # mail service unavailable
-        return SUCC  # unconditional success
+
+        return STATUS(2)
 
     @action(detail=False, methods=["POST"])
     def email_modify_password_callback(self, req: Request):
@@ -535,6 +560,9 @@ class UserViewSet(viewsets.ViewSet):
             relation.user.password = curr_password
             relation.user.save()
             relation.delete()
+
+            # sessions deleted after password modification
+            SessionPool.objects.filter(user=relation.user).delete()
 
             return SUCC
 
