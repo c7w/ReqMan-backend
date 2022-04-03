@@ -284,14 +284,22 @@ class UMS_Tests(TestCase):
 
         resp = c.post(
             "/ums/modify_project/",
-            data={"project": self.p1.id, "title": "t" * PROJECT_TITLE_LEN + "t", "description": "NewDesc"},
+            data={
+                "project": self.p1.id,
+                "title": "t" * PROJECT_TITLE_LEN + "t",
+                "description": "NewDesc",
+            },
             content_type="application/json",
         )
         self.assertEqual(resp.json()["code"], 1)
 
         resp = c.post(
             "/ums/modify_project/",
-            data={"project": self.p1.id, "title": "NewTitle", "description": "d" * PROJECT_DESC_LEN + "d"},
+            data={
+                "project": self.p1.id,
+                "title": "NewTitle",
+                "description": "d" * PROJECT_DESC_LEN + "d",
+            },
             content_type="application/json",
         )
         self.assertEqual(resp.json()["code"], 2)
@@ -1104,7 +1112,7 @@ class UMS_Tests(TestCase):
                 "op": "modify",
             },
         ).json()
-        self.assertIn(resp["code"], [0,1])
+        self.assertIn(resp["code"], [0, 1])
 
         # 2: add: too frequent
         resp = c.post(

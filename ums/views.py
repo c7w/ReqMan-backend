@@ -402,7 +402,9 @@ class UserViewSet(viewsets.ViewSet):
 
         # minor email
         def rm(e):
-            relation = UserMinorEmailAssociation.objects.filter(email=e, user=req.user).first()
+            relation = UserMinorEmailAssociation.objects.filter(
+                email=e, user=req.user
+            ).first()
             if not relation:
                 return 5  # 5: non-exist
             relation.delete()
@@ -510,7 +512,6 @@ class UserViewSet(viewsets.ViewSet):
             return FAIL  # mail service unavailable
 
         return STATUS(2)
-
 
     @action(detail=False, methods=["POST"])
     def email_modify_password_callback(self, req: Request):

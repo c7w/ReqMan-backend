@@ -203,6 +203,7 @@ def email_exist(email: str):
         return False
     return True
 
+
 def get_user_by_major_email(email: str):
     return User.objects.filter(email=email, disabled=False).first()
 
@@ -234,7 +235,6 @@ def name_valid(name: str):
     check if name valid
     """
     return re.match(r"^[a-zA-Z0-9_]{3,16}$", name) is not None
-
 
 
 def user_and_projects(x: User):
