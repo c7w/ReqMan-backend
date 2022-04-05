@@ -1,5 +1,4 @@
 import datetime as dt
-from pyexpat import model
 import pytz
 from backend.settings import TIME_ZONE
 from django.db import models
@@ -156,3 +155,7 @@ class ProjectIterationAssociation(models.Model):
 
     class Meta:
         unique_together = ["iteration","project"]
+
+class UserSRAssociation(models.Model):
+    user = models.ForeignKey("ums.User",on_delete=models.CASCADE)
+    sr = models.ForeignKey(SR,on_delete=models.CASCADE,unique=True)

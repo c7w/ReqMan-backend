@@ -54,6 +54,8 @@ class RMSViewSet(viewsets.ViewSet):
             srId = intify(require(req.query_params,"SRId"))
             judgeTypeInt(srId)
             resu = serialize(getSRChangeLog(srId))
+        elif type == "user-sr":
+            resu = serialize(getUserSR(proj))
         else:
             return FAIL
         return Response({"code": 0, "data": resu})

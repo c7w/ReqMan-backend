@@ -105,6 +105,10 @@ def getProjectIteration(proj: Project):
 def getSRChangeLog(srId:int):
     return SR_Changelog.objects.filter(SR__id=srId)
 
+def getUserSR(proj:Project):
+    SRs = getSR(proj)
+    return UserSRAssociation.objects.filter(sr__in=SRs)
+
 def createIR(datas: dict):
     data = {}
     data["project"] = require(datas, "project")
@@ -271,6 +275,26 @@ def createProjectIteration(datas: dict):
         raise ParamErr("Association Exist")
     ProjectIterationAssociation.objects.create(**data)
 
+def createUserSR(datas:dict):
+    user = require(datas,"userId")
+    judgeTypeInt(user)
+    user = User.objects.filter(id=user).first()
+    if not user:
+        raise ParamErr("Wrong user Id.")
+    sr = require(datas,"SRId")
+    judgeTypeInt(sr)
+    sr = SR.objects.filter(id=sr).first()
+    if not sr:
+        raise ParamErr("Wrong sr Id")
+    exist = UserSRAssociation.objects.filter(sr=sr).first()
+    if exist:
+        raise ParamErr(f"Association to {sr.id} exist.")
+    data = {
+        "user":user,
+        "sr":sr
+    }
+    UserSRAssociation.objects.create(**data)
+
 
 def createOperation(proj: Project, type: string, data: dict, user: User):
     dataList = require(data, "data")
@@ -300,6 +324,8 @@ def createOperation(proj: Project, type: string, data: dict, user: User):
         createIRIteration(create)
     elif type == "project-iteration":
         createProjectIteration(create)
+    elif type == "user-sr":
+        createUserSR(create)
     else:
         return True
     return False
@@ -471,4 +497,10 @@ def deleteOperation(proj: Project, type: string, data: dict):
         judgeTypeInt(it)
         it = Iteration.objects.filter(id=it).first()
         ProjectIterationAssociation.objects.filter(project=proj, iteration=it).delete()
+    elif type == "user-sr":
+        user = require(dataList,"userId")
+        judgeTypeInt(user)
+        sr = require(dataList,"SRId")
+        judgeTypeInt(sr)
+        UserSRAssociation.objects.filter(user__id=user,sr__id=sr).delete()
     return False
