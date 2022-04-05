@@ -127,6 +127,7 @@ class SR_Changelog(models.Model):
         TODO = "TODO"
         WIP = "WIP"
         Done = "Done"
+        Reviewing = "Reviewing"
 
     formerState = models.TextField(choices=SRState.choices)
     formerDescription = models.TextField()
