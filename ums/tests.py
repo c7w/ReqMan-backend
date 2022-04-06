@@ -3,6 +3,7 @@ from django.test import Client as DefaultClient
 from ums.models import *
 import json
 from ums.views import EMAIL_EXPIRE_SECONDS, RESETTING_STATUS_EXPIRE_SECONDS
+import ums.utils
 
 SUCC = {"code": 0}
 FAIL = {"code": 1}
@@ -93,6 +94,23 @@ class UMS_Tests(TestCase):
 
     def test_login(self):
         c = Client()
+
+        c.cookies["sessionId"] = "0"
+        resp = c.post(
+            "/ums/login/",
+            data={"identity": self.u1.name * 2, "password": self.u1.password},
+            content_type="application/json",
+        )
+        self.assertEqual(resp.json(), {"code": 2})
+
+        c.cookies["sessionId"] = "0"
+        resp = c.post(
+            "/ums/login/",
+            data={"identity": self.u1.name, "password": self.u1.password * 2},
+            content_type="application/json",
+        )
+        self.assertEqual(resp.json(), {"code": 3})
+
         c.cookies["sessionId"] = "0"
         resp = c.post(
             "/ums/login/",
@@ -124,6 +142,17 @@ class UMS_Tests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(resp.json(), {"code": 3})
+
+        c.cookies["sessionId"] = "3"
+        resp = c.post(
+            "/ums/login/",
+            data={
+                "identity": "non" + self.u1.email,
+                "password": self.u1.password + "cccccc",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.json(), {"code": 2})
 
         c.cookies["sessionId"] = "4"
         resp = c.post(
@@ -281,6 +310,28 @@ class UMS_Tests(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         self.assertEqual(self.p1.title, "NewTitle")
         self.assertEqual(self.p1.description, "NewDesc")
+
+        resp = c.post(
+            "/ums/modify_project/",
+            data={
+                "project": self.p1.id,
+                "title": "t" * PROJECT_TITLE_LEN + "t",
+                "description": "NewDesc",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.json()["code"], 1)
+
+        resp = c.post(
+            "/ums/modify_project/",
+            data={
+                "project": self.p1.id,
+                "title": "NewTitle",
+                "description": "d" * PROJECT_DESC_LEN + "d",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.json()["code"], 2)
 
     def inv_legal_check(self, resp):
         inv = resp.json()["data"]["invitation"]
@@ -452,6 +503,14 @@ class UMS_Tests(TestCase):
             content_type="application/json",
         )
         self.assertNotEqual(resp.json()["code"], 0)
+
+        # invalid user id
+        resp = c.post(
+            url,
+            data={"project": self.p1.id, "user": 9999999, "role": Role.SUPERMASTER},
+            content_type="application/json",
+        )
+        self.assertEqual(resp.json()["code"], 3)
 
         # invalid role
         resp = c.post(
@@ -703,6 +762,22 @@ class UMS_Tests(TestCase):
         self.assertEqual(resp["code"], 0)
         self.assertNotEqual(Project.objects.filter(**data).first(), None)
 
+        data = {
+            "title": "test_title_create_project",
+            "description": "t" * PROJECT_DESC_LEN + "t",
+        }
+        resp = c.post("/ums/create_project/", data=data.copy()).json()
+
+        self.assertEqual(resp["code"], 2)
+
+        data = {
+            "title": "t" * PROJECT_TITLE_LEN + "t",
+            "description": "t",
+        }
+        resp = c.post("/ums/create_project/", data=data.copy()).json()
+
+        self.assertEqual(resp["code"], 1)
+
     def test_upload_project_avatar(self):
         c = self.login_u1("22")
         url = "/ums/upload_project_avatar/"
@@ -851,12 +926,12 @@ class UMS_Tests(TestCase):
 
         # non-exist email
         resp = c.post(url1, data={"email": "invalid"}).json()
-        self.assertEqual(resp["code"], 0)
+        self.assertEqual(resp["code"], 2)
         self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
 
         # non-verified email
         resp = c.post(url1, data={"email": self.u1.email}).json()
-        self.assertEqual(resp["code"], 0)
+        self.assertEqual(resp["code"], 2)
         self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
 
         # add verified tag
@@ -957,6 +1032,14 @@ class UMS_Tests(TestCase):
             url, data={"email": "ill_email", "op": "ill_op", "type": "major"}
         ).json()
         self.assertEqual(resp["code"], 6)
+        resp = c.post(
+            url, data={"email": "e@e.cn", "op": "add", "type": "major"}
+        ).json()
+        self.assertEqual(resp["code"], -1)
+        resp = c.post(
+            url, data={"email": "e@e.cn", "op": "none_sense", "type": "minor"}
+        ).json()
+        self.assertEqual(resp["code"], -1)
 
     def test_email_major_verification(self):
         c = self.login_u1("28")
@@ -1066,7 +1149,7 @@ class UMS_Tests(TestCase):
                 "op": "modify",
             },
         ).json()
-        self.assertIn(resp["code"], [0,1])
+        self.assertIn(resp["code"], [0, 1])
 
         # 2: add: too frequent
         resp = c.post(
@@ -1147,3 +1230,13 @@ class UMS_Tests(TestCase):
         # 0: successful
         resp = c.post(url2, data={"hash": "test_hash"}).json()
         self.assertEqual(resp["code"], 0)
+
+        # 0: verify: successful
+        resp = c.post(
+            url1, data={"email": "verify@test.com", "type": "major", "op": "modify"}
+        ).json()
+        self.assertEqual(resp["code"], 12)
+
+    def test_utils(self):
+        ums.utils.user_to_list(self.u4, self.p1)
+        ums.utils.send_mail("", "")

@@ -9,6 +9,7 @@ rights = {}
 
 from rest_framework.exceptions import PermissionDenied
 
+
 def project_rights(role):
     def decorator(func):
         r = role if type(role) == list else [role]
@@ -25,6 +26,7 @@ def project_rights(role):
 
     return decorator
 
+
 def require_login(func):
     @wraps(func)
     def wrapper(*args, **kw):
@@ -35,15 +37,6 @@ def require_login(func):
 
     return wrapper
 
-def require_not_login(func):
-    @wraps(func)
-    def wrapper(*args, **kw):
-        req = args[1]
-        if req.user:
-            raise PermissionDenied
-        return func(*args, **kw)
-
-    return wrapper
 
 class GeneralPermission(BasePermission):
     def has_permission(self, req, view):

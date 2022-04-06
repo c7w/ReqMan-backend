@@ -57,7 +57,8 @@ class RMS_Tests(TestCase):
             project=self.ums.p1, iteration=self.It1
         )
         IRIterationAssociation.objects.create(IR=self.IR1, iteration=self.It1)
-
+        UserSRAssociation.objects.create(user=self.ums.u1,sr=self.SR1)
+        
     def login(self, user, sess):
         c = Client()
         c.cookies["sessionId"] = sess
@@ -130,6 +131,11 @@ class RMS_Tests(TestCase):
         )
         print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
+
+        type = "user-sr"
+        resp = c.get(url,data={"project": str(id), "type": type})
+        print(resp.json())
+        self.assertEqual(resp.json()['code'],0)
 
         type = "ir-iteration"
         resp = c.get(
@@ -561,3 +567,26 @@ class RMS_Tests(TestCase):
             "data": {"updateData": {"IRId": self.IR2.id, "iterationId": self.It1.id}},
         }
         self.postMessage(c, data154, 0)
+
+        data155 = {
+            'project':self.ums.p1.id,
+            "type":"user-sr",
+            "operation":"create",
+            "data":{
+                "updateData":{
+                    "userId":self.ums.u1.id,
+                    "SRId":self.SR2.id,
+                }
+            }
+        }
+        self.postMessage(c,data155,0)
+        data156 = {
+            'project':self.ums.p1.id,
+            "type":"user-sr",
+            "operation":"delete",
+            "data":{
+                "userId":self.ums.u1.id,
+                "SRId":self.SR2.id
+            }
+        }
+        self.postMessage(c,data156,0)

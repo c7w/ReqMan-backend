@@ -5,6 +5,8 @@ from backend.settings import TIME_ZONE
 import utils.model_date as getTime
 
 EXPIRE_DAYS = 2
+PROJECT_TITLE_LEN = 255
+PROJECT_DESC_LEN = 1000
 
 
 class Project(models.Model):

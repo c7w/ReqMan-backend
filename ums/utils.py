@@ -118,15 +118,6 @@ def create_inv(proj: Project, role: str):
     )
 
 
-def renew_inv(inv: ProjectInvitationAssociation):
-    """
-    create a ProjectInvitationAssociation
-    """
-    inv.invitation = gen_invitation()
-    inv.save()
-    return inv
-
-
 def gen_invitation():
     """
     generate the invitation string and return it
@@ -191,13 +182,21 @@ def name_exist(name: str):
 
 def email_exist(email: str):
     """
-    check if email exist, NOT case sensitive
-    return user instance if possible
+    check if major / minor email exist, NOT case sensitive
     """
-    users = User.objects.filter(email__iexact=email)
-    for u in users:
-        if not u.disabled:
-            return u
+    try:
+        email = str(email)
+    except:
+        return None
+    users = User.objects.filter(email__iexact=email.lower(), disabled=False)
+    minors = UserMinorEmailAssociation.objects.filter(email__iexact=email.lower())
+    if len(users) == 0 and len(minors) == 0:
+        return False
+    return True
+
+
+def get_user_by_major_email(email: str):
+    return User.objects.filter(email=email, disabled=False).first()
 
 
 def user_exist(id: int):
@@ -227,18 +226,6 @@ def name_valid(name: str):
     check if name valid
     """
     return re.match(r"^[a-zA-Z0-9_]{3,16}$", name) is not None
-
-
-def run(func):
-    print("outside")
-
-    @wraps(func)
-    def wrapper(*args, **kw):
-        print(args)
-        print("insider")
-        return func(*args, **kw)
-
-    return wrapper
 
 
 def user_and_projects(x: User):
