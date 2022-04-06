@@ -6,12 +6,7 @@ from utils.exceptions import ParamErr
 from ums.models import *
 from utils.sessions import *
 from ums.utils import *
-from utils.permissions import (
-    GeneralPermission,
-    project_rights,
-    require_login,
-    require_not_login,
-)
+from utils.permissions import GeneralPermission, project_rights, require_login
 from django.conf import settings
 import hashlib
 from utils.model_date import get_timestamp

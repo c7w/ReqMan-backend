@@ -118,15 +118,6 @@ def create_inv(proj: Project, role: str):
     )
 
 
-def renew_inv(inv: ProjectInvitationAssociation):
-    """
-    create a ProjectInvitationAssociation
-    """
-    inv.invitation = gen_invitation()
-    inv.save()
-    return inv
-
-
 def gen_invitation():
     """
     generate the invitation string and return it
