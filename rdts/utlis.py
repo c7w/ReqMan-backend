@@ -42,6 +42,12 @@ def getIssueSR(repo: Repository):
     issue = getIssue(repo)
     return IssueSRAssociation.objects.filter(issue__in=issue)
 
+def getIssueMR(issueId:int):
+    issue = Issue.objects.filter(id=issueId).first()
+    if not issue:
+        raise ParamErr(f'Wrong issueId')
+    return IssueMRAssociation.objects.filter(issue=issue)
+
 
 def createRepo(datas: dict):
     data = {}
@@ -218,6 +224,23 @@ def createIssueSR(datas: dict):
         raise ParamErr("Association Exist")
     IssueSRAssociation.objects.create(**data)
 
+def createIssueMR(datas:dict):
+    issue = require(datas,"issueId")
+    judgeTypeInt(issue)
+    mr = require(datas,"MRId")
+    judgeTypeInt(mr)
+    issue = Issue.objects.filter(id=issue).first()
+    mr = MergeRequest.objects.filter(id=mr).first()
+    if not issue or not mr:
+        raise ParamErr(f'Wrong issueId or MRId')
+    exist = IssueMRAssociation.objects.filter(issue=issue,MR=mr).first()
+    if exist:
+        raise ParamErr("Association existed.")
+    data = {
+        'issue':issue,
+        'MR':mr
+    }
+    IssueMRAssociation.objects.create(**data)
 
 def createOpertion(proj: Project, type: str, data: dict, user: User):
     dataList = require(data, "data")
@@ -249,6 +272,8 @@ def createOpertion(proj: Project, type: str, data: dict, user: User):
         createIssueSR(create)
     elif type == "commit-sr":
         createCommitSR(create)
+    elif type == 'issue-mr':
+        createIssueMR(create)
     return False
 
 
@@ -499,4 +524,10 @@ def deleteOperation(proj: Project, type: str, data: dict):
         sr = SR.objects.filter(id=sr).first()
         commit = Commit.objects.filter(id=commit).first()
         CommitSRAssociation.objects.filter(SR=sr, commit=commit).delete()
+    elif type == 'issue-mr':
+        issue = require(datas,'issueId')
+        judgeTypeInt(issue)
+        mr = require(datas,'MRId')
+        judgeTypeInt(mr)
+        IssueMRAssociation.objects.filter(issue__id=issue,MR__id=mr).delete()
     return False

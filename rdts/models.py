@@ -132,6 +132,12 @@ class IssueSRAssociation(models.Model):
     class Meta:
         unique_together = ['issue','SR']
 
+class IssueMRAssociation(models.Model):
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
+    MR = models.ForeignKey(MergeRequest,on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ['issue','MR']
 
 class RemoteRepo(models.Model):
     """

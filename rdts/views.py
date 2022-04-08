@@ -42,6 +42,9 @@ class RDTSViewSet(viewsets.ViewSet):
             resu = serialize(getMRSR(repo))
         elif type == "issue-sr":
             resu = serialize(getIssueSR(repo))
+        elif type == 'issue-mr':
+            issueId = intify(require(req.query_params,"issueId"))
+            resu = serialize(getIssueMR(issueId))
         else:
             return FAIL
         return Response({"code": 0, "data": resu})
