@@ -46,7 +46,7 @@ class RDTS_Tests(TestCase):
         CommitSRAssociation.objects.create(commit=self.commit1, SR=self.rms.SR1)
         MRSRAssociation.objects.create(MR=self.MR1, SR=self.rms.SR1)
         IssueSRAssociation.objects.create(issue=self.issue1, SR=self.rms.SR1)
-        IssueMRAssociation.objects.create(issue=self.issue1,MR=self.MR1)
+        IssueMRAssociation.objects.create(issue=self.issue1, MR=self.MR1)
 
     """
     Test GET
@@ -55,7 +55,7 @@ class RDTS_Tests(TestCase):
     def getRequest(self, c, datas, excode):
         url = "/rdts/project/"
         resp = c.get(url, data=datas)
-        print('______json________')
+        print("______json________")
         print(resp.json())
         self.assertEqual(resp.json()["code"], excode)
 
@@ -90,8 +90,12 @@ class RDTS_Tests(TestCase):
         data7 = {"repo": str(self.repo.id), "type": "mit-sr"}
         self.getRequest(c, data7, 1)
 
-        data8 = {"repo":str(self.repo.id),'type':"issue-mr",'issueId':self.issue1.id}
-        self.getRequest(c,data8,0)
+        data8 = {
+            "repo": str(self.repo.id),
+            "type": "issue-mr",
+            "issueId": self.issue1.id,
+        }
+        self.getRequest(c, data8, 0)
 
     def post_message(self, c, datas, excode):
         url = "/rdts/project/"
@@ -379,27 +383,19 @@ class RDTS_Tests(TestCase):
             "project": self.rms.ums.p1.id,
             "repo": self.repo.id,
             "type": "issue-mr",
-            "operation":"delete",
-            "data":{
-                "issueId":self.issue1.id,
-                "MRId":self.MR1.id
-            }
+            "operation": "delete",
+            "data": {"issueId": self.issue1.id, "MRId": self.MR1.id},
         }
-        self.post_message(c,data,0)
+        self.post_message(c, data, 0)
 
         data = {
             "project": self.rms.ums.p1.id,
             "repo": self.repo.id,
             "type": "issue-mr",
-            "operation":"create",
-            "data":{
-                "updateData":{
-                    "issueId":self.issue1.id,
-                    "MRId":self.MR1.id
-                }
-            }
+            "operation": "create",
+            "data": {"updateData": {"issueId": self.issue1.id, "MRId": self.MR1.id}},
         }
-        self.post_message(c,data,0)
+        self.post_message(c, data, 0)
 
 
 class ScheduleFunctionTest(TestCase):

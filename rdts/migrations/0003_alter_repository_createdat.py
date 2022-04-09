@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rdts', '0002_alter_repository_createdat'),
+        ("rdts", "0002_alter_repository_createdat"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='repository',
-            name='createdAt',
+            model_name="repository",
+            name="createdAt",
             field=models.FloatField(default=1648138466.577152),
         ),
     ]

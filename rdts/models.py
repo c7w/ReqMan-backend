@@ -13,9 +13,7 @@ class Repository(models.Model):
     project = models.ForeignKey("ums.Project", on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField()
-    createdAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    createdAt = models.FloatField(default=getTime.get_timestamp)
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     disabled = models.BooleanField(default=False)
 
@@ -100,7 +98,6 @@ class Issue(models.Model):
     labels = models.TextField(default="[]")  # 以json 形式存下所有label, 频繁用的label直接取出来当布尔键存
     is_bug = models.BooleanField(default=False)
 
-
     class Meta:
         indexes = [
             models.Index(fields=["authoredByUserName"]),
@@ -114,7 +111,7 @@ class CommitSRAssociation(models.Model):
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ['commit','SR']
+        unique_together = ["commit", "SR"]
 
 
 class MRSRAssociation(models.Model):
@@ -122,7 +119,7 @@ class MRSRAssociation(models.Model):
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ['MR','SR']
+        unique_together = ["MR", "SR"]
 
 
 class IssueSRAssociation(models.Model):
@@ -130,14 +127,16 @@ class IssueSRAssociation(models.Model):
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ['issue','SR']
+        unique_together = ["issue", "SR"]
+
 
 class IssueMRAssociation(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
-    MR = models.ForeignKey(MergeRequest,on_delete=models.CASCADE)
+    MR = models.ForeignKey(MergeRequest, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ['issue','MR']
+        unique_together = ["issue", "MR"]
+
 
 class RemoteRepo(models.Model):
     """

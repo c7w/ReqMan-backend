@@ -7,13 +7,13 @@ import utils.model_date
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rdts', '0001_initial'),
+        ("rdts", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='repository',
-            name='createdAt',
+            model_name="repository",
+            name="createdAt",
             field=models.FloatField(default=utils.model_date.get_timestamp),
         ),
     ]
