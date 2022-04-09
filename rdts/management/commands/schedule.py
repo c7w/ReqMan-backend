@@ -9,7 +9,7 @@ from backend.settings import TIME_ZONE
 from time import sleep
 import json
 from iso8601 import parse_date
-from utils.common import extract_sr_pattern
+# from utils.common import extract_sr_pattern
 
 SMALL_INTERVAL = 0.5
 BIG_INTERVAL = 1
@@ -374,12 +374,12 @@ class Command(BaseCommand):
                 json.loads(r.info)["base_url"], r.remote_id, r.access_token
             )
 
-            self.get_issue(r, req)
-            sleep(BIG_INTERVAL)
-            self.get_commit(r, req)
-            sleep(BIG_INTERVAL)
-            self.get_merge(r, req)
-            sleep(BIG_INTERVAL)
+            # self.get_issue(r, req)
+            # sleep(BIG_INTERVAL)
+            # self.get_commit(r, req)
+            # sleep(BIG_INTERVAL)
+            # self.get_merge(r, req)
+            # sleep(BIG_INTERVAL)
 
         self.stdout.write("END OF TASK CRAWL")
 
