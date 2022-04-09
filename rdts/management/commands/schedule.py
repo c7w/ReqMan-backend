@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from apscheduler.schedulers.blocking import BlockingScheduler
 from rdts.models import *
+from rms.models import *
 from rdts.query_class import type_map, Gitlab
 import datetime as dt
 import pytz
@@ -8,6 +9,7 @@ from backend.settings import TIME_ZONE
 from time import sleep
 import json
 from iso8601 import parse_date
+# from utils.common import extract_sr_pattern
 
 SMALL_INTERVAL = 0.5
 BIG_INTERVAL = 1
@@ -21,6 +23,16 @@ class Command(BaseCommand):
     help = "Run Schedule Tasks"
 
     def get_merge(self, r: RemoteRepo, req):
+        def update_sr_merge(mr: MergeRequest, title):
+            pattern = extract_sr_pattern(title)
+            print(pattern)
+            if pattern:
+                sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
+                if sr:
+                    relation = MRSRAssociation.objects.filter(MR=mr, SR=sr).first()
+                    if not relation:
+                        MRSRAssociation.objects.create(MR=mr, SR=sr)
+
         self.stdout.write("begin query merges")
         # make requests
         merges = []
@@ -67,6 +79,7 @@ class Command(BaseCommand):
                 MergeCrawlAssociation.objects.create(
                     merge=c, crawl=crawl, operation=CrawlerOp.REMOVE
                 )
+                MRSRAssociation.objects.filter(MR=c).delete()
 
         # search for addition
         self.stdout.write(str(len(merges)))
@@ -108,18 +121,32 @@ class Command(BaseCommand):
                     MergeCrawlAssociation.objects.create(
                         merge=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
+                update_sr_merge(m, kw["title"])
             else:
                 updated = True
                 new_c = MergeRequest.objects.create(**kw)
                 MergeCrawlAssociation.objects.create(
                     merge=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
+                update_sr_merge(new_c, kw["title"])
 
         crawl.finished = True
         crawl.updated = updated
         crawl.save()
 
     def get_commit(self, r: RemoteRepo, req):
+        def update_sr_commit(comm: Commit, title):
+            pattern = extract_sr_pattern(title)
+            print(pattern)
+            if pattern:
+                sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
+                if sr:
+                    relation = CommitSRAssociation.objects.filter(
+                        commit=comm, SR=sr
+                    ).first()
+                    if not relation:
+                        CommitSRAssociation.objects.create(commit=comm, SR=sr)
+
         self.stdout.write("begin query commits")
         # make requests
         commits = []
@@ -166,6 +193,7 @@ class Command(BaseCommand):
                 CommitCrawlAssociation.objects.create(
                     commit=c, crawl=crawl, operation=CrawlerOp.REMOVE
                 )
+                CommitSRAssociation.objects.filter(commit=c).delete()
 
         # search for addition
         for c in commits:
@@ -198,17 +226,31 @@ class Command(BaseCommand):
                     CommitCrawlAssociation.objects.create(
                         commit=oc, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
+                update_sr_commit(oc, kw["title"])
             else:
                 updated = True
                 new_c = Commit.objects.create(**kw)
                 CommitCrawlAssociation.objects.create(
                     commit=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
+                update_sr_commit(new_c, kw["title"])
         crawl.finished = True
         crawl.updated = updated
         crawl.save()
 
     def get_issue(self, r: RemoteRepo, req):
+        def update_sr_issue(iss: Issue, title):
+            pattern = extract_sr_pattern(title)
+            print(pattern)
+            if pattern:
+                sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
+                if sr:
+                    relation = IssueSRAssociation.objects.filter(
+                        issue=iss, SR=sr
+                    ).first()
+                    if not relation:
+                        IssueSRAssociation.objects.create(issue=iss, SR=sr)
+
         self.stdout.write("begin query issues")
         # make requests
         issues = []
@@ -255,6 +297,7 @@ class Command(BaseCommand):
                 IssueCrawlAssociation.objects.create(
                     issue=c, crawl=crawl, operation=CrawlerOp.REMOVE
                 )
+                IssueSRAssociation.objects.filter(issue=c).delete()
 
         for c in issues:
             kw = {
@@ -304,12 +347,14 @@ class Command(BaseCommand):
                     IssueCrawlAssociation.objects.create(
                         issue=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
+                update_sr_issue(m, kw["title"])
             else:
                 updated = True
                 new_c = Issue.objects.create(**kw)
                 IssueCrawlAssociation.objects.create(
                     issue=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
+                update_sr_issue(new_c, kw["title"])
 
         crawl.finished = True
         crawl.updated = updated
@@ -328,17 +373,18 @@ class Command(BaseCommand):
             req = type_map[r.type](
                 json.loads(r.info)["base_url"], r.remote_id, r.access_token
             )
-            self.get_commit(r, req)
-            sleep(BIG_INTERVAL)
-            self.get_merge(r, req)
-            sleep(BIG_INTERVAL)
-            self.get_issue(r, req)
-            sleep(BIG_INTERVAL)
+
+            # self.get_issue(r, req)
+            # sleep(BIG_INTERVAL)
+            # self.get_commit(r, req)
+            # sleep(BIG_INTERVAL)
+            # self.get_merge(r, req)
+            # sleep(BIG_INTERVAL)
 
         self.stdout.write("END OF TASK CRAWL")
 
     def handle(self, *args, **options):
         s = BlockingScheduler()
         self.stdout.write("Scheduler Initialized")
-        s.add_job(self.crawl_all, "interval", minutes=3)
+        s.add_job(self.crawl_all, "interval", minutes=1)
         s.start()

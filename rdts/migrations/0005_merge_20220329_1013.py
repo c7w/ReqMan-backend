@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rdts', '0003_alter_issue_assigneeusername_and_more'),
-        ('rdts', '0004_alter_repository_createdat'),
+        ("rdts", "0003_alter_issue_assigneeusername_and_more"),
+        ("rdts", "0004_alter_repository_createdat"),
     ]
 
-    operations = [
-    ]
+    operations = []

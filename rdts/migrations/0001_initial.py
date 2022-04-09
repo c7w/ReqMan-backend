@@ -9,213 +9,377 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('ums', '0001_initial'),
-        ('rms', '0001_initial'),
+        ("ums", "0001_initial"),
+        ("rms", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Commit',
+            name="Commit",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('hash_id', models.CharField(max_length=255)),
-                ('title', models.CharField(max_length=255)),
-                ('message', models.TextField()),
-                ('commiter_email', models.CharField(max_length=255)),
-                ('commiter_name', models.CharField(max_length=255)),
-                ('createdAt', models.FloatField()),
-                ('url', models.TextField()),
-                ('disabled', models.BooleanField(default=False)),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("hash_id", models.CharField(max_length=255)),
+                ("title", models.CharField(max_length=255)),
+                ("message", models.TextField()),
+                ("commiter_email", models.CharField(max_length=255)),
+                ("commiter_name", models.CharField(max_length=255)),
+                ("createdAt", models.FloatField()),
+                ("url", models.TextField()),
+                ("disabled", models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
-            name='CrawlLog',
+            name="CrawlLog",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('time', models.FloatField()),
-                ('status', models.IntegerField(default=200)),
-                ('message', models.TextField(default='')),
-                ('request_type', models.TextField(default='general')),
-                ('finished', models.BooleanField(default=False)),
-                ('updated', models.BooleanField(default=False)),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("time", models.FloatField()),
+                ("status", models.IntegerField(default=200)),
+                ("message", models.TextField(default="")),
+                ("request_type", models.TextField(default="general")),
+                ("finished", models.BooleanField(default=False)),
+                ("updated", models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
-            name='Issue',
+            name="Issue",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('issue_id', models.IntegerField()),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField()),
-                ('state', models.TextField(choices=[('closed', 'Closed'), ('opened', 'Opened')])),
-                ('authoredByUserName', models.CharField(max_length=255)),
-                ('authoredAt', models.FloatField(blank=True, null=True)),
-                ('updatedAt', models.FloatField(blank=True, null=True)),
-                ('closedByUserName', models.CharField(max_length=255)),
-                ('closedAt', models.FloatField(blank=True, null=True)),
-                ('assigneeUserName', models.CharField(max_length=255)),
-                ('disabled', models.BooleanField(default=False)),
-                ('url', models.TextField()),
-                ('labels', models.TextField(default='[]')),
-                ('is_bug', models.BooleanField(default=False)),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("issue_id", models.IntegerField()),
+                ("title", models.CharField(max_length=255)),
+                ("description", models.TextField()),
+                (
+                    "state",
+                    models.TextField(
+                        choices=[("closed", "Closed"), ("opened", "Opened")]
+                    ),
+                ),
+                ("authoredByUserName", models.CharField(max_length=255)),
+                ("authoredAt", models.FloatField(blank=True, null=True)),
+                ("updatedAt", models.FloatField(blank=True, null=True)),
+                ("closedByUserName", models.CharField(max_length=255)),
+                ("closedAt", models.FloatField(blank=True, null=True)),
+                ("assigneeUserName", models.CharField(max_length=255)),
+                ("disabled", models.BooleanField(default=False)),
+                ("url", models.TextField()),
+                ("labels", models.TextField(default="[]")),
+                ("is_bug", models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
-            name='MergeRequest',
+            name="MergeRequest",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('merge_id', models.IntegerField()),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField()),
-                ('state', models.TextField(choices=[('merged', 'Merged'), ('closed', 'Closed'), ('opened', 'Opened')])),
-                ('authoredByEmail', models.CharField(default='', max_length=255)),
-                ('authoredByUserName', models.CharField(default='', max_length=255)),
-                ('authoredAt', models.FloatField(blank=True, null=True)),
-                ('reviewedByEmail', models.CharField(default='', max_length=255)),
-                ('reviewedByUserName', models.CharField(default='', max_length=255)),
-                ('reviewedAt', models.FloatField(blank=True, null=True)),
-                ('disabled', models.BooleanField(default=False)),
-                ('url', models.TextField()),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("merge_id", models.IntegerField()),
+                ("title", models.CharField(max_length=255)),
+                ("description", models.TextField()),
+                (
+                    "state",
+                    models.TextField(
+                        choices=[
+                            ("merged", "Merged"),
+                            ("closed", "Closed"),
+                            ("opened", "Opened"),
+                        ]
+                    ),
+                ),
+                ("authoredByEmail", models.CharField(default="", max_length=255)),
+                ("authoredByUserName", models.CharField(default="", max_length=255)),
+                ("authoredAt", models.FloatField(blank=True, null=True)),
+                ("reviewedByEmail", models.CharField(default="", max_length=255)),
+                ("reviewedByUserName", models.CharField(default="", max_length=255)),
+                ("reviewedAt", models.FloatField(blank=True, null=True)),
+                ("disabled", models.BooleanField(default=False)),
+                ("url", models.TextField()),
             ],
         ),
         migrations.CreateModel(
-            name='Repository',
+            name="Repository",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('url', models.CharField(max_length=255)),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField()),
-                ('createdAt', models.FloatField(default=1648267711.024364)),
-                ('disabled', models.BooleanField(default=False)),
-                ('createdBy', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ums.user')),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ums.project')),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("url", models.CharField(max_length=255)),
+                ("title", models.CharField(max_length=255)),
+                ("description", models.TextField()),
+                ("createdAt", models.FloatField(default=1648267711.024364)),
+                ("disabled", models.BooleanField(default=False)),
+                (
+                    "createdBy",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="ums.user"
+                    ),
+                ),
+                (
+                    "project",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="ums.project"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='RemoteRepo',
+            name="RemoteRepo",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('type', models.CharField(max_length=50)),
-                ('remote_id', models.TextField()),
-                ('access_token', models.TextField()),
-                ('enable_crawling', models.BooleanField(default=True)),
-                ('info', models.TextField(default='{}')),
-                ('repo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.repository')),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("type", models.CharField(max_length=50)),
+                ("remote_id", models.TextField()),
+                ("access_token", models.TextField()),
+                ("enable_crawling", models.BooleanField(default=True)),
+                ("info", models.TextField(default="{}")),
+                (
+                    "repo",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="rdts.repository",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='MRSRAssociation',
+            name="MRSRAssociation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('MR', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.mergerequest')),
-                ('SR', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rms.sr')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "MR",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="rdts.mergerequest",
+                    ),
+                ),
+                (
+                    "SR",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rms.sr"
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='mergerequest',
-            name='repo',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.repository'),
+            model_name="mergerequest",
+            name="repo",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="rdts.repository"
+            ),
         ),
         migrations.CreateModel(
-            name='MergeCrawlAssociation',
+            name="MergeCrawlAssociation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('operation', models.CharField(max_length=10)),
-                ('crawl', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.crawllog')),
-                ('merge', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.mergerequest')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("operation", models.CharField(max_length=10)),
+                (
+                    "crawl",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rdts.crawllog"
+                    ),
+                ),
+                (
+                    "merge",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="rdts.mergerequest",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='IssueSRAssociation',
+            name="IssueSRAssociation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('SR', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rms.sr')),
-                ('issue', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.issue')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "SR",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rms.sr"
+                    ),
+                ),
+                (
+                    "issue",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rdts.issue"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='IssueCrawlAssociation',
+            name="IssueCrawlAssociation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('operation', models.CharField(max_length=10)),
-                ('crawl', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.crawllog')),
-                ('issue', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.issue')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("operation", models.CharField(max_length=10)),
+                (
+                    "crawl",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rdts.crawllog"
+                    ),
+                ),
+                (
+                    "issue",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rdts.issue"
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='issue',
-            name='repo',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.repository'),
+            model_name="issue",
+            name="repo",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="rdts.repository"
+            ),
         ),
         migrations.AddField(
-            model_name='crawllog',
-            name='repo',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.remoterepo'),
+            model_name="crawllog",
+            name="repo",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="rdts.remoterepo"
+            ),
         ),
         migrations.CreateModel(
-            name='CommitSRAssociation',
+            name="CommitSRAssociation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('SR', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rms.sr')),
-                ('commit', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.commit')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "SR",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rms.sr"
+                    ),
+                ),
+                (
+                    "commit",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rdts.commit"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='CommitCrawlAssociation',
+            name="CommitCrawlAssociation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('operation', models.CharField(max_length=10)),
-                ('commit', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.commit')),
-                ('crawl', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.crawllog')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("operation", models.CharField(max_length=10)),
+                (
+                    "commit",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rdts.commit"
+                    ),
+                ),
+                (
+                    "crawl",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rdts.crawllog"
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='commit',
-            name='repo',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.repository'),
+            model_name="commit",
+            name="repo",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="rdts.repository"
+            ),
         ),
         migrations.AddIndex(
-            model_name='repository',
-            index=models.Index(fields=['project'], name='rdts_reposi_project_4b714d_idx'),
+            model_name="repository",
+            index=models.Index(
+                fields=["project"], name="rdts_reposi_project_4b714d_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='repository',
-            index=models.Index(fields=['title'], name='rdts_reposi_title_42c014_idx'),
+            model_name="repository",
+            index=models.Index(fields=["title"], name="rdts_reposi_title_42c014_idx"),
         ),
         migrations.AddIndex(
-            model_name='repository',
-            index=models.Index(fields=['title', 'project'], name='rdts_reposi_title_d944f8_idx'),
+            model_name="repository",
+            index=models.Index(
+                fields=["title", "project"], name="rdts_reposi_title_d944f8_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='repository',
-            unique_together={('project', 'title')},
+            name="repository",
+            unique_together={("project", "title")},
         ),
         migrations.AddIndex(
-            model_name='remoterepo',
-            index=models.Index(fields=['repo'], name='rdts_remote_repo_id_a25f16_idx'),
+            model_name="remoterepo",
+            index=models.Index(fields=["repo"], name="rdts_remote_repo_id_a25f16_idx"),
         ),
         migrations.AddIndex(
-            model_name='mergerequest',
-            index=models.Index(fields=['authoredByUserName'], name='rdts_merger_authore_35befd_idx'),
+            model_name="mergerequest",
+            index=models.Index(
+                fields=["authoredByUserName"], name="rdts_merger_authore_35befd_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='mergerequest',
-            index=models.Index(fields=['reviewedByUserName'], name='rdts_merger_reviewe_70e79c_idx'),
+            model_name="mergerequest",
+            index=models.Index(
+                fields=["reviewedByUserName"], name="rdts_merger_reviewe_70e79c_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='issue',
-            index=models.Index(fields=['authoredByUserName'], name='rdts_issue_authore_916624_idx'),
+            model_name="issue",
+            index=models.Index(
+                fields=["authoredByUserName"], name="rdts_issue_authore_916624_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='issue',
-            index=models.Index(fields=['closedByUserName'], name='rdts_issue_closedB_c9fbcc_idx'),
+            model_name="issue",
+            index=models.Index(
+                fields=["closedByUserName"], name="rdts_issue_closedB_c9fbcc_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='commit',
-            index=models.Index(fields=['commiter_email'], name='rdts_commit_commite_057d04_idx'),
+            model_name="commit",
+            index=models.Index(
+                fields=["commiter_email"], name="rdts_commit_commite_057d04_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='commit',
-            index=models.Index(fields=['commiter_name'], name='rdts_commit_commite_d20353_idx'),
+            model_name="commit",
+            index=models.Index(
+                fields=["commiter_name"], name="rdts_commit_commite_d20353_idx"
+            ),
         ),
     ]

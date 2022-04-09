@@ -7,19 +7,38 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rdts', '0007_alter_repository_unique_together_and_more'),
+        ("rdts", "0007_alter_repository_unique_together_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='IssueMRAssociation',
+            name="IssueMRAssociation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('MR', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.mergerequest')),
-                ('issue', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rdts.issue')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "MR",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="rdts.mergerequest",
+                    ),
+                ),
+                (
+                    "issue",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rdts.issue"
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('issue', 'MR')},
+                "unique_together": {("issue", "MR")},
             },
         ),
     ]

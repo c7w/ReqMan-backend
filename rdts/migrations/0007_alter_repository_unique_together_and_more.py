@@ -6,25 +6,25 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rms', '0006_projectiterationassociation_iriterationassociation'),
-        ('rdts', '0006_alter_repository_createdat'),
+        ("rms", "0006_projectiterationassociation_iriterationassociation"),
+        ("rdts", "0006_alter_repository_createdat"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='repository',
+            name="repository",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='commitsrassociation',
-            unique_together={('commit', 'SR')},
+            name="commitsrassociation",
+            unique_together={("commit", "SR")},
         ),
         migrations.AlterUniqueTogether(
-            name='issuesrassociation',
-            unique_together={('issue', 'SR')},
+            name="issuesrassociation",
+            unique_together={("issue", "SR")},
         ),
         migrations.AlterUniqueTogether(
-            name='mrsrassociation',
-            unique_together={('MR', 'SR')},
+            name="mrsrassociation",
+            unique_together={("MR", "SR")},
         ),
     ]
