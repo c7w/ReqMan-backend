@@ -121,3 +121,12 @@ class UserMinorEmailAssociation(models.Model):
             models.Index(fields=["user"]),
             models.Index(fields=["email"]),
         ]
+
+
+class UserRemoteUsernameAssociation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    remote_name = models.CharField(max_length=255)
+    repository = models.ForeignKey("rdts.Repository", on_delete=models.CASCADE)
+
+    class Meta:
+        indexes = [models.Index(fields=["remote_name", "repository"])]

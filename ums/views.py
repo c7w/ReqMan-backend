@@ -10,6 +10,7 @@ from utils.permissions import GeneralPermission, project_rights, require_login
 from django.conf import settings
 import hashlib
 from utils.model_date import get_timestamp
+from rdts.models import Repository
 
 DEFAULT_INVITED_ROLE = "member"
 
@@ -562,3 +563,31 @@ class UserViewSet(viewsets.ViewSet):
             return SUCC
 
         raise ParamErr("invalid stage")
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["POST"])
+    def set_remote_username(self, req: Request):
+        repo = require(req.data, "repo", int)
+        remote_name = require(req.data, "remote_name")
+
+        repo = Repository.objects.filter(id=repo).first()
+
+        if not repo:
+            return STATUS(2)
+
+        if len(remote_name) > 255:
+            return STATUS(1)
+
+        relation = UserRemoteUsernameAssociation.objects.filter(
+            user=req.user, repository=repo
+        ).first()
+
+        if relation:
+            relation.remote_name = remote_name
+            relation.save()
+        else:
+            UserRemoteUsernameAssociation.objects.create(
+                user=req.user, repository=repo, remote_name=remote_name
+            )
+
+        return SUCC

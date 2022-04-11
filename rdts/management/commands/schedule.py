@@ -29,6 +29,7 @@ class Command(BaseCommand):
             print(pattern)
             if pattern:
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
+                MRSRAssociation.objects.filter(MR=mr).delete()
                 if sr:
                     relation = MRSRAssociation.objects.filter(MR=mr, SR=sr).first()
                     if not relation:
