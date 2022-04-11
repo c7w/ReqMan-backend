@@ -44,6 +44,10 @@ class Commit(models.Model):
             models.Index(fields=["repo"]),
         ]
 
+    user_committer = models.ForeignKey(
+        "ums.User", on_delete=models.CASCADE, null=True, default=None, related_name="+"
+    )
+
 
 class MergeRequest(models.Model):
     id = models.AutoField(primary_key=True)
@@ -66,6 +70,13 @@ class MergeRequest(models.Model):
     reviewedAt = models.FloatField(null=True, blank=True)
     disabled = models.BooleanField(default=False)
     url = models.TextField()
+
+    user_authored = models.ForeignKey(
+        "ums.User", on_delete=models.CASCADE, null=True, default=None, related_name="+"
+    )
+    user_reviewed = models.ForeignKey(
+        "ums.User", on_delete=models.CASCADE, null=True, default=None, related_name="+"
+    )
 
     class Meta:
         indexes = [
@@ -97,6 +108,28 @@ class Issue(models.Model):
     url = models.TextField()
     labels = models.TextField(default="[]")  # 以json 形式存下所有label, 频繁用的label直接取出来当布尔键存
     is_bug = models.BooleanField(default=False)
+
+    user_assignee = models.ForeignKey(
+        "ums.User",
+        on_delete=models.CASCADE,
+        null=True,
+        default=None,
+        related_name="+",
+    )
+    user_authored = models.ForeignKey(
+        "ums.User",
+        on_delete=models.CASCADE,
+        null=True,
+        default=None,
+        related_name="+",
+    )
+    user_closed = models.ForeignKey(
+        "ums.User",
+        on_delete=models.CASCADE,
+        null=True,
+        default=None,
+        related_name="+",
+    )
 
     class Meta:
         indexes = [

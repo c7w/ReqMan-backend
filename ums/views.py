@@ -575,6 +575,9 @@ class UserViewSet(viewsets.ViewSet):
         if not repo:
             return STATUS(2)
 
+        if repo.project.id != req.auth["proj"].id:
+            return STATUS(3)
+
         if len(remote_name) > 255:
             return STATUS(1)
 

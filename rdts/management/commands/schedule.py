@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from apscheduler.schedulers.blocking import BlockingScheduler
 from rdts.models import *
 from rms.models import *
+from ums.models import UserRemoteUsernameAssociation, UserMinorEmailAssociation
 from rdts.query_class import type_map, Gitlab
 import datetime as dt
 import pytz
@@ -31,9 +32,24 @@ class Command(BaseCommand):
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
                 MRSRAssociation.objects.filter(MR=mr).delete()
                 if sr:
-                    relation = MRSRAssociation.objects.filter(MR=mr, SR=sr).first()
-                    if not relation:
-                        MRSRAssociation.objects.create(MR=mr, SR=sr)
+                    MRSRAssociation.objects.create(MR=mr, SR=sr)
+
+        def update_user_merge(mr: MergeRequest):
+            mr.user_authored = (
+                UserRemoteUsernameAssociation.objects.filter(
+                    repository=r.repo, remote_name=mr.authoredByUserName
+                )
+                .first()
+                .user
+            )
+            mr.user_reviewed = (
+                UserRemoteUsernameAssociation.objects.filter(
+                    repository=r.repo, remote_name=mr.reviewedByUserName
+                )
+                .first()
+                .user
+            )
+            mr.save()
 
         self.stdout.write("begin query merges")
         # make requests
@@ -115,7 +131,7 @@ class Command(BaseCommand):
                     "authoredAt": m.authoredAt,
                     "reviewedByUserName": m.reviewedByUserName,
                     "reviewedAt": m.reviewedAt,
-                    "url": c["web_url"],
+                    "url": m.url,
                 }
                 if prev_info != kw:
                     updated = True
@@ -124,6 +140,7 @@ class Command(BaseCommand):
                         merge=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
                 update_sr_merge(m, kw["title"])
+                update_user_merge(mr)
             else:
                 updated = True
                 new_c = MergeRequest.objects.create(**kw)
@@ -131,6 +148,7 @@ class Command(BaseCommand):
                     merge=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
                 update_sr_merge(new_c, kw["title"])
+                update_user_merge(new_c)
 
         crawl.finished = True
         crawl.updated = updated
@@ -142,12 +160,19 @@ class Command(BaseCommand):
             print(pattern)
             if pattern:
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
+                CommitSRAssociation.objects.filter(commit=comm).delete()
                 if sr:
-                    relation = CommitSRAssociation.objects.filter(
-                        commit=comm, SR=sr
-                    ).first()
-                    if not relation:
-                        CommitSRAssociation.objects.create(commit=comm, SR=sr)
+                    CommitSRAssociation.objects.create(commit=comm, SR=sr)
+
+        def update_user_commit(c: Commit):
+            c.user_committer = (
+                UserMinorEmailAssociation.objects.filter(
+                    email=c.commiter_email, verified=True
+                )
+                .first()
+                .user
+            )
+            c.save()
 
         self.stdout.write("begin query commits")
         # make requests
@@ -229,6 +254,7 @@ class Command(BaseCommand):
                         commit=oc, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
                 update_sr_commit(oc, kw["title"])
+                update_user_commit(oc)
             else:
                 updated = True
                 new_c = Commit.objects.create(**kw)
@@ -236,6 +262,7 @@ class Command(BaseCommand):
                     commit=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
                 update_sr_commit(new_c, kw["title"])
+                update_user_commit(new_c)
         crawl.finished = True
         crawl.updated = updated
         crawl.save()
@@ -246,12 +273,33 @@ class Command(BaseCommand):
             print(pattern)
             if pattern:
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
+                IssueSRAssociation.objects.filter(issue=iss).delete()
                 if sr:
-                    relation = IssueSRAssociation.objects.filter(
-                        issue=iss, SR=sr
-                    ).first()
-                    if not relation:
-                        IssueSRAssociation.objects.create(issue=iss, SR=sr)
+                    IssueSRAssociation.objects.create(issue=iss, SR=sr)
+
+        def update_user_issue(iss: Issue):
+            iss.user_assignee = (
+                UserRemoteUsernameAssociation.objects.filter(
+                    repository=r.repo, remote_name=iss.assigneeUserName
+                )
+                .first()
+                .user
+            )
+            iss.user_authored = (
+                UserRemoteUsernameAssociation.objects.filter(
+                    repository=r.repo, remote_name=iss.authoredByUserName
+                )
+                .first()
+                .user
+            )
+            iss.user_closed = (
+                UserRemoteUsernameAssociation.objects.filter(
+                    repository=r.repo, remote_name=iss.closedByUserName
+                )
+                .first()
+                .user
+            )
+            iss.save()
 
         self.stdout.write("begin query issues")
         # make requests
@@ -350,6 +398,7 @@ class Command(BaseCommand):
                         issue=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
                 update_sr_issue(m, kw["title"])
+                update_user_issue(m)
             else:
                 updated = True
                 new_c = Issue.objects.create(**kw)
@@ -357,6 +406,7 @@ class Command(BaseCommand):
                     issue=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
                 update_sr_issue(new_c, kw["title"])
+                update_user_issue(new_c)
 
         crawl.finished = True
         crawl.updated = updated
