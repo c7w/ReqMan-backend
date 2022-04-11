@@ -197,8 +197,8 @@ class UserViewSet(viewsets.ViewSet):
         return SUCC
 
     @project_rights("AnyMember")
-    @action(detail=False, methods=["POST"])
-    def project(self, req: Request):
+    @action(detail=False, methods=["POST"], url_path="project")
+    def show_project_detail(self, req: Request):
         proj = req.auth["proj"]
         avatar = proj.avatar
         users = [user_to_list(u, proj) for u in all_users().filter(project=proj)]
