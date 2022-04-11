@@ -35,20 +35,20 @@ class Command(BaseCommand):
                     MRSRAssociation.objects.create(MR=mr, SR=sr)
 
         def update_user_merge(mr: MergeRequest):
-            mr.user_authored = (
-                UserRemoteUsernameAssociation.objects.filter(
-                    repository=r.repo, remote_name=mr.authoredByUserName
-                )
-                .first()
-                .user
-            )
-            mr.user_reviewed = (
-                UserRemoteUsernameAssociation.objects.filter(
-                    repository=r.repo, remote_name=mr.reviewedByUserName
-                )
-                .first()
-                .user
-            )
+            _rec = UserRemoteUsernameAssociation.objects.filter(
+                repository=r.repo, remote_name=mr.authoredByUserName
+            ).first()
+
+            if _rec:
+                mr.user_authored = _rec.user
+
+            _rec = UserRemoteUsernameAssociation.objects.filter(
+                repository=r.repo, remote_name=mr.reviewedByUserName
+            ).first()
+
+            if _rec:
+                mr.user_reviewed = _rec.user
+
             mr.save()
 
         self.stdout.write("begin query merges")
@@ -140,7 +140,7 @@ class Command(BaseCommand):
                         merge=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
                 update_sr_merge(m, kw["title"])
-                update_user_merge(mr)
+                update_user_merge(m)
             else:
                 updated = True
                 new_c = MergeRequest.objects.create(**kw)
@@ -165,13 +165,12 @@ class Command(BaseCommand):
                     CommitSRAssociation.objects.create(commit=comm, SR=sr)
 
         def update_user_commit(c: Commit):
-            c.user_committer = (
-                UserMinorEmailAssociation.objects.filter(
-                    email=c.commiter_email, verified=True
-                )
-                .first()
-                .user
-            )
+            _rec = UserMinorEmailAssociation.objects.filter(
+                email=c.commiter_email, verified=True
+            ).first()
+
+            if _rec:
+                c.user_committer = _rec.user
             c.save()
 
         self.stdout.write("begin query commits")
@@ -278,27 +277,25 @@ class Command(BaseCommand):
                     IssueSRAssociation.objects.create(issue=iss, SR=sr)
 
         def update_user_issue(iss: Issue):
-            iss.user_assignee = (
-                UserRemoteUsernameAssociation.objects.filter(
-                    repository=r.repo, remote_name=iss.assigneeUserName
-                )
-                .first()
-                .user
-            )
-            iss.user_authored = (
-                UserRemoteUsernameAssociation.objects.filter(
-                    repository=r.repo, remote_name=iss.authoredByUserName
-                )
-                .first()
-                .user
-            )
-            iss.user_closed = (
-                UserRemoteUsernameAssociation.objects.filter(
-                    repository=r.repo, remote_name=iss.closedByUserName
-                )
-                .first()
-                .user
-            )
+            _rec = UserRemoteUsernameAssociation.objects.filter(
+                repository=r.repo, remote_name=iss.assigneeUserName
+            ).first()
+            if _rec:
+                iss.user_assignee = _rec.user
+
+            _rec = UserRemoteUsernameAssociation.objects.filter(
+                repository=r.repo, remote_name=iss.authoredByUserName
+            ).first()
+            if _rec:
+                iss.user_authored = _rec.user
+
+            _rec = UserRemoteUsernameAssociation.objects.filter(
+                repository=r.repo, remote_name=iss.closedByUserName
+            ).first()
+
+            if _rec:
+                iss.user_closed = _rec.user
+
             iss.save()
 
         self.stdout.write("begin query issues")
@@ -436,7 +433,8 @@ class Command(BaseCommand):
         self.stdout.write("END OF TASK CRAWL")
 
     def handle(self, *args, **options):
-        s = BlockingScheduler()
-        self.stdout.write("Scheduler Initialized")
-        s.add_job(self.crawl_all, "interval", minutes=1)
-        s.start()
+        # s = BlockingScheduler()
+        # self.stdout.write("Scheduler Initialized")
+        # s.add_job(self.crawl_all, "interval", minutes=1)
+        # s.start()
+        self.crawl_all()
