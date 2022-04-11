@@ -47,6 +47,9 @@ class Commit(models.Model):
     user_committer = models.ForeignKey(
         "ums.User", on_delete=models.CASCADE, null=True, default=None, related_name="+"
     )
+    diff = models.TextField(default='')
+    additions = models.IntegerField(default=-1)
+    deletions = models.IntegerField(default=-1)
 
 
 class MergeRequest(models.Model):

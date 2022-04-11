@@ -173,12 +173,20 @@ class Command(BaseCommand):
                 c.user_committer = _rec.user
             c.save()
 
+        def append_diff(_kw: dict):
+            diff_status, additions, deletions, diffs = req.commit_diff_lines(c["id"])
+            print("diff status", diff_status, additions, deletions)
+            _kw['additions'] = additions
+            _kw['deletions'] = deletions
+            _kw['diff'] = json.dumps(diffs, ensure_ascii=False)
+            return _kw
+
         self.stdout.write("begin query commits")
         # make requests
         commits = []
         i = 1
         while True:
-            sleep(SMALL_INTERVAL)
+            # sleep(SMALL_INTERVAL)
             self.stdout.write(f" Begin commits on page {i}")
             part = req.commits(i)
             if part[0] == 200:
@@ -248,6 +256,8 @@ class Command(BaseCommand):
                 }
                 if old_key != kw:
                     updated = True
+                    kw = append_diff(kw)
+                    print(kw['additions'])
                     cs.update(**kw)
                     CommitCrawlAssociation.objects.create(
                         commit=oc, crawl=crawl, operation=CrawlerOp.UPDATE
@@ -256,6 +266,8 @@ class Command(BaseCommand):
                 update_user_commit(oc)
             else:
                 updated = True
+                kw = append_diff(kw)
+                print(kw['additions'])
                 new_c = Commit.objects.create(**kw)
                 CommitCrawlAssociation.objects.create(
                     commit=new_c, crawl=crawl, operation=CrawlerOp.INSERT
@@ -423,8 +435,8 @@ class Command(BaseCommand):
                 json.loads(r.info)["base_url"], r.remote_id, r.access_token
             )
 
-            self.get_issue(r, req)
-            sleep(BIG_INTERVAL)
+            # self.get_issue(r, req)
+            # sleep(BIG_INTERVAL)
             self.get_commit(r, req)
             sleep(BIG_INTERVAL)
             self.get_merge(r, req)
