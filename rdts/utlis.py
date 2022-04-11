@@ -51,18 +51,22 @@ def getIssueMR(issueId: int):
 
 
 def createRepo(datas: dict):
+    """
+    this interface have been moved !!!
+    """
     data = {}
-    data["url"] = require(datas, "url")
+    # data["url"] = require(datas, "url")
     data["project"] = require(datas, "project")
     data["title"] = require(datas, "title")
     data["description"] = require(datas, "description")
     data["createdBy"] = require(datas, "createdBy")
-    judgeTypeStr(data["url"])
-    judgeStrLen(data["url"], 255)
+    # judgeTypeStr(data["url"])
+    # judgeStrLen(data["url"], 255)
     judgeTypeStr(data["title"])
     judgeStrLen(data["title"], 255)
     judgeTypeStr(data["description"])
     Repository.objects.create(**data)
+    raise ParamErr("this interface is obsolete")
 
 
 def createCommit(datas: dict):

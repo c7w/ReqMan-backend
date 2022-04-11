@@ -9,7 +9,7 @@ import utils.model_date as getTime
 
 class Repository(models.Model):
     id = models.BigAutoField(primary_key=True)
-    url = models.CharField(max_length=255)
+    # url = models.CharField(max_length=255)
     project = models.ForeignKey("ums.Project", on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField()

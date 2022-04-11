@@ -157,7 +157,7 @@ class RDTSViewSet(viewsets.ViewSet):
             raise ParamErr(f"page number error [{offset}, {end}]")
 
         repo = Repository.objects.filter(id=repo, disabled=False).first()
-        if not repo or repo.project.id != req.auth["project"].id:
+        if not repo or repo.project.id != req.auth["proj"].id:
             return STATUS(3)
 
         remote_repo = RemoteRepo.objects.filter(repo=repo).first()
@@ -172,11 +172,45 @@ class RDTSViewSet(viewsets.ViewSet):
     def crawl_detail(self, req: Request):
         crawl = require(req.data, "crawl_id", int)
 
-        log = CrawlLog.objects.filter(id=crawl)
+        log = CrawlLog.objects.filter(id=crawl).first()
         if not log:
             return STATUS(1)
 
-        if log.repo.repo.project.id != req.auth["project"].id:
+        if log.repo.repo.project.id != req.auth["proj"].id:
             return STATUS(1)
 
-        raise NotImplemented
+        issues = IssueCrawlAssociation.objects.filter(crawl=log)
+        mrs = MergeCrawlAssociation.objects.filter(crawl=log)
+        commits = CommitCrawlAssociation.objects.filter(crawl=log)
+
+        return Response(
+            {
+                "code": 0,
+                "data": {
+                    "issue": [
+                        model_to_dict(
+                            i.issue,
+                            fields=[
+                                "issue_id",
+                                "title",
+                                "labels",
+                                "authoredByUserName",
+                            ],
+                        )
+                        for i in issues
+                    ],
+                    "merge": [
+                        model_to_dict(
+                            m.merge, fields=["merge_id", "title", "authoredByUserName"]
+                        )
+                        for m in mrs
+                    ],
+                    "commit": [
+                        model_to_dict(
+                            c.commit, fields=["hash_id", "title", "commiter_name"]
+                        )
+                        for c in commits
+                    ],
+                },
+            }
+        )
