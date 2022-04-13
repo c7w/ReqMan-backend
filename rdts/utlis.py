@@ -6,6 +6,10 @@ from ums.utils import require
 from utils.exceptions import ParamErr
 
 
+def now():
+    return dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
+
+
 def repoExist(id: int):
     repo = Repository.objects.filter(id=id, disabled=False)
     for r in repo:

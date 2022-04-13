@@ -125,7 +125,9 @@ class RDTSViewSet(viewsets.ViewSet):
 
         if op == "modify":
             repo_id = require(req.data, "id", int)
-            repo = Repository.objects.filter(id=repo_id, disabled=False)
+            repo = Repository.objects.filter(
+                id=repo_id, disabled=False, project=req.auth["proj"]
+            )
             if len(repo) == 0:
                 return STATUS(3)
 
@@ -215,7 +217,165 @@ class RDTSViewSet(viewsets.ViewSet):
             }
         )
 
-    @project_rights(Role.QA)
+    @project_rights([Role.QA, Role.SUPERMASTER])
     @action(detail=False, methods=["POST"])
     def get_recent_acitvity(self, req: Request):
-        digest = require(req.data, "")
+        digest = require(req.data, "digest", bool)
+        dev_id = require(req.data, "dev_id", int)
+        limit = require(
+            req.data,
+            "limit",
+        )
+
+        if limit == -1:
+            begin = 0
+        else:
+            begin = now() - limit
+
+        dev = User.objects.filter(id=dev_id, disabled=False).first()
+        if not dev:
+            return STATUS(1)
+
+        relation = UserProjectAssociation.objects.filter(
+            project=req.auth["proj"], user=dev
+        ).first()
+        if not relation:
+            return STATUS(1)
+
+        # here we do not strictly limit the role to issue
+        # if relation.role != Role.DEV:
+        #     return STATUS(1)
+
+        merges = MergeRequest.objects.filter(
+            user_authored=dev,
+            authoredAt__gte=begin,
+            repo__project=req.auth["proj"],
+        )
+        commits = Commit.objects.filter(
+            user_committer=dev,
+            createdAt__gte=begin,
+            repo__project=req.auth["proj"],
+        )
+        issues = Issue.objects.filter(
+            user_assignee=dev,
+            closedAt__gte=begin,
+            repo__project=req.auth["proj"],
+        )
+
+        if digest:
+            additions = sum([c.additions for c in commits])
+            deletions = sum([c.deletions for c in commits])
+            return Response(
+                {
+                    "code": 0,
+                    "data": {
+                        "mr_count": len(merges),
+                        "commit_count": len(commits),
+                        "additions": additions,
+                        "deletions": deletions,
+                        "issue_count": len(issues),
+                        "issue_times": [
+                            round(i.closedAt - i.authoredAt) for i in issues
+                        ],
+                    },
+                }
+            )
+        else:
+            return Response(
+                {
+                    "code": 0,
+                    "data": {
+                        "merges": [
+                            {
+                                **model_to_dict(
+                                    m, fields=["id", "merge_id", "title", "url"]
+                                ),
+                                "repo": m.repo.title,
+                            }
+                            for m in merges
+                        ],
+                        "commits": [
+                            {
+                                **model_to_dict(
+                                    c,
+                                    fields=[
+                                        "id",
+                                        "hash_id",
+                                        "message",
+                                        "createdAt",
+                                        "url",
+                                    ],
+                                ),
+                                "repo": c.repo.title,
+                            }
+                            for c in commits
+                        ],
+                        "issues": [
+                            {
+                                **model_to_dict(
+                                    i,
+                                    fields=[
+                                        "id",
+                                        "issue_id",
+                                        "title",
+                                        "authoredAt",
+                                        "closedAt",
+                                    ],
+                                ),
+                                "repo": i.repo.title,
+                            }
+                            for i in issues
+                        ],
+                    },
+                }
+            )
+
+    @project_rights([Role.QA, Role.SUPERMASTER])
+    @action(detail=False, methods=["GET"])
+    def iteration_bugs(self, req: Request):
+        iteration_id = require(req.query_params, "iteration", int)
+        iteration = Iteration.objects.filter(
+            id=iteration_id, project=req.auth["proj"]
+        ).first()
+        if not iteration:
+            return FAIL
+        relations = SRIterationAssociation.objects.filter(iteration=iteration)
+        bugs = []
+        for r in relations:
+            issues = IssueSRAssociation.objects.filter(SR=r.SR, issue__is_bug=True)
+            bugs += [(i.issue, r.SR) for i in issues]
+
+        return Response(
+            {
+                "code": 0,
+                "data": {
+                    "bug_issues": [
+                        {
+                            **model_to_dict(
+                                i,
+                                fields=[
+                                    "id",
+                                    "issue_id",
+                                    "title",
+                                    "description",
+                                    "authoredAt",
+                                    "closedAt",
+                                    "url",
+                                ],
+                            ),
+                            "sr": model_to_dict(
+                                sr,
+                                fields=[
+                                    "id",
+                                    "title",
+                                    "description",
+                                    "priority",
+                                    "rank",
+                                ],
+                            ),
+                        }
+                        for i, sr in bugs
+                    ]
+                },
+            }
+        )
