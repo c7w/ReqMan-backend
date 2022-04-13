@@ -1,6 +1,7 @@
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 
+
 def from_diff_to_lines(diff: str):
     diff = diff.split("\n")
     add = 0
@@ -8,9 +9,10 @@ def from_diff_to_lines(diff: str):
     for l in diff:
         if len(l) and l[0] == "+":
             add += 1
-        if len(l) and l[0] == '-':
+        if len(l) and l[0] == "-":
             subs += 1
     return add, subs
+
 
 class Gitlab:
     def __init__(self, base_url: str, repo, access_token: str):
@@ -45,10 +47,10 @@ class Gitlab:
             total_add = 0
             total_subs = 0
             for file in res:
-                add, subs = from_diff_to_lines(file['diff'])
+                add, subs = from_diff_to_lines(file["diff"])
                 total_add += add
                 total_subs += subs
-                diffs += [file['diff']]
+                diffs += [file["diff"]]
             return status, total_add, total_subs, diffs
         else:
             return status, -1, -1, []

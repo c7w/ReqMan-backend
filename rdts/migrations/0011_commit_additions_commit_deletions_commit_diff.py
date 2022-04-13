@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rdts', '0010_commit_user_committer_issue_user_assignee_and_more'),
+        ("rdts", "0010_commit_user_committer_issue_user_assignee_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='commit',
-            name='additions',
+            model_name="commit",
+            name="additions",
             field=models.IntegerField(default=-1),
         ),
         migrations.AddField(
-            model_name='commit',
-            name='deletions',
+            model_name="commit",
+            name="deletions",
             field=models.IntegerField(default=-1),
         ),
         migrations.AddField(
-            model_name='commit',
-            name='diff',
-            field=models.TextField(default=''),
+            model_name="commit",
+            name="diff",
+            field=models.TextField(default=""),
         ),
     ]

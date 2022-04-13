@@ -214,3 +214,8 @@ class RDTSViewSet(viewsets.ViewSet):
                 },
             }
         )
+
+    @project_rights(Role.QA)
+    @action(detail=False, methods=["POST"])
+    def get_recent_acitvity(self, req: Request):
+        digest = require(req.data, "")

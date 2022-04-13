@@ -15,6 +15,13 @@ from utils.common import extract_sr_pattern
 
 SMALL_INTERVAL = 0.5
 BIG_INTERVAL = 1
+DIFF_LIMIT = 7 * 24 * 3600
+
+
+def update_obj(model, dic):
+    for k, v in dic.items():
+        setattr(model, k, v)
+    model.save()
 
 
 def now():
@@ -135,7 +142,7 @@ class Command(BaseCommand):
                 }
                 if prev_info != kw:
                     updated = True
-                    mr.update(**kw)
+                    update_obj(m, kw)
                     MergeCrawlAssociation.objects.create(
                         merge=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
@@ -175,10 +182,10 @@ class Command(BaseCommand):
 
         def append_diff(_kw: dict):
             diff_status, additions, deletions, diffs = req.commit_diff_lines(c["id"])
-            print("diff status", diff_status, additions, deletions)
-            _kw['additions'] = additions
-            _kw['deletions'] = deletions
-            _kw['diff'] = json.dumps(diffs, ensure_ascii=False)
+            # print("diff status", diff_status, additions, deletions)
+            _kw["additions"] = additions
+            _kw["deletions"] = deletions
+            _kw["diff"] = json.dumps(diffs, ensure_ascii=False)
             return _kw
 
         self.stdout.write("begin query commits")
@@ -257,8 +264,7 @@ class Command(BaseCommand):
                 if old_key != kw:
                     updated = True
                     kw = append_diff(kw)
-                    print(kw['additions'])
-                    cs.update(**kw)
+                    update_obj(oc, kw)
                     CommitCrawlAssociation.objects.create(
                         commit=oc, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
@@ -267,7 +273,7 @@ class Command(BaseCommand):
             else:
                 updated = True
                 kw = append_diff(kw)
-                print(kw['additions'])
+                print("create", kw["additions"], kw["commiter_email"])
                 new_c = Commit.objects.create(**kw)
                 CommitCrawlAssociation.objects.create(
                     commit=new_c, crawl=crawl, operation=CrawlerOp.INSERT
@@ -402,7 +408,7 @@ class Command(BaseCommand):
                 }
                 if prev_info != kw:
                     updated = True
-                    iss.update(**kw)
+                    update_obj(m, kw)
                     IssueCrawlAssociation.objects.create(
                         issue=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
@@ -435,8 +441,8 @@ class Command(BaseCommand):
                 json.loads(r.info)["base_url"], r.remote_id, r.access_token
             )
 
-            # self.get_issue(r, req)
-            # sleep(BIG_INTERVAL)
+            self.get_issue(r, req)
+            sleep(BIG_INTERVAL)
             self.get_commit(r, req)
             sleep(BIG_INTERVAL)
             self.get_merge(r, req)
@@ -445,8 +451,8 @@ class Command(BaseCommand):
         self.stdout.write("END OF TASK CRAWL")
 
     def handle(self, *args, **options):
-        # s = BlockingScheduler()
-        # self.stdout.write("Scheduler Initialized")
-        # s.add_job(self.crawl_all, "interval", minutes=1)
-        # s.start()
-        self.crawl_all()
+        s = BlockingScheduler()
+        self.stdout.write("Scheduler Initialized")
+        s.add_job(self.crawl_all, "interval", minutes=5)
+        s.start()
+        # self.crawl_all()
