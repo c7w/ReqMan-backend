@@ -407,7 +407,7 @@ class ScheduleFunctionTest(TestCase):
             title="repo title",
             description="repo desc",
             createdBy=self.user,
-            url="https://gitlab.secoder.net/2020011156/unittest_repo",
+            # url="https://gitlab.secoder.net/2020011156/unittest_repo",
         )
         self.remote = RemoteRepo.objects.create(
             repo=self.repo,
