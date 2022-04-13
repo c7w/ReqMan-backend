@@ -63,6 +63,9 @@ class SR(models.Model):
         IR,
         through="IRSRAssociation",
     )
+    pattern = models.CharField(
+        max_length=100, default=None, null=True
+    )  # the pattern of the sub_request
 
     class SRState(models.TextChoices):
         TODO = "TODO"
@@ -80,6 +83,7 @@ class SR(models.Model):
             models.Index(fields=["project"]),
             models.Index(fields=["title"]),
             models.Index(fields=["title", "project"]),
+            models.Index(fields=["pattern"]),
         ]
 
 
@@ -88,7 +92,7 @@ class IRSRAssociation(models.Model):
     SR = models.ForeignKey(SR, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ["IR","SR"]
+        unique_together = ["IR", "SR"]
 
 
 class SRIterationAssociation(models.Model):
@@ -96,7 +100,7 @@ class SRIterationAssociation(models.Model):
     iteration = models.ForeignKey(Iteration, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ["iteration","SR"]
+        unique_together = ["iteration", "SR"]
 
 
 class Service(models.Model):
@@ -140,7 +144,8 @@ class ServiceSRAssociation(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ["service","SR"]
+        unique_together = ["service", "SR"]
+
 
 class IRIterationAssociation(models.Model):
     IR = models.ForeignKey(IR, on_delete=models.CASCADE)
@@ -155,8 +160,9 @@ class ProjectIterationAssociation(models.Model):
     iteration = models.ForeignKey(Iteration, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ["iteration","project"]
+        unique_together = ["iteration", "project"]
+
 
 class UserSRAssociation(models.Model):
-    user = models.ForeignKey("ums.User",on_delete=models.CASCADE)
-    sr = models.ForeignKey(SR,on_delete=models.CASCADE,unique=True)
+    user = models.ForeignKey("ums.User", on_delete=models.CASCADE)
+    sr = models.ForeignKey(SR, on_delete=models.CASCADE, unique=True)

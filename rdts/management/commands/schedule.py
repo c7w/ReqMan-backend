@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from apscheduler.schedulers.blocking import BlockingScheduler
 from rdts.models import *
 from rms.models import *
+from ums.models import UserRemoteUsernameAssociation, UserMinorEmailAssociation
 from rdts.query_class import type_map, Gitlab
 import datetime as dt
 import pytz
@@ -9,10 +10,18 @@ from backend.settings import TIME_ZONE
 from time import sleep
 import json
 from iso8601 import parse_date
-# from utils.common import extract_sr_pattern
+
+from utils.common import extract_sr_pattern
 
 SMALL_INTERVAL = 0.5
 BIG_INTERVAL = 1
+DIFF_LIMIT = 7 * 24 * 3600
+
+
+def update_obj(model, dic):
+    for k, v in dic.items():
+        setattr(model, k, v)
+    model.save()
 
 
 def now():
@@ -28,10 +37,26 @@ class Command(BaseCommand):
             print(pattern)
             if pattern:
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
+                MRSRAssociation.objects.filter(MR=mr).delete()
                 if sr:
-                    relation = MRSRAssociation.objects.filter(MR=mr, SR=sr).first()
-                    if not relation:
-                        MRSRAssociation.objects.create(MR=mr, SR=sr)
+                    MRSRAssociation.objects.create(MR=mr, SR=sr)
+
+        def update_user_merge(mr: MergeRequest):
+            _rec = UserRemoteUsernameAssociation.objects.filter(
+                repository=r.repo, remote_name=mr.authoredByUserName
+            ).first()
+
+            if _rec:
+                mr.user_authored = _rec.user
+
+            _rec = UserRemoteUsernameAssociation.objects.filter(
+                repository=r.repo, remote_name=mr.reviewedByUserName
+            ).first()
+
+            if _rec:
+                mr.user_reviewed = _rec.user
+
+            mr.save()
 
         self.stdout.write("begin query merges")
         # make requests
@@ -113,15 +138,16 @@ class Command(BaseCommand):
                     "authoredAt": m.authoredAt,
                     "reviewedByUserName": m.reviewedByUserName,
                     "reviewedAt": m.reviewedAt,
-                    "url": c["web_url"],
+                    "url": m.url,
                 }
                 if prev_info != kw:
                     updated = True
-                    mr.update(**kw)
+                    update_obj(m, kw)
                     MergeCrawlAssociation.objects.create(
                         merge=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
                 update_sr_merge(m, kw["title"])
+                update_user_merge(m)
             else:
                 updated = True
                 new_c = MergeRequest.objects.create(**kw)
@@ -129,6 +155,7 @@ class Command(BaseCommand):
                     merge=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
                 update_sr_merge(new_c, kw["title"])
+                update_user_merge(new_c)
 
         crawl.finished = True
         crawl.updated = updated
@@ -140,19 +167,33 @@ class Command(BaseCommand):
             print(pattern)
             if pattern:
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
+                CommitSRAssociation.objects.filter(commit=comm).delete()
                 if sr:
-                    relation = CommitSRAssociation.objects.filter(
-                        commit=comm, SR=sr
-                    ).first()
-                    if not relation:
-                        CommitSRAssociation.objects.create(commit=comm, SR=sr)
+                    CommitSRAssociation.objects.create(commit=comm, SR=sr)
+
+        def update_user_commit(c: Commit):
+            _rec = UserMinorEmailAssociation.objects.filter(
+                email=c.commiter_email, verified=True
+            ).first()
+
+            if _rec:
+                c.user_committer = _rec.user
+            c.save()
+
+        def append_diff(_kw: dict):
+            diff_status, additions, deletions, diffs = req.commit_diff_lines(c["id"])
+            # print("diff status", diff_status, additions, deletions)
+            _kw["additions"] = additions
+            _kw["deletions"] = deletions
+            _kw["diff"] = json.dumps(diffs, ensure_ascii=False)
+            return _kw
 
         self.stdout.write("begin query commits")
         # make requests
         commits = []
         i = 1
         while True:
-            sleep(SMALL_INTERVAL)
+            # sleep(SMALL_INTERVAL)
             self.stdout.write(f" Begin commits on page {i}")
             part = req.commits(i)
             if part[0] == 200:
@@ -222,18 +263,23 @@ class Command(BaseCommand):
                 }
                 if old_key != kw:
                     updated = True
-                    cs.update(**kw)
+                    kw = append_diff(kw)
+                    update_obj(oc, kw)
                     CommitCrawlAssociation.objects.create(
                         commit=oc, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
                 update_sr_commit(oc, kw["title"])
+                update_user_commit(oc)
             else:
                 updated = True
+                kw = append_diff(kw)
+                print("create", kw["additions"], kw["commiter_email"])
                 new_c = Commit.objects.create(**kw)
                 CommitCrawlAssociation.objects.create(
                     commit=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
                 update_sr_commit(new_c, kw["title"])
+                update_user_commit(new_c)
         crawl.finished = True
         crawl.updated = updated
         crawl.save()
@@ -244,12 +290,31 @@ class Command(BaseCommand):
             print(pattern)
             if pattern:
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
+                IssueSRAssociation.objects.filter(issue=iss).delete()
                 if sr:
-                    relation = IssueSRAssociation.objects.filter(
-                        issue=iss, SR=sr
-                    ).first()
-                    if not relation:
-                        IssueSRAssociation.objects.create(issue=iss, SR=sr)
+                    IssueSRAssociation.objects.create(issue=iss, SR=sr)
+
+        def update_user_issue(iss: Issue):
+            _rec = UserRemoteUsernameAssociation.objects.filter(
+                repository=r.repo, remote_name=iss.assigneeUserName
+            ).first()
+            if _rec:
+                iss.user_assignee = _rec.user
+
+            _rec = UserRemoteUsernameAssociation.objects.filter(
+                repository=r.repo, remote_name=iss.authoredByUserName
+            ).first()
+            if _rec:
+                iss.user_authored = _rec.user
+
+            _rec = UserRemoteUsernameAssociation.objects.filter(
+                repository=r.repo, remote_name=iss.closedByUserName
+            ).first()
+
+            if _rec:
+                iss.user_closed = _rec.user
+
+            iss.save()
 
         self.stdout.write("begin query issues")
         # make requests
@@ -343,11 +408,12 @@ class Command(BaseCommand):
                 }
                 if prev_info != kw:
                     updated = True
-                    iss.update(**kw)
+                    update_obj(m, kw)
                     IssueCrawlAssociation.objects.create(
                         issue=m, crawl=crawl, operation=CrawlerOp.UPDATE
                     )
                 update_sr_issue(m, kw["title"])
+                update_user_issue(m)
             else:
                 updated = True
                 new_c = Issue.objects.create(**kw)
@@ -355,6 +421,7 @@ class Command(BaseCommand):
                     issue=new_c, crawl=crawl, operation=CrawlerOp.INSERT
                 )
                 update_sr_issue(new_c, kw["title"])
+                update_user_issue(new_c)
 
         crawl.finished = True
         crawl.updated = updated
@@ -374,17 +441,18 @@ class Command(BaseCommand):
                 json.loads(r.info)["base_url"], r.remote_id, r.access_token
             )
 
-            # self.get_issue(r, req)
-            # sleep(BIG_INTERVAL)
-            # self.get_commit(r, req)
-            # sleep(BIG_INTERVAL)
-            # self.get_merge(r, req)
-            # sleep(BIG_INTERVAL)
+            self.get_issue(r, req)
+            sleep(BIG_INTERVAL)
+            self.get_commit(r, req)
+            sleep(BIG_INTERVAL)
+            self.get_merge(r, req)
+            sleep(BIG_INTERVAL)
 
         self.stdout.write("END OF TASK CRAWL")
 
     def handle(self, *args, **options):
         s = BlockingScheduler()
         self.stdout.write("Scheduler Initialized")
-        s.add_job(self.crawl_all, "interval", minutes=1)
+        s.add_job(self.crawl_all, "interval", minutes=5)
         s.start()
+        # self.crawl_all()

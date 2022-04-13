@@ -57,8 +57,8 @@ class RMS_Tests(TestCase):
             project=self.ums.p1, iteration=self.It1
         )
         IRIterationAssociation.objects.create(IR=self.IR1, iteration=self.It1)
-        UserSRAssociation.objects.create(user=self.ums.u1,sr=self.SR1)
-        
+        UserSRAssociation.objects.create(user=self.ums.u1, sr=self.SR1)
+
     def login(self, user, sess):
         c = Client()
         c.cookies["sessionId"] = sess
@@ -133,9 +133,9 @@ class RMS_Tests(TestCase):
         self.assertEqual(resp.json()["code"], 0)
 
         type = "user-sr"
-        resp = c.get(url,data={"project": str(id), "type": type})
+        resp = c.get(url, data={"project": str(id), "type": type})
         print(resp.json())
-        self.assertEqual(resp.json()['code'],0)
+        self.assertEqual(resp.json()["code"], 0)
 
         type = "ir-iteration"
         resp = c.get(
@@ -394,10 +394,10 @@ class RMS_Tests(TestCase):
         data12 = {
             "project": self.ums.p1.id,
             "type": "SR_changeLog",
-            "SRId":2,
+            "SRId": 2,
         }
-        resp=c.get('/rms/project/',data=data12)
-        self.assertEqual(resp.json()['code'],0)
+        resp = c.get("/rms/project/", data=data12)
+        self.assertEqual(resp.json()["code"], 0)
 
         data13 = {
             "project": self.ums.p1.id,
@@ -506,8 +506,9 @@ class RMS_Tests(TestCase):
             "project": self.ums.p1.id,
             "type": "user-iteration",
             "operation": "delete",
-            "data": {"iterationId": 2,
-                    "userId":999,
+            "data": {
+                "iterationId": 2,
+                "userId": 999,
             },
         }
         self.postMessage(c, data153, 0)
@@ -569,24 +570,21 @@ class RMS_Tests(TestCase):
         self.postMessage(c, data154, 0)
 
         data155 = {
-            'project':self.ums.p1.id,
-            "type":"user-sr",
-            "operation":"create",
-            "data":{
-                "updateData":{
-                    "userId":self.ums.u1.id,
-                    "SRId":self.SR2.id,
+            "project": self.ums.p1.id,
+            "type": "user-sr",
+            "operation": "create",
+            "data": {
+                "updateData": {
+                    "userId": self.ums.u1.id,
+                    "SRId": self.SR2.id,
                 }
-            }
+            },
         }
-        self.postMessage(c,data155,0)
+        self.postMessage(c, data155, 0)
         data156 = {
-            'project':self.ums.p1.id,
-            "type":"user-sr",
-            "operation":"delete",
-            "data":{
-                "userId":self.ums.u1.id,
-                "SRId":self.SR2.id
-            }
+            "project": self.ums.p1.id,
+            "type": "user-sr",
+            "operation": "delete",
+            "data": {"userId": self.ums.u1.id, "SRId": self.SR2.id},
         }
-        self.postMessage(c,data156,0)
+        self.postMessage(c, data156, 0)

@@ -11,7 +11,7 @@ class RDTS_Tests(TestCase):
         self.rms = RMS_Tests()
         self.rms.setUp()
         self.repo = Repository.objects.create(
-            url="223.edu",
+            # url="223.edu",
             project=self.rms.ums.p1,
             title="repo1",
             description="a common repo",
@@ -113,7 +113,7 @@ class RDTS_Tests(TestCase):
             "operation": "create",
             "data": {
                 "updateData": {
-                    "url": "22333.edu",
+                    # "url": "22333.edu",
                     "project": self.rms.ums.p1.id,
                     "title": "repo2",
                     "description": "a common repo",
@@ -121,7 +121,7 @@ class RDTS_Tests(TestCase):
                 }
             },
         }
-        self.post_message(c, data, 0)
+        self.post_message(c, data, -1)
 
         data = {
             "project": self.rms.ums.p1.id,
@@ -262,7 +262,7 @@ class RDTS_Tests(TestCase):
                     "commiter_email": "admin@2333.edu",
                     "commiter_name": "2333",
                     "createdAt": 1.0,
-                    "url": "233.edu",
+                    # "url": "233.edu",
                 },
             },
         }
@@ -296,7 +296,7 @@ class RDTS_Tests(TestCase):
             "data": {
                 "id": repo.id,
                 "updateData": {
-                    "url": "23333.edu",
+                    # "url": "23333.edu",
                     "project": self.rms.ums.p1.id,
                     "title": "repo2333",
                     "description": "a 2333 repo",
@@ -407,7 +407,7 @@ class ScheduleFunctionTest(TestCase):
             title="repo title",
             description="repo desc",
             createdBy=self.user,
-            url="https://gitlab.secoder.net/2020011156/unittest_repo",
+            # url="https://gitlab.secoder.net/2020011156/unittest_repo",
         )
         self.remote = RemoteRepo.objects.create(
             repo=self.repo,

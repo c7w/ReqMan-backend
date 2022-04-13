@@ -24,7 +24,7 @@ RESETTING_STATUS_EXPIRE_SECONDS = 3000
 EMAIL_MIN_INTERVAL = 30
 
 
-def require(lst, attr_name):
+def require(lst, attr_name, attr_type=None):
     """
     require a field in parameter lst.
     If it does not exist, raise ParamErr
@@ -32,7 +32,45 @@ def require(lst, attr_name):
     attr = lst.get(attr_name)
     if not attr:
         raise ParamErr(f"missing {attr_name}.")
+
+    if attr_type == int:
+        return intify(attr)
+
+    if attr_type == float:
+        return floatify(attr)
+
+    if attr_type == bool:
+        return booleanfy(attr)
+
     return attr
+
+
+def floatify(inp):
+    """
+    check input, if input is int, return
+    if input is str, turn it into string, if unable to convert, raise ParamErr
+    """
+    if type(inp) == float:
+        return inp
+
+    try:
+        return float(inp)
+    except ValueError:
+        raise ParamErr(f"{inp} cannot be convert to an float")
+
+
+def booleanfy(inp):
+    """
+    check input, if input is int, return
+    if input is str, turn it into string, if unable to convert, raise ParamErr
+    """
+    if type(inp) == bool:
+        return inp
+
+    try:
+        return bool(inp)
+    except ValueError:
+        raise ParamErr(f"{inp} cannot be convert to an bool")
 
 
 def intify(inp):
