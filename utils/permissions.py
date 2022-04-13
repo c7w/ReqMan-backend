@@ -4,6 +4,7 @@ from ums.utils import is_role, in_proj, intify, require, proj_exist
 from ums.models import Role, UserProjectAssociation
 from functools import wraps
 from utils.exceptions import ParamErr, Failure
+from rest_framework.request import Request
 
 rights = {}
 
@@ -39,7 +40,7 @@ def require_login(func):
 
 
 class GeneralPermission(BasePermission):
-    def has_permission(self, req, view):
+    def has_permission(self, req: Request, view):
         if view.action not in rights:
             return True
         pm = rights[view.action]
@@ -47,7 +48,11 @@ class GeneralPermission(BasePermission):
         if pm["type"] == "project":
             if not req.user:
                 return False
-            proj = intify(require(req.data, "project"))
+            if req.method == "POST":
+                proj = require(req.data, "project", int)
+            else:
+                proj = require(req.query_params, "project", int)
+
             proj = proj_exist(proj)
             if not proj:
                 raise ParamErr("proj non-exist")

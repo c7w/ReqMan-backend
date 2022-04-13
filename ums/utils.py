@@ -30,7 +30,7 @@ def require(lst, attr_name, attr_type=None):
     If it does not exist, raise ParamErr
     """
     attr = lst.get(attr_name)
-    if not attr:
+    if attr is None:
         raise ParamErr(f"missing {attr_name}.")
 
     if attr_type == int:
