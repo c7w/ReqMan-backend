@@ -7,6 +7,8 @@ from ums.models import *
 from utils.sessions import *
 from ums.utils import *
 from utils.permissions import GeneralPermission, project_rights, require_login
+
+# from utils.throttle import GeneralThrottle
 from django.conf import settings
 import hashlib
 from utils.model_date import get_timestamp
@@ -37,11 +39,7 @@ class UserViewSet(viewsets.ViewSet):
         email = require(req.data, "email")
         return Response({"code": 1 if email_exist(email) else 0})
 
-    @action(
-        detail=False,
-        methods=["POST"],
-        #    throttle_classes=throttle_classes + [SpecialThrottle("register")],
-    )
+    @action(detail=False, methods=["POST"])
     def register(self, req: Request):
         if req.user:
             return FAIL

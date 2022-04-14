@@ -156,10 +156,8 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exceptions.handler",
     "DEFAULT_THROTTLE_RATES": {
         # general throttles
-        "user": "60/min",
-        "visitor": "30/min",
-        # special throttles
-        "register": "10/day",
+        "user": "50/min",
+        "visitor": "20/min",
     },
 }
 
