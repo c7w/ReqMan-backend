@@ -153,10 +153,10 @@ class RDTSViewSet(viewsets.ViewSet):
         raise ParamErr("invalid op")
 
     @project_rights("AnyMember")
-    @action(detail=False, methods=["POST"])
+    @action(detail=False, methods=["GET"])
     def repo_crawllog(self, req: Request):
-        repo = require(req.data, "repo", int)
-        page = require(req.data, "page", int)
+        repo = require(req.query_params, "repo", int)
+        page = require(req.query_params, "page", int)
         PAGE_SZ = 50
         offset = (page - 1) * PAGE_SZ
         end = page * PAGE_SZ
@@ -174,14 +174,13 @@ class RDTSViewSet(viewsets.ViewSet):
 
         logs = CrawlLog.objects.filter(repo=remote_repo).order_by("-time")[offset:end]
 
-        print(logs)
         return Response({"code": 0, "data": [model_to_dict(log, exclude=['repo']) for log in logs]})
 
     @project_rights("AnyMember")
-    @action(detail=False, methods=["POST"])
+    @action(detail=False, methods=["GET"])
     def crawl_detail(self, req: Request):
-        crawl = require(req.data, "crawl_id", int)
-        page = require(req.data, "page", int)
+        crawl = require(req.query_params, "crawl_id", int)
+        page = require(req.query_params, "page", int)
         PAGE_SZ = 20
 
         begin = (page - 1) * PAGE_SZ
@@ -207,7 +206,7 @@ class RDTSViewSet(viewsets.ViewSet):
                 "data": {
                     "log": model_to_dict(log),
                     "issue": [
-                        model_to_dict(
+                        {**model_to_dict(
                             i.issue,
                             fields=[
                                 "issue_id",
@@ -215,19 +214,19 @@ class RDTSViewSet(viewsets.ViewSet):
                                 "labels",
                                 "authoredByUserName",
                             ],
-                        )
+                        ),"op": i.operation}
                         for i in issues
                     ],
                     "merge": [
-                        model_to_dict(
+                        {**model_to_dict(
                             m.merge, fields=["merge_id", "title", "authoredByUserName"]
-                        )
+                        ),"op": m.operation}
                         for m in mrs
                     ],
                     "commit": [
-                        model_to_dict(
+                        {**model_to_dict(
                             c.commit, fields=["hash_id", "title", "commiter_name"]
-                        )
+                        ),"op": c.operation}
                         for c in commits
                     ],
                 },
