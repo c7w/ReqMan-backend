@@ -33,13 +33,15 @@ class Command(BaseCommand):
 
     def get_merge(self, r: RemoteRepo, req):
         def update_sr_merge(mr: MergeRequest, title):
+            if MRSRAssociation.objects.filter(MR=mr, auto_added=False).first():
+                return
             pattern = extract_sr_pattern(title)
             print(pattern)
             if pattern:
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
-                MRSRAssociation.objects.filter(MR=mr).delete()
+                MRSRAssociation.objects.filter(MR=mr, auto_added=True).delete()
                 if sr:
-                    MRSRAssociation.objects.create(MR=mr, SR=sr)
+                    MRSRAssociation.objects.create(MR=mr, SR=sr, auto_added=True)
 
         def update_user_merge(mr: MergeRequest):
             _rec = UserRemoteUsernameAssociation.objects.filter(
@@ -163,13 +165,21 @@ class Command(BaseCommand):
 
     def get_commit(self, r: RemoteRepo, req):
         def update_sr_commit(comm: Commit, title):
+            if CommitSRAssociation.objects.filter(
+                commit=comm, auto_added=False
+            ).first():
+                return
             pattern = extract_sr_pattern(title)
             print(pattern)
             if pattern:
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
-                CommitSRAssociation.objects.filter(commit=comm).delete()
+                CommitSRAssociation.objects.filter(
+                    commit=comm, auto_added=True
+                ).delete()
                 if sr:
-                    CommitSRAssociation.objects.create(commit=comm, SR=sr)
+                    CommitSRAssociation.objects.create(
+                        commit=comm, SR=sr, auto_added=True
+                    )
 
         def update_user_commit(c: Commit):
             _rec = UserMinorEmailAssociation.objects.filter(
@@ -286,13 +296,15 @@ class Command(BaseCommand):
 
     def get_issue(self, r: RemoteRepo, req):
         def update_sr_issue(iss: Issue, title):
+            if IssueSRAssociation.objects.filter(issue=iss, auto_added=False).first():
+                return
             pattern = extract_sr_pattern(title)
             print(pattern)
             if pattern:
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
-                IssueSRAssociation.objects.filter(issue=iss).delete()
+                IssueSRAssociation.objects.filter(issue=iss, auto_added=True).delete()
                 if sr:
-                    IssueSRAssociation.objects.create(issue=iss, SR=sr)
+                    IssueSRAssociation.objects.create(issue=iss, SR=sr, auto_added=True)
 
         def update_user_issue(iss: Issue):
             _rec = UserRemoteUsernameAssociation.objects.filter(
@@ -428,7 +440,9 @@ class Command(BaseCommand):
         crawl.save()
 
     def crawl_all(self):
-        remote_repos = RemoteRepo.objects.filter(enable_crawling=True)
+        remote_repos = RemoteRepo.objects.filter(
+            enable_crawling=True, repo__disabled=False
+        )
         self.stdout.write("Repos: " + ", ".join([str(r.id) for r in remote_repos]))
 
         for r in remote_repos:

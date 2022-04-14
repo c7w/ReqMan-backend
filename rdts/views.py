@@ -29,7 +29,18 @@ class RDTSViewSet(viewsets.ViewSet):
                 return FAIL
             if not in_proj(req.user, proje):
                 return FAIL
-            resu = serialize(getRepo(proje))
+
+            resu = []
+            repos = getRepo(proje)
+            for repo in repos:
+                remote = RemoteRepo.objects.filter(repo=repo).first()
+                resu += [
+                    {
+                        **model_to_dict(repo),
+                        "remote": model_to_dict(remote) if remote else None,
+                    }
+                ]
+
             return Response({"code": 0, "data": resu})
         repo = intify(require(req.query_params, "repo"))
         repo = repoExist(repo)
@@ -147,10 +158,10 @@ class RDTSViewSet(viewsets.ViewSet):
         raise ParamErr("invalid op")
 
     @project_rights("AnyMember")
-    @action(detail=False, methods=["POST"])
+    @action(detail=False, methods=["GET"])
     def repo_crawllog(self, req: Request):
-        repo = require(req.data, "repo", int)
-        page = require(req.data, "page", int)
+        repo = require(req.query_params, "repo", int)
+        page = require(req.query_params, "page", int)
         PAGE_SZ = 50
         offset = (page - 1) * PAGE_SZ
         end = page * PAGE_SZ
@@ -158,21 +169,32 @@ class RDTSViewSet(viewsets.ViewSet):
         if offset < 0 or end < 0 or offset > end:
             raise ParamErr(f"page number error [{offset}, {end}]")
 
-        repo = Repository.objects.filter(id=repo, disabled=False).first()
+        repo = Repository.objects.filter(
+            id=repo, disabled=False, project=req.auth["proj"]
+        ).first()
         if not repo or repo.project.id != req.auth["proj"].id:
-            return STATUS(3)
+            return STATUS(1)
 
         remote_repo = RemoteRepo.objects.filter(repo=repo).first()
 
         logs = CrawlLog.objects.filter(repo=remote_repo).order_by("-time")[offset:end]
 
-        print(logs)
-        return Response({"code": 0, "data": [model_to_dict(log) for log in logs]})
+        return Response(
+            {"code": 0, "data": [model_to_dict(log, exclude=["repo"]) for log in logs]}
+        )
 
     @project_rights("AnyMember")
-    @action(detail=False, methods=["POST"])
+    @action(detail=False, methods=["GET"])
     def crawl_detail(self, req: Request):
-        crawl = require(req.data, "crawl_id", int)
+        crawl = require(req.query_params, "crawl_id", int)
+        page = require(req.query_params, "page", int)
+        PAGE_SZ = 20
+
+        begin = (page - 1) * PAGE_SZ
+        end = page * PAGE_SZ
+
+        if begin < 0 or end < 0 or begin > end:
+            return STATUS(2)
 
         log = CrawlLog.objects.filter(id=crawl).first()
         if not log:
@@ -181,36 +203,47 @@ class RDTSViewSet(viewsets.ViewSet):
         if log.repo.repo.project.id != req.auth["proj"].id:
             return STATUS(1)
 
-        issues = IssueCrawlAssociation.objects.filter(crawl=log)
-        mrs = MergeCrawlAssociation.objects.filter(crawl=log)
-        commits = CommitCrawlAssociation.objects.filter(crawl=log)
+        issues = IssueCrawlAssociation.objects.filter(crawl=log)[begin:end]
+        mrs = MergeCrawlAssociation.objects.filter(crawl=log)[begin:end]
+        commits = CommitCrawlAssociation.objects.filter(crawl=log)[begin:end]
 
         return Response(
             {
                 "code": 0,
                 "data": {
+                    "log": model_to_dict(log),
                     "issue": [
-                        model_to_dict(
-                            i.issue,
-                            fields=[
-                                "issue_id",
-                                "title",
-                                "labels",
-                                "authoredByUserName",
-                            ],
-                        )
+                        {
+                            **model_to_dict(
+                                i.issue,
+                                fields=[
+                                    "issue_id",
+                                    "title",
+                                    "labels",
+                                    "authoredByUserName",
+                                ],
+                            ),
+                            "op": i.operation,
+                        }
                         for i in issues
                     ],
                     "merge": [
-                        model_to_dict(
-                            m.merge, fields=["merge_id", "title", "authoredByUserName"]
-                        )
+                        {
+                            **model_to_dict(
+                                m.merge,
+                                fields=["merge_id", "title", "authoredByUserName"],
+                            ),
+                            "op": m.operation,
+                        }
                         for m in mrs
                     ],
                     "commit": [
-                        model_to_dict(
-                            c.commit, fields=["hash_id", "title", "commiter_name"]
-                        )
+                        {
+                            **model_to_dict(
+                                c.commit, fields=["hash_id", "title", "commiter_name"]
+                            ),
+                            "op": c.operation,
+                        }
                         for c in commits
                     ],
                 },
@@ -304,6 +337,8 @@ class RDTSViewSet(viewsets.ViewSet):
                                         "message",
                                         "createdAt",
                                         "url",
+                                        "additions",
+                                        "deletions",
                                     ],
                                 ),
                                 "repo": c.repo.title,

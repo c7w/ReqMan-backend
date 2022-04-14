@@ -570,13 +570,10 @@ class UserViewSet(viewsets.ViewSet):
         repo = require(req.data, "repo", int)
         remote_name = require(req.data, "remote_name")
 
-        repo = Repository.objects.filter(id=repo).first()
+        repo = Repository.objects.filter(id=repo, disabled=False).first()
 
-        if not repo:
+        if not repo or repo.project.id != req.auth["proj"].id:
             return STATUS(2)
-
-        if repo.project.id != req.auth["proj"].id:
-            return STATUS(3)
 
         if len(remote_name) > 255:
             return STATUS(1)

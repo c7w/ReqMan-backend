@@ -2,6 +2,25 @@ import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 
 
+class RemoteRepoFetcher:
+    def __init__(self, base_url: str, repo, access_token: str):
+        self.base = base_url.strip("/")
+        self.repo = int(repo)
+        self.token = access_token
+
+    def merges(self, page):
+        raise NotImplemented
+
+    def issues(self, page):
+        raise NotImplemented
+
+    def commits(self, page):
+        raise NotImplemented
+
+    def commit_diff_lines(self, _hash):
+        raise NotImplemented
+
+
 def from_diff_to_lines(diff: str):
     diff = diff.split("\n")
     add = 0
@@ -14,11 +33,9 @@ def from_diff_to_lines(diff: str):
     return add, subs
 
 
-class Gitlab:
+class Gitlab(RemoteRepoFetcher):
     def __init__(self, base_url: str, repo, access_token: str):
-        self.base = base_url.strip("/")
-        self.repo = int(repo)
-        self.token = access_token
+        super(Gitlab, self).__init__(base_url, repo, access_token)
 
     def merges(self, page):
         return self.request("merge_requests", page)
@@ -40,8 +57,8 @@ class Gitlab:
         resp = requests.get(url, headers={"PRIVATE-TOKEN": self.token})
         return resp.status_code, resp.json()
 
-    def commit_diff_lines(self, hash: str):
-        status, res = self.request(f"repository/commits/{hash}/diff")
+    def commit_diff_lines(self, _hash: str):
+        status, res = self.request(f"repository/commits/{_hash}/diff")
         if status == 200:
             diffs = []
             total_add = 0
