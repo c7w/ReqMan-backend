@@ -30,4 +30,24 @@ class Migration(migrations.Migration):
             model_name="config",
             index=models.Index(fields=["key"], name="ums_config_key_84db69_idx"),
         ),
+        migrations.RemoveIndex(
+            model_name="userremoteusernameassociation",
+            name="ums_userrem_remote__db2e35_idx",
+        ),
+        migrations.RemoveField(
+            model_name="userremoteusernameassociation",
+            name="repository",
+        ),
+        migrations.AddField(
+            model_name="userremoteusernameassociation",
+            name="url",
+            field=models.CharField(default="", max_length=255),
+            preserve_default=False,
+        ),
+        migrations.AddIndex(
+            model_name="userremoteusernameassociation",
+            index=models.Index(
+                fields=["remote_name", "url"], name="ums_userrem_remote__945b02_idx"
+            ),
+        ),
     ]

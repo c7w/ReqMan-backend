@@ -2,6 +2,7 @@ from tkinter.tix import Tree
 from rms.models import *
 from ums.models import Project
 from ums.utils import *
+from utils.common import extract_sr_pattern
 
 
 def serialize(resu: dict, excludeList=None):
@@ -143,6 +144,7 @@ def createSR(datas: dict):
     judgeTypeInt(data["priority"])
     data["createdBy"] = require(datas, "createdBy")
     data["state"] = require(datas, "state")
+    data["pattern"] = extract_sr_pattern(data["title"])
 
     if not data["state"] in ["TODO", "WIP", "Reviewing", "Done"]:
         raise ParamErr(f"wrong type.")
@@ -377,6 +379,8 @@ def updateSR(id: int, datas: dict, user: User):
     if "state" in data:
         if not data["state"] in ["TODO", "WIP", "Reviewing", "Done"]:
             raise ParamErr(f"wrong type.")
+    if "title" in data:
+        data["pattern"] = extract_sr_pattern(data["title"])
     SR.objects.filter(id=id).update(**data)
     log["SR"] = sr
     log["project"] = sr.project
