@@ -34,7 +34,12 @@ class RDTSViewSet(viewsets.ViewSet):
             repos = getRepo(proje)
             for repo in repos:
                 remote = RemoteRepo.objects.filter(repo=repo).first()
-                resu += [{**model_to_dict(repo), "remote": model_to_dict(remote) if remote else None}]
+                resu += [
+                    {
+                        **model_to_dict(repo),
+                        "remote": model_to_dict(remote) if remote else None,
+                    }
+                ]
 
             return Response({"code": 0, "data": resu})
         repo = intify(require(req.query_params, "repo"))
@@ -174,7 +179,9 @@ class RDTSViewSet(viewsets.ViewSet):
 
         logs = CrawlLog.objects.filter(repo=remote_repo).order_by("-time")[offset:end]
 
-        return Response({"code": 0, "data": [model_to_dict(log, exclude=['repo']) for log in logs]})
+        return Response(
+            {"code": 0, "data": [model_to_dict(log, exclude=["repo"]) for log in logs]}
+        )
 
     @project_rights("AnyMember")
     @action(detail=False, methods=["GET"])
@@ -206,27 +213,37 @@ class RDTSViewSet(viewsets.ViewSet):
                 "data": {
                     "log": model_to_dict(log),
                     "issue": [
-                        {**model_to_dict(
-                            i.issue,
-                            fields=[
-                                "issue_id",
-                                "title",
-                                "labels",
-                                "authoredByUserName",
-                            ],
-                        ),"op": i.operation}
+                        {
+                            **model_to_dict(
+                                i.issue,
+                                fields=[
+                                    "issue_id",
+                                    "title",
+                                    "labels",
+                                    "authoredByUserName",
+                                ],
+                            ),
+                            "op": i.operation,
+                        }
                         for i in issues
                     ],
                     "merge": [
-                        {**model_to_dict(
-                            m.merge, fields=["merge_id", "title", "authoredByUserName"]
-                        ),"op": m.operation}
+                        {
+                            **model_to_dict(
+                                m.merge,
+                                fields=["merge_id", "title", "authoredByUserName"],
+                            ),
+                            "op": m.operation,
+                        }
                         for m in mrs
                     ],
                     "commit": [
-                        {**model_to_dict(
-                            c.commit, fields=["hash_id", "title", "commiter_name"]
-                        ),"op": c.operation}
+                        {
+                            **model_to_dict(
+                                c.commit, fields=["hash_id", "title", "commiter_name"]
+                            ),
+                            "op": c.operation,
+                        }
                         for c in commits
                     ],
                 },

@@ -1,6 +1,7 @@
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 
+
 class RemoteRepoFetcher:
     def __init__(self, base_url: str, repo, access_token: str):
         self.base = base_url.strip("/")
@@ -18,6 +19,7 @@ class RemoteRepoFetcher:
 
     def commit_diff_lines(self, _hash):
         raise NotImplemented
+
 
 def from_diff_to_lines(diff: str):
     diff = diff.split("\n")
