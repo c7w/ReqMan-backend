@@ -45,14 +45,14 @@ class Command(BaseCommand):
 
         def update_user_merge(mr: MergeRequest):
             _rec = UserRemoteUsernameAssociation.objects.filter(
-                repository=r.repo, remote_name=mr.authoredByUserName
+                url=r.repo.url, remote_name=mr.authoredByUserName
             ).first()
 
             if _rec:
                 mr.user_authored = _rec.user
 
             _rec = UserRemoteUsernameAssociation.objects.filter(
-                repository=r.repo, remote_name=mr.reviewedByUserName
+                url=r.repo.url, remote_name=mr.reviewedByUserName
             ).first()
 
             if _rec:
@@ -308,19 +308,19 @@ class Command(BaseCommand):
 
         def update_user_issue(iss: Issue):
             _rec = UserRemoteUsernameAssociation.objects.filter(
-                repository=r.repo, remote_name=iss.assigneeUserName
+                url=r.repo.url, remote_name=iss.assigneeUserName
             ).first()
             if _rec:
                 iss.user_assignee = _rec.user
 
             _rec = UserRemoteUsernameAssociation.objects.filter(
-                repository=r.repo, remote_name=iss.authoredByUserName
+                url=r.repo.url, remote_name=iss.authoredByUserName
             ).first()
             if _rec:
                 iss.user_authored = _rec.user
 
             _rec = UserRemoteUsernameAssociation.objects.filter(
-                repository=r.repo, remote_name=iss.closedByUserName
+                url=r.repo.url, remote_name=iss.closedByUserName
             ).first()
 
             if _rec:
@@ -465,8 +465,8 @@ class Command(BaseCommand):
         self.stdout.write("END OF TASK CRAWL")
 
     def handle(self, *args, **options):
-        s = BlockingScheduler()
-        self.stdout.write("Scheduler Initialized")
-        s.add_job(self.crawl_all, "interval", minutes=5)
-        s.start()
-        # self.crawl_all()
+        # s = BlockingScheduler()
+        # self.stdout.write("Scheduler Initialized")
+        # s.add_job(self.crawl_all, "interval", minutes=5)
+        # s.start()
+        self.crawl_all()
