@@ -562,22 +562,24 @@ class UserViewSet(viewsets.ViewSet):
 
         raise ParamErr("invalid stage")
 
-    @project_rights("AnyMember")
     @action(detail=False, methods=["POST"])
+    @require_login
     def set_remote_username(self, req: Request):
-        repo = require(req.data, "repo", int)
+        url = require(req.data, "url")
         remote_name = require(req.data, "remote_name")
 
-        repo = Repository.objects.filter(id=repo, disabled=False).first()
+        repos = Repository.objects.filter(
+            url=url, project=req.auth["proj"], disabled=False
+        )
 
-        if not repo or repo.project.id != req.auth["proj"].id:
+        if len(repos) == 0:
             return STATUS(2)
 
         if len(remote_name) > 255:
             return STATUS(1)
 
         relation = UserRemoteUsernameAssociation.objects.filter(
-            user=req.user, repository=repo
+            user=req.user, url=url
         ).first()
 
         if relation:
@@ -585,7 +587,16 @@ class UserViewSet(viewsets.ViewSet):
             relation.save()
         else:
             UserRemoteUsernameAssociation.objects.create(
-                user=req.user, repository=repo, remote_name=remote_name
+                user=req.user, url=url, remote_name=remote_name
             )
 
         return SUCC
+
+    @action(detail=False, methods=["GET"])
+    @require_login
+    def urls_to_set_remote_name(self, req: Request):
+        projects = req.user.project.filter(disabled=False)
+        urls_av = set()
+        for p in projects:
+            for r in Repository.objects.filter(project=p, disabled=False):
+                urls_av += r

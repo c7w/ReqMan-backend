@@ -49,7 +49,7 @@ class RDTSViewSet(viewsets.ViewSet):
         if type == "mr":
             resu = serialize(getMR(repo))
         elif type == "commit":
-            resu = serialize(getCommit(repo),["diff"])
+            resu = serialize(getCommit(repo), ["diff"])
         elif type == "issue":
             resu = serialize(getIssue(repo))
         elif type == "commit-sr":
@@ -120,9 +120,20 @@ class RDTSViewSet(viewsets.ViewSet):
         if len(desc) > 1000:
             return STATUS(2)
 
+        if "base_url" not in info:
+            return STATUS(4)
+
+        remote_url = (
+            info["base_url"].strip().strip("/").strip("http://").strip("https://")
+        )
+
         if op == "add":
             repo = Repository.objects.create(
-                project=proj, title=title, description=desc, createdBy=req.user
+                project=proj,
+                title=title,
+                description=desc,
+                createdBy=req.user,
+                url=remote_url,
             )
             RemoteRepo.objects.create(
                 type=repo_type,
@@ -252,7 +263,7 @@ class RDTSViewSet(viewsets.ViewSet):
 
     @project_rights([Role.QA, Role.SUPERMASTER])
     @action(detail=False, methods=["POST"])
-    def get_recent_acitvity(self, req: Request):
+    def get_recent_activity(self, req: Request):
         digest = require(req.data, "digest", bool)
         dev_id = require(req.data, "dev_id", int)
         limit = require(
