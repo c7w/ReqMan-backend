@@ -4,7 +4,9 @@ from ums.models import Project
 from ums.utils import *
 
 
-def serialize(resu: dict, excludeList: list = []):
+def serialize(resu: dict, excludeList=None):
+    if excludeList is None:
+        excludeList = []
     return [model_to_dict(p, exclude=excludeList) for p in resu]
 
 
