@@ -130,3 +130,11 @@ class UserRemoteUsernameAssociation(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["remote_name", "repository"])]
+
+
+class Config(models.Model):
+    key = models.CharField(max_length=255)
+    value = models.TextField()
+
+    class Meta:
+        indexes = [models.Index(fields=["key"])]
