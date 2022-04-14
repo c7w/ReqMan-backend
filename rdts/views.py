@@ -306,6 +306,8 @@ class RDTSViewSet(viewsets.ViewSet):
                                         "message",
                                         "createdAt",
                                         "url",
+                                        "additions",
+                                        "deletions",
                                     ],
                                 ),
                                 "repo": c.repo.title,

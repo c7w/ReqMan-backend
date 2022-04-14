@@ -145,6 +145,7 @@ class Issue(models.Model):
 class CommitSRAssociation(models.Model):
     commit = models.ForeignKey(Commit, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
+    auto_added = models.BooleanField(models.BooleanField, default=False)
 
     class Meta:
         unique_together = ["commit", "SR"]
@@ -153,6 +154,7 @@ class CommitSRAssociation(models.Model):
 class MRSRAssociation(models.Model):
     MR = models.ForeignKey(MergeRequest, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
+    auto_added = models.BooleanField(models.BooleanField, default=False)
 
     class Meta:
         unique_together = ["MR", "SR"]
@@ -161,6 +163,7 @@ class MRSRAssociation(models.Model):
 class IssueSRAssociation(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
+    auto_added = models.BooleanField(models.BooleanField, default=False)
 
     class Meta:
         unique_together = ["issue", "SR"]
@@ -169,6 +172,7 @@ class IssueSRAssociation(models.Model):
 class IssueMRAssociation(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
     MR = models.ForeignKey(MergeRequest, on_delete=models.CASCADE)
+    auto_added = models.BooleanField(models.BooleanField, default=False)
 
     class Meta:
         unique_together = ["issue", "MR"]
