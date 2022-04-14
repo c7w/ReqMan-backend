@@ -11,10 +11,10 @@ from time import sleep
 import json
 from iso8601 import parse_date
 
-from utils.common import extract_sr_pattern
+from utils.common import extract_sr_pattern, extract_issue_pattern
 
-SMALL_INTERVAL = 0.5
-BIG_INTERVAL = 1
+SMALL_INTERVAL = 0.1
+BIG_INTERVAL = 0.5
 DIFF_LIMIT = 7 * 24 * 3600
 
 
@@ -32,33 +32,49 @@ class Command(BaseCommand):
     help = "Run Schedule Tasks"
 
     def get_merge(self, r: RemoteRepo, req):
-        def update_sr_merge(mr: MergeRequest, title):
-            if MRSRAssociation.objects.filter(MR=mr, auto_added=False).first():
+        def update_sr_merge(_mr: MergeRequest, title):
+            if MRSRAssociation.objects.filter(MR=_mr, auto_added=False).first():
                 return
             pattern = extract_sr_pattern(title)
             print(pattern)
             if pattern:
                 sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
-                MRSRAssociation.objects.filter(MR=mr, auto_added=True).delete()
+                MRSRAssociation.objects.filter(MR=_mr, auto_added=True).delete()
                 if sr:
-                    MRSRAssociation.objects.create(MR=mr, SR=sr, auto_added=True)
+                    MRSRAssociation.objects.create(MR=_mr, SR=sr, auto_added=True)
 
-        def update_user_merge(mr: MergeRequest):
+        def update_user_merge(_mr: MergeRequest):
             _rec = UserRemoteUsernameAssociation.objects.filter(
-                url=r.repo.url, remote_name=mr.authoredByUserName
+                url=r.repo.url, remote_name=_mr.authoredByUserName
             ).first()
 
             if _rec:
-                mr.user_authored = _rec.user
+                _mr.user_authored = _rec.user
 
             _rec = UserRemoteUsernameAssociation.objects.filter(
-                url=r.repo.url, remote_name=mr.reviewedByUserName
+                url=r.repo.url, remote_name=_mr.reviewedByUserName
             ).first()
 
             if _rec:
-                mr.user_reviewed = _rec.user
+                _mr.user_reviewed = _rec.user
 
-            mr.save()
+            _mr.save()
+
+        def update_merge_issue(_mr: MergeRequest):
+            if IssueMRAssociation.objects.filter(
+                MR=_mr, auto_added=False
+            ).first():  # manual top priority
+                return
+            issue_str = extract_issue_pattern(_mr.title)
+            if issue_str:
+                issue_id = int(issue_str)
+                issue = Issue.objects.filter(issue_id=issue_id).first()
+                IssueMRAssociation.objects.filter(MR=_mr, auto_added=True).delete()
+                print("pattern", issue_id, "issue", issue)
+                if issue:
+                    IssueMRAssociation.objects.create(
+                        issue=issue, MR=_mr, auto_added=True
+                    )
 
         self.stdout.write("begin query merges")
         # make requests
@@ -150,6 +166,7 @@ class Command(BaseCommand):
                     )
                 update_sr_merge(m, kw["title"])
                 update_user_merge(m)
+                update_merge_issue(m)
             else:
                 updated = True
                 new_c = MergeRequest.objects.create(**kw)
@@ -158,6 +175,7 @@ class Command(BaseCommand):
                 )
                 update_sr_merge(new_c, kw["title"])
                 update_user_merge(new_c)
+                update_merge_issue(new_c)
 
         crawl.finished = True
         crawl.updated = updated
@@ -183,7 +201,7 @@ class Command(BaseCommand):
 
         def update_user_commit(c: Commit):
             _rec = UserMinorEmailAssociation.objects.filter(
-                email=c.commiter_email, # verified=True
+                email=c.commiter_email,  # verified=True
             ).first()
 
             if _rec:
@@ -465,8 +483,8 @@ class Command(BaseCommand):
         self.stdout.write("END OF TASK CRAWL")
 
     def handle(self, *args, **options):
-        # s = BlockingScheduler()
-        # self.stdout.write("Scheduler Initialized")
-        # s.add_job(self.crawl_all, "interval", minutes=5)
-        # s.start()
-        self.crawl_all()
+        s = BlockingScheduler()
+        self.stdout.write("Scheduler Initialized")
+        s.add_job(self.crawl_all, "interval", minutes=5)
+        s.start()
+        # self.crawl_all()

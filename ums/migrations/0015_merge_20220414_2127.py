@@ -6,9 +6,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ums', '0014_config_config_ums_config_key_84db69_idx'),
-        ('ums', '0014_remove_userremoteusernameassociation_ums_userrem_remote__db2e35_idx_and_more'),
+        ("ums", "0014_config_config_ums_config_key_84db69_idx"),
+        (
+            "ums",
+            "0014_remove_userremoteusernameassociation_ums_userrem_remote__db2e35_idx_and_more",
+        ),
     ]
 
-    operations = [
-    ]
+    operations = []
