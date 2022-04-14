@@ -428,7 +428,9 @@ class Command(BaseCommand):
         crawl.save()
 
     def crawl_all(self):
-        remote_repos = RemoteRepo.objects.filter(enable_crawling=True, repo__disabled=False)
+        remote_repos = RemoteRepo.objects.filter(
+            enable_crawling=True, repo__disabled=False
+        )
         self.stdout.write("Repos: " + ", ".join([str(r.id) for r in remote_repos]))
 
         for r in remote_repos:

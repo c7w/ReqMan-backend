@@ -158,7 +158,9 @@ class RDTSViewSet(viewsets.ViewSet):
         if offset < 0 or end < 0 or offset > end:
             raise ParamErr(f"page number error [{offset}, {end}]")
 
-        repo = Repository.objects.filter(id=repo, disabled=False).first()
+        repo = Repository.objects.filter(
+            id=repo, disabled=False, project=req.auth["proj"]
+        ).first()
         if not repo or repo.project.id != req.auth["proj"].id:
             return STATUS(3)
 
