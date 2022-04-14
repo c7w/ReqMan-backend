@@ -124,7 +124,11 @@ class RDTSViewSet(viewsets.ViewSet):
             return STATUS(4)
 
         remote_url = (
-            info["base_url"].strip().strip("/").strip("http://").strip("https://")
+            info["base_url"]
+            .strip()
+            .strip("/")
+            .replace("http://", "")
+            .replace("https://", "")
         )
 
         if op == "add":
@@ -155,7 +159,7 @@ class RDTSViewSet(viewsets.ViewSet):
 
             remote_repo = RemoteRepo.objects.filter(repo=repo[0])
 
-            repo.update(title=title, description=desc)
+            repo.update(title=title, description=desc, url=remote_url)
             remote_repo.update(
                 type=repo_type,
                 remote_id=remote_id,

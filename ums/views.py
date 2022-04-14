@@ -568,11 +568,13 @@ class UserViewSet(viewsets.ViewSet):
         url = require(req.data, "url")
         remote_name = require(req.data, "remote_name")
 
-        repos = Repository.objects.filter(
-            url=url, project=req.auth["proj"], disabled=False
-        )
+        projects = req.user.project.filter(disabled=False)
+        urls = set()
+        for p in projects:
+            for r in Repository.objects.filter(project=p, disabled=False):
+                urls.add(r.url)
 
-        if len(repos) == 0:
+        if url not in urls:
             return STATUS(2)
 
         if len(remote_name) > 255:
@@ -596,7 +598,11 @@ class UserViewSet(viewsets.ViewSet):
     @require_login
     def urls_to_set_remote_name(self, req: Request):
         projects = req.user.project.filter(disabled=False)
-        urls_av = set()
+        mapping = {}
         for p in projects:
             for r in Repository.objects.filter(project=p, disabled=False):
-                urls_av += r
+                if r.url in mapping:
+                    mapping[r.url] += [r.title]
+                else:
+                    mapping[r.url] = [r.title]
+        return Response({"code": 0, "data": mapping})
