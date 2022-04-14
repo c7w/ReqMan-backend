@@ -12,7 +12,7 @@ class UmsConfig(AppConfig):
 
             try:
                 obj = Config.objects.filter(key=key).first()
-            except OperationalError:
+            except Exception:
                 return
             if obj:
                 return
