@@ -143,7 +143,7 @@ class RDTSViewSet(viewsets.ViewSet):
                 return STATUS(3)
 
             remote_repo = RemoteRepo.objects.filter(repo=repo[0])
-
+            print(remote_repo)
             repo.update(title=title, description=desc)
             remote_repo.update(
                 type=repo_type,
@@ -252,12 +252,13 @@ class RDTSViewSet(viewsets.ViewSet):
 
     @project_rights([Role.QA, Role.SUPERMASTER])
     @action(detail=False, methods=["POST"])
-    def get_recent_acitvity(self, req: Request):
+    def get_recent_activity(self, req: Request):
         digest = require(req.data, "digest", bool)
         dev_id = require(req.data, "dev_id", int)
         limit = require(
             req.data,
             "limit",
+            float
         )
 
         if limit == -1:
