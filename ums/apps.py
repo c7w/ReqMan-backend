@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from django.db.utils import OperationalError
 
 
 class UmsConfig(AppConfig):
@@ -9,7 +10,10 @@ class UmsConfig(AppConfig):
         def try_set_default(key, value):
             from .models import Config
 
-            obj = Config.objects.filter(key=key).first()
+            try:
+                obj = Config.objects.filter(key=key).first()
+            except OperationalError:
+                return
             if obj:
                 return
             Config.objects.create(key=key, value=value)
