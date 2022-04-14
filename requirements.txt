@@ -21,3 +21,5 @@ black
 apscheduler
 requests
 iso8601==1.0.2
+
+humanize

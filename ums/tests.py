@@ -930,9 +930,9 @@ class UMS_Tests(TestCase):
         self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
 
         # non-verified email
-        resp = c.post(url1, data={"email": self.u1.email}).json()
-        self.assertEqual(resp["code"], 2)
-        self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
+        # resp = c.post(url1, data={"email": self.u1.email}).json()
+        # self.assertEqual(resp["code"], 2)
+        # self.assertEqual(len(PendingModifyPasswordEmail.objects.all()), 0)
 
         # add verified tag
         self.u1.email_verified = True
