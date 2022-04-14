@@ -296,12 +296,12 @@ def send_mail(receiver: str, content: str = "", subject: str = "") -> bool:
     if subject == "":
         subject = "subject not yet configured"
 
-    username = "tangentnightydegree@foxmail.com"
+    username = "reqman@foxmail.com"
     host = "smtp.qq.com"
-    auth = "hfeiqimfqxkegbci"
+    auth = "ousjljeyregndcab"
 
     msg = MIMEText(content)
-    msg["From"] = "ReqMan"
+    msg["From"] = f"ReqMan<{username}>"
     msg["Subject"] = subject
     msg["To"] = receiver
 
