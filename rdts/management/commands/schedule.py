@@ -183,7 +183,7 @@ class Command(BaseCommand):
 
         def update_user_commit(c: Commit):
             _rec = UserMinorEmailAssociation.objects.filter(
-                email=c.commiter_email, verified=True
+                email=c.commiter_email, # verified=True
             ).first()
 
             if _rec:
