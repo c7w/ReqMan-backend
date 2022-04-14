@@ -362,12 +362,6 @@ def updateSR(id: int, datas: dict, user: User):
     sr = SR.objects.filter(id=id).first()
     if not sr:
         raise ParamErr(f"Wrong SR Id.")
-    log["SR"] = sr
-    log["project"] = sr.project
-    log["formerState"] = sr.state
-    log["formerDescription"] = sr.description
-    log["changedBy"] = user
-    log["description"] = "Changed by " + user.name
     for i in datas:
         if i in rangeWord:
             data[i] = datas[i]
@@ -384,6 +378,12 @@ def updateSR(id: int, datas: dict, user: User):
         if not data["state"] in ["TODO", "WIP", "Reviewing", "Done"]:
             raise ParamErr(f"wrong type.")
     SR.objects.filter(id=id).update(**data)
+    log["SR"] = sr
+    log["project"] = sr.project
+    log["formerState"] = sr.state
+    log["formerDescription"] = sr.description
+    log["changedBy"] = user
+    log["description"] = "Changed by " + user.name
     SR_Changelog.objects.create(**log)
 
 
