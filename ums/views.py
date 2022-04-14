@@ -494,7 +494,7 @@ class UserViewSet(viewsets.ViewSet):
     def email_modify_password_request(self, req: Request):
         email = require(req.data, "email").lower()
         user = all_users().filter(email=email).first()
-        if user and user.email_verified:
+        if user:
             hash1 = hashlib.sha256(str(get_timestamp()).encode()).hexdigest()
             PendingModifyPasswordEmail.objects.create(
                 user=user,
