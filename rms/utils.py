@@ -431,7 +431,7 @@ def updateSRState(id, datas, user):
             raise ParamErr(f"wrong type.")
     else:
         return
-    users = SR.objects.filter(sr=sr).first()
+    users = UserSRAssociation.objects.filter(sr=sr).first()
     if users.user != user:
         raise ParamErr(f"User not associated to SR!")
     SR.objects.filter(id=id).update(**data)
