@@ -12,4 +12,4 @@ def extract_issue_pattern(title: str):
     res = re.search(r"(?<=\(#)\d+\)$", title.strip())
     if res is None:
         return None
-    return res[:-1]
+    return res.group(0)[:-1]
