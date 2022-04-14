@@ -49,7 +49,7 @@ class RDTSViewSet(viewsets.ViewSet):
         if type == "mr":
             resu = serialize(getMR(repo))
         elif type == "commit":
-            resu = serialize(getCommit(repo))
+            resu = serialize(getCommit(repo),["diff"])
         elif type == "issue":
             resu = serialize(getIssue(repo))
         elif type == "commit-sr":
