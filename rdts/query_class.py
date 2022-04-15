@@ -20,6 +20,9 @@ class RemoteRepoFetcher:
     def commit_diff_lines(self, _hash):
         raise NotImplemented
 
+    def branches(self, page):
+        raise NotImplemented
+
 
 def from_diff_to_lines(diff: str):
     diff = diff.split("\n")
@@ -71,6 +74,9 @@ class Gitlab(RemoteRepoFetcher):
             return status, total_add, total_subs, diffs
         else:
             return status, -1, -1, []
+
+    def branches(self, page):
+        return self.request("repository/branches", page)
 
 
 type_map = {"gitlab": Gitlab}

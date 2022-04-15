@@ -259,3 +259,8 @@ class IssueCrawlAssociation(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
     crawl = models.ForeignKey(CrawlLog, on_delete=models.CASCADE)
     operation = models.CharField(max_length=10)
+
+
+class PendingWebhookRequests(models.Model):
+    remote = models.ForeignKey(RemoteRepo, on_delete=models.CASCADE)
+    body = models.TextField()
