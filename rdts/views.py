@@ -13,6 +13,35 @@ from rms.utils import serialize
 from rdts.query_class import type_map
 import json
 from django.forms.models import model_to_dict
+from rest_framework.decorators import api_view
+
+
+@api_view(["POST"])
+def webhook(req: Request):
+    token = req.MEAT.get("X-Gitlab-Token")
+    if not token:
+        token = req.MEAT.get("X-Gitlab-Token".upper())
+
+    if not token:
+        return FAIL
+
+    remote = None
+    for r in RemoteRepo.objects.filter(repo__disabled=False):
+        if r.secret_token == token:
+            remote = r
+            break
+
+    if not remote:
+        return FAIL
+
+    op = require(req.data, "object_kind")
+
+    if op == "push":
+        pass
+    elif op == "issue":
+        pass
+    elif op == "merge_request":
+        pass
 
 
 class RDTSViewSet(viewsets.ViewSet):

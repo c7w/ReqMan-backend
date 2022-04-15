@@ -21,5 +21,5 @@ urlpatterns = [
     path("", views.root),
     path("ums/", include("ums.urls")),
     path("rms/", include("rms.urls")),
-    path("rdts/",include("rdts.urls")),
+    path("rdts/", include("rdts.urls")),
 ]
