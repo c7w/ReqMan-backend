@@ -23,11 +23,10 @@ def update_obj(model, dic):
 def now():
     return dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
 
-def search_for_commit_update(commits, r: RemoteRepo, ori_commits, crawl):
+
+def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=None):
     def update_sr_commit(comm: Commit, title):
-        if CommitSRAssociation.objects.filter(
-            commit=comm, auto_added=False
-        ).first():
+        if CommitSRAssociation.objects.filter(commit=comm, auto_added=False).first():
             return
         pattern = extract_sr_pattern(title)
         print(pattern)
@@ -35,13 +34,9 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, crawl):
             sr = SR.objects.filter(
                 pattern=pattern, project=r.repo.project, disabled=False
             ).first()
-            CommitSRAssociation.objects.filter(
-                commit=comm, auto_added=True
-            ).delete()
+            CommitSRAssociation.objects.filter(commit=comm, auto_added=True).delete()
             if sr:
-                CommitSRAssociation.objects.create(
-                    commit=comm, SR=sr, auto_added=True
-                )
+                CommitSRAssociation.objects.create(commit=comm, SR=sr, auto_added=True)
 
     def update_user_commit(c: Commit):
         _rec = UserMinorEmailAssociation.objects.filter(
@@ -54,7 +49,7 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, crawl):
 
     def append_diff(_kw: dict):
         diff_status, additions, deletions, diffs = req.commit_diff_lines(c["id"])
-        # print("diff status", diff_status, additions, deletions)
+        print("diff status", diff_status, additions, deletions)
         _kw["additions"] = additions
         _kw["deletions"] = deletions
         _kw["diff"] = json.dumps(diffs, ensure_ascii=False)
@@ -98,7 +93,7 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, crawl):
         else:
             updated = True
             kw = append_diff(kw)
-            print("create", kw["additions"], kw["commiter_email"])
+            print("create", kw["additions"], kw["deletions"], kw["commiter_email"])
             new_c = Commit.objects.create(**kw)
             if crawl:
                 CommitCrawlAssociation.objects.create(
@@ -108,7 +103,8 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, crawl):
             update_user_commit(new_c)
     return updated
 
-def search_for_issue_update(issues, r: RemoteRepo, ori_issues, crawl = None):
+
+def search_for_issue_update(issues, r: RemoteRepo, ori_issues, crawl=None):
     def update_sr_issue(iss: Issue, title):
         if IssueSRAssociation.objects.filter(issue=iss, auto_added=False).first():
             return
@@ -208,8 +204,14 @@ def search_for_issue_update(issues, r: RemoteRepo, ori_issues, crawl = None):
     return updated
 
 
-def search_for_mr_addition(merges, r: RemoteRepo, ori_merges, crawl = None, ):
+def search_for_mr_addition(
+    merges,
+    r: RemoteRepo,
+    ori_merges,
+    crawl=None,
+):
     updated = False
+
     def update_sr_merge(_mr: MergeRequest, title):
         if MRSRAssociation.objects.filter(MR=_mr, auto_added=False).first():
             return
@@ -252,9 +254,8 @@ def search_for_mr_addition(merges, r: RemoteRepo, ori_merges, crawl = None, ):
             IssueMRAssociation.objects.filter(MR=_mr, auto_added=True).delete()
             print("pattern", issue_id, "issue", issue)
             if issue:
-                IssueMRAssociation.objects.create(
-                    issue=issue, MR=_mr, auto_added=True
-                )
+                IssueMRAssociation.objects.create(issue=issue, MR=_mr, auto_added=True)
+
     print(str(len(merges)))
     for c in merges:
         kw = {

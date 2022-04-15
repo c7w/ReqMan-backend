@@ -20,12 +20,15 @@ from utils.model_date import get_timestamp
 
 @api_view(["POST"])
 def webhook(req: Request):
-    token = req.MEAT.get("HTTP_X_GITLAB_TOKEN")
+    token = req.META.get("HTTP_X_GITLAB_TOKEN")
+    print(token)
 
     if not token:
         return FAIL
 
-    remote = RemoteRepo.objects.filter(repo__disabled=False, secret_token=token.strip())
+    remote = RemoteRepo.objects.filter(
+        repo__disabled=False, secret_token=token.strip()
+    ).first()
 
     if not remote:
         return FAIL
@@ -462,3 +465,27 @@ class RDTSViewSet(viewsets.ViewSet):
                 },
             }
         )
+
+    from rdts.query_class import type_map
+
+    @project_rights([Role.QA, Role.SUPERMASTER])
+    @action(detail=False, methods=["GET"])
+    def test_access_token(self, req: Request):
+        repo = require(req.query_params, "repository", int)
+        repo = Repository.objects.filter(id=repo, disabled=False).first()
+
+        if not repo:
+            return STATUS(1)
+
+        remote = RemoteRepo.objects.filter(repo=repo).first()
+
+        if not remote:
+            return STATUS(2)
+
+        req = type_map[remote.type](
+            json.loads(remote.info)["base_url"], remote.remote_id, remote.access_token
+        )
+
+        status, data = req.project()
+
+        return Response({"code": 0, "data": {"status": status, "response": data}})

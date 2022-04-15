@@ -231,7 +231,7 @@ class Command(BaseCommand):
                 CommitSRAssociation.objects.filter(commit=c).delete()
 
         # search for addition
-        add_upd = search_for_commit_update(commits, r, ori_commits, crawl)
+        add_upd = search_for_commit_update(commits, r, ori_commits, req, crawl)
         if add_upd:
             updated = True
 

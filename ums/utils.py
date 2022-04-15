@@ -105,6 +105,10 @@ def user_to_list(user: User, proj: Project = None):
         return data
 
     data["role"] = relation.role
+
+    minors = UserMinorEmailAssociation.objects.filter(user=user)
+    data["minor_emails"] = [(r.email, r.verified) for r in minors]
+
     return data
 
 
