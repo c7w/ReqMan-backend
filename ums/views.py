@@ -605,4 +605,10 @@ class UserViewSet(viewsets.ViewSet):
                     mapping[r.url] += [r.title]
                 else:
                     mapping[r.url] = [r.title]
-        return Response({"code": 0, "data": mapping})
+        exist = UserRemoteUsernameAssociation.objects.filter(user=req.user)
+        exist_dic = {}
+        for r in exist:
+            exist_dic[r.url] = r.remote_name
+        return Response(
+            {"code": 0, "data": {"all_urls": mapping, "exist_usernames": exist_dic}}
+        )
