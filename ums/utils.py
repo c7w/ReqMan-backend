@@ -43,6 +43,11 @@ def require(lst, attr_name, attr_type=None):
     if attr_type == bool:
         return booleanfy(attr)
 
+    if attr_type == list and type(attr) != list:
+        raise ParamErr(
+            f"Expecting array for {attr_name}, got {type(attr)} instead, '{attr_name}' = {attr}"
+        )
+
     return attr
 
 
