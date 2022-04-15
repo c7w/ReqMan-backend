@@ -315,8 +315,8 @@ class Command(BaseCommand):
                 json.loads(r.info)["base_url"], r.remote_id, r.access_token
             )
 
-            # iss_c = self.get_issue(r, req)
-            # sleep(BIG_INTERVAL)
+            iss_c = self.get_issue(r, req)
+            sleep(BIG_INTERVAL)
             mr_c = self.get_merge(r, req)
             sleep(BIG_INTERVAL)
             comm_c = self.get_commit(r, req)

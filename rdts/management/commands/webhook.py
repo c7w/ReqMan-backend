@@ -41,6 +41,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         s = BlockingScheduler()
         self.stdout.write("Webhook Scheduler Initialized")
-        s.add_job(self.response, "interval", seconds=0.5)
+        s.add_job(self.response, "interval", seconds=0.4)
         s.start()
         # self.response()

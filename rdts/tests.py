@@ -304,7 +304,7 @@ class RDTS_Tests(TestCase):
                 },
             },
         }
-        self.post_message(c, data, 0)
+        self.post_message(c, data, -1)
 
         # test delete
         data = {
