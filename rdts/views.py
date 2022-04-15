@@ -305,7 +305,7 @@ class RDTSViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["POST"])
     def get_recent_activity(self, req: Request):
         digest = require(req.data, "digest", bool)
-        dev_id = require(req.data, "dev_id", int)
+        dev_id = require(req.data, "dev_id", list)
         limit = require(
             req.data,
             "limit",
@@ -316,43 +316,46 @@ class RDTSViewSet(viewsets.ViewSet):
         else:
             begin = now() - limit
 
-        dev = User.objects.filter(id=dev_id, disabled=False).first()
-        if not dev:
-            return STATUS(1)
+        info = []
+        for did in dev_id:
+            dev = User.objects.filter(id=did, disabled=False).first()
+            if not dev:
+                return STATUS(1)
 
-        relation = UserProjectAssociation.objects.filter(
-            project=req.auth["proj"], user=dev
-        ).first()
-        if not relation:
-            return STATUS(1)
+            relation = UserProjectAssociation.objects.filter(
+                project=req.auth["proj"], user=dev
+            ).first()
+            if not relation:
+                return STATUS(1)
 
-        # here we do not strictly limit the role to issue
-        # if relation.role != Role.DEV:
-        #     return STATUS(1)
+            # here we do not strictly limit the role to issue
+            # if relation.role != Role.DEV:
+            #     return STATUS(1)
 
-        merges = MergeRequest.objects.filter(
-            user_authored=dev,
-            authoredAt__gte=begin,
-            repo__project=req.auth["proj"],
-        )
-        commits = Commit.objects.filter(
-            user_committer=dev,
-            createdAt__gte=begin,
-            repo__project=req.auth["proj"],
-        )
-        issues = Issue.objects.filter(
-            user_assignee=dev,
-            closedAt__gte=begin,
-            repo__project=req.auth["proj"],
-        )
+            merges = MergeRequest.objects.filter(
+                user_authored=dev,
+                authoredAt__gte=begin,
+                repo__project=req.auth["proj"],
+            )
+            commits = Commit.objects.filter(
+                user_committer=dev,
+                createdAt__gte=begin,
+                repo__project=req.auth["proj"],
+            )
+            issues = Issue.objects.filter(
+                user_assignee=dev,
+                closedAt__gte=begin,
+                repo__project=req.auth["proj"],
+            )
+            info += [(dev, merges, commits, issues)]
 
         if digest:
-            additions = sum([c.additions for c in commits])
-            deletions = sum([c.deletions for c in commits])
-            return Response(
-                {
-                    "code": 0,
-                    "data": {
+            res = []
+            for dev, merges, commits, issues in info:
+                additions = sum([c.additions for c in commits])
+                deletions = sum([c.deletions for c in commits])
+                res += [
+                    {
                         "mr_count": len(merges),
                         "commit_count": len(commits),
                         "additions": additions,
@@ -361,14 +364,15 @@ class RDTSViewSet(viewsets.ViewSet):
                         "issue_times": [
                             round(i.closedAt - i.authoredAt) for i in issues
                         ],
-                    },
-                }
-            )
+                        "commit_times": [round(c.createdAt) for c in commits],
+                    }
+                ]
+            return Response({"code": 0, "data": res})
         else:
-            return Response(
-                {
-                    "code": 0,
-                    "data": {
+            res = []
+            for dev, merges, commits, issues in info:
+                res += [
+                    {
                         "merges": [
                             {
                                 **model_to_dict(
@@ -412,9 +416,9 @@ class RDTSViewSet(viewsets.ViewSet):
                             }
                             for i in issues
                         ],
-                    },
-                }
-            )
+                    }
+                ]
+            return Response({"code": 0, "data": res})
 
     @project_rights([Role.QA, Role.SUPERMASTER])
     @action(detail=False, methods=["GET"])
