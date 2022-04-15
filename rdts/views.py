@@ -14,34 +14,39 @@ from rdts.query_class import type_map
 import json
 from django.forms.models import model_to_dict
 from rest_framework.decorators import api_view
+import hashlib
+from utils.model_date import get_timestamp
 
 
 @api_view(["POST"])
 def webhook(req: Request):
-    token = req.MEAT.get("X-Gitlab-Token")
-    if not token:
-        token = req.MEAT.get("X-Gitlab-Token".upper())
+    token = req.META.get("HTTP_X_GITLAB_TOKEN")
+    print(token)
 
     if not token:
         return FAIL
 
-    remote = None
-    for r in RemoteRepo.objects.filter(repo__disabled=False):
-        if r.secret_token == token:
-            remote = r
-            break
+    remote = RemoteRepo.objects.filter(
+        repo__disabled=False, secret_token=token.strip()
+    ).first()
 
     if not remote:
         return FAIL
 
-    op = require(req.data, "object_kind")
+    if remote.enable_crawling:
+        remote.enable_crawling = False
+        remote.save()
 
-    if op == "push":
-        pass
-    elif op == "issue":
-        pass
-    elif op == "merge_request":
-        pass
+    if "object_kind" in req.data and req.data["object_kind"] in [
+        "push",
+        "merge_request",
+        "issue",
+    ]:
+        PendingWebhookRequests.objects.create(
+            remote=remote, body=json.dumps(req.data, ensure_ascii=False)
+        )
+
+    return SUCC
 
 
 class RDTSViewSet(viewsets.ViewSet):
@@ -161,6 +166,7 @@ class RDTSViewSet(viewsets.ViewSet):
         )
 
         if op == "add":
+            secret_token = hashlib.sha3_512(str(get_timestamp()).encode()).hexdigest()
             repo = Repository.objects.create(
                 project=proj,
                 title=title,
@@ -175,6 +181,7 @@ class RDTSViewSet(viewsets.ViewSet):
                 enable_crawling=enable_crawling,
                 info=json.dumps(info, ensure_ascii=False),
                 repo=repo,
+                secret_token=secret_token,
             )
             return SUCC
 
@@ -458,3 +465,27 @@ class RDTSViewSet(viewsets.ViewSet):
                 },
             }
         )
+
+    from rdts.query_class import type_map
+
+    @project_rights([Role.QA, Role.SUPERMASTER])
+    @action(detail=False, methods=["GET"])
+    def test_access_token(self, req: Request):
+        repo = require(req.query_params, "repository", int)
+        repo = Repository.objects.filter(id=repo, disabled=False).first()
+
+        if not repo:
+            return STATUS(1)
+
+        remote = RemoteRepo.objects.filter(repo=repo).first()
+
+        if not remote:
+            return STATUS(2)
+
+        req = type_map[remote.type](
+            json.loads(remote.info)["base_url"], remote.remote_id, remote.access_token
+        )
+
+        status, data = req.project()
+
+        return Response({"code": 0, "data": {"status": status, "response": data}})

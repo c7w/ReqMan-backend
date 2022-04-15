@@ -94,6 +94,9 @@ def user_to_list(user: User, proj: Project = None):
     """
 
     data = model_to_dict(user, exclude=["password", "disabled", "project"])
+    minors = UserMinorEmailAssociation.objects.filter(user=user)
+    data["minor_emails"] = [(r.email, r.verified) for r in minors]
+
     if not proj:
         return data
 
@@ -105,6 +108,7 @@ def user_to_list(user: User, proj: Project = None):
         return data
 
     data["role"] = relation.role
+
     return data
 
 
