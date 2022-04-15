@@ -14,13 +14,12 @@ from rdts.query_class import type_map
 import json
 from django.forms.models import model_to_dict
 from rest_framework.decorators import api_view
-
+import hashlib
+from utils.model_date import get_timestamp
 
 @api_view(["POST"])
 def webhook(req: Request):
-    token = req.MEAT.get("X-Gitlab-Token")
-    if not token:
-        token = req.MEAT.get("X-Gitlab-Token".upper())
+    token = req.MEAT.get("HTTP_X_GITLAB_TOKEN")
 
     if not token:
         return FAIL
@@ -161,6 +160,7 @@ class RDTSViewSet(viewsets.ViewSet):
         )
 
         if op == "add":
+            secret_token = hashlib.sha3_512(str(get_timestamp()).encode()).hexdigest()
             repo = Repository.objects.create(
                 project=proj,
                 title=title,
@@ -175,6 +175,7 @@ class RDTSViewSet(viewsets.ViewSet):
                 enable_crawling=enable_crawling,
                 info=json.dumps(info, ensure_ascii=False),
                 repo=repo,
+                secret_token=secret_token
             )
             return SUCC
 
