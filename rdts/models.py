@@ -188,16 +188,15 @@ class RemoteRepo(models.Model):
     type = models.CharField(
         max_length=50
     )  # 远程仓库类型，用于在query_class.py 中匹配相应的请求类， 目前支持的字符串 'gitlab'
-    remote_id = models.TextField()  # 远程仓库id，有意设为String
-    access_token = models.TextField()
+    remote_id = models.TextField(default="")  # 远程仓库id，有意设为String
+    access_token = models.TextField(default="")
     enable_crawling = models.BooleanField(default=True)  # 是否同步仓库
     info = models.TextField(default="{}")  # 额外信息，如网址
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE)  # 对应的本地仓库
+    secret_token = models.CharField(max_length=255, default="")
 
     class Meta:
-        indexes = [
-            models.Index(fields=["repo"]),
-        ]
+        indexes = [models.Index(fields=["repo"]), models.Index(fields=["secret_token"])]
 
 
 class CrawlLog(models.Model):

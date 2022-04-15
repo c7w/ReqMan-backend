@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env["site"]["secret_key"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env['site']['debug']
+DEBUG = env["site"]["debug"]
 # DEBUG = True
 
 if "*" in env["site"]["allowed_hosts"]:
