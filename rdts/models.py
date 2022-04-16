@@ -201,7 +201,7 @@ class RemoteRepo(models.Model):
 
 class CrawlLog(models.Model):
     """
-    记录每一次
+    记录每一次 **爬取或者webhook**
     """
 
     id = models.BigAutoField(primary_key=True)
@@ -216,6 +216,7 @@ class CrawlLog(models.Model):
     updated = models.BooleanField(
         default=False
     )  # 本次爬取是否对数据库做了修改，加上是考虑到大部分爬取都没有修改，用这个字段可以加速查询速度
+    is_webhook = models.BooleanField(default=False)
 
 
 class CrawlerOp(models.TextChoices):
