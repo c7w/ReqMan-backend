@@ -241,4 +241,4 @@ class Command(BaseCommand):
         self.stdout.write("Scheduler Initialized")
         s.add_job(self.crawl_all, "interval", minutes=5)
         s.start()
-        self.crawl_all()
+        # self.crawl_all()

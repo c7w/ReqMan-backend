@@ -29,7 +29,7 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
         if CommitSRAssociation.objects.filter(commit=comm, auto_added=False).first():
             return
         pattern = extract_sr_pattern(title)
-        print(pattern)
+        print(title, pattern)
         if pattern:
             sr = SR.objects.filter(
                 pattern=pattern, project=r.repo.project, disabled=False
@@ -323,6 +323,8 @@ def batch_refresh_sr_status(iss_c, mr_c, comm_c, r):
     IS = IssueCrawlAssociation.objects.filter(
         crawl=iss_c, operation__in=["update", "insert"]
     ).order_by("issue__authoredAt")
+
+    print(MR, CM, IS, iss_c, mr_c, comm_c)
 
     for c in CM:
         relation = CommitSRAssociation.objects.filter(commit=c.commit).first()
