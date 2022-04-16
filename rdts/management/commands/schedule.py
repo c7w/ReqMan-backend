@@ -237,8 +237,8 @@ class Command(BaseCommand):
         self.stdout.write("END OF TASK CRAWL")
 
     def handle(self, *args, **options):
-        # s = BlockingScheduler()
-        # self.stdout.write("Scheduler Initialized")
-        # s.add_job(self.crawl_all, "interval", minutes=5)
-        # s.start()
-        self.crawl_all()
+        s = BlockingScheduler()
+        self.stdout.write("Scheduler Initialized")
+        s.add_job(self.crawl_all, "interval", minutes=5)
+        s.start()
+        # self.crawl_all()
