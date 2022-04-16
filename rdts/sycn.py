@@ -32,7 +32,7 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
         print(title, pattern)
         if pattern:
             sr = SR.objects.filter(
-                pattern=pattern, project=r.repo.project, disabled=False
+                title=pattern, project=r.repo.project, disabled=False
             ).first()
             CommitSRAssociation.objects.filter(commit=comm, auto_added=True).delete()
             if sr:
@@ -112,7 +112,7 @@ def search_for_issue_update(issues, r: RemoteRepo, ori_issues, crawl=None):
         print(pattern)
         if pattern:
             sr = SR.objects.filter(
-                pattern=pattern, project=r.repo.project, disabled=False
+                title=pattern, project=r.repo.project, disabled=False
             ).first()
             IssueSRAssociation.objects.filter(issue=iss, auto_added=True).delete()
             if sr:
@@ -219,7 +219,7 @@ def search_for_mr_addition(
         print(pattern)
         if pattern:
             sr = SR.objects.filter(
-                pattern=pattern, project=r.repo.project, disabled=False
+                title=pattern, project=r.repo.project, disabled=False
             ).first()
             MRSRAssociation.objects.filter(MR=_mr, auto_added=True).delete()
             if sr:
