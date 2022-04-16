@@ -612,3 +612,20 @@ class UserViewSet(viewsets.ViewSet):
         return Response(
             {"code": 0, "data": {"all_urls": mapping, "exist_usernames": exist_dic}}
         )
+
+    @project_rights(Role.SUPERMASTER)
+    @action(detail=False, methods=["POST"])
+    def config_regex(self, req: Request):
+        local_sr = require(req.data, "local_sr_title_pattern_extract")
+        remote_sr = require(req.data, "remote_sr_pattern_extract")
+        remote_issue = require(req.data, "remote_issue_iid_extract")
+
+        if len(local_sr) > 1000 or len(remote_sr) > 1000 or len(remote_issue) > 1000:
+            return FAIL
+
+        req.auth["proj"].local_sr_title_pattern_extract = local_sr
+        req.auth["proj"].remote_sr_pattern_extract = remote_sr
+        req.auth["proj"].remote_issue_iid_extract = remote_issue
+        req.auth["proj"].save()
+
+        return SUCC

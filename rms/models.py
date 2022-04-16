@@ -144,7 +144,7 @@ class SR_Changelog(models.Model):
     autoAddCrawl = models.ForeignKey(
         "rdts.CrawlLog", on_delete=models.CASCADE, default=None, null=True
     )
-    autoAddedTriggerType = models.CharField(max_length=10, null=True, default='')
+    autoAddedTriggerType = models.CharField(max_length=10, null=True, default="")
     autoAddedTriggerValue = models.IntegerField(default=None, null=True)
 
 

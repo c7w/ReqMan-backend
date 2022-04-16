@@ -28,7 +28,7 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
     def update_sr_commit(comm: Commit, title):
         if CommitSRAssociation.objects.filter(commit=comm, auto_added=False).first():
             return
-        pattern = extract_sr_pattern(title)
+        pattern = extract_sr_pattern(title, r.repo.project)
         print(title, pattern)
         if pattern:
             sr = SR.objects.filter(
@@ -108,7 +108,7 @@ def search_for_issue_update(issues, r: RemoteRepo, ori_issues, crawl=None):
     def update_sr_issue(iss: Issue, title):
         if IssueSRAssociation.objects.filter(issue=iss, auto_added=False).first():
             return
-        pattern = extract_sr_pattern(title)
+        pattern = extract_sr_pattern(title, r.repo.project)
         print(pattern)
         if pattern:
             sr = SR.objects.filter(
@@ -215,7 +215,7 @@ def search_for_mr_addition(
     def update_sr_merge(_mr: MergeRequest, title):
         if MRSRAssociation.objects.filter(MR=_mr, auto_added=False).first():
             return
-        pattern = extract_sr_pattern(title)
+        pattern = extract_sr_pattern(title, r.repo.project)
         print(pattern)
         if pattern:
             sr = SR.objects.filter(
@@ -247,7 +247,7 @@ def search_for_mr_addition(
             MR=_mr, auto_added=False
         ).first():  # manual top priority
             return
-        issue_str = extract_issue_pattern(_mr.title)
+        issue_str = extract_issue_pattern(_mr.title, r.repo.project)
         if issue_str:
             issue_id = int(issue_str)
             issue = Issue.objects.filter(issue_id=issue_id).first()
