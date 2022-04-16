@@ -71,15 +71,15 @@ class Command(BaseCommand):
         updated = False
 
         # search for deletion
-        for c in ori_merges:
-            if c.merge_id not in merges_dic:
-                updated = True
-                c.disabled = True
-                c.save()
-                MergeCrawlAssociation.objects.create(
-                    merge=c, crawl=crawl, operation=CrawlerOp.REMOVE
-                )
-                MRSRAssociation.objects.filter(MR=c).delete()
+        # for c in ori_merges:
+        #     if c.merge_id not in merges_dic:
+        #         updated = True
+        #         c.disabled = True
+        #         c.save()
+        #         MergeCrawlAssociation.objects.create(
+        #             merge=c, crawl=crawl, operation=CrawlerOp.REMOVE
+        #         )
+        #         MRSRAssociation.objects.filter(MR=c).delete()
 
         # search for addition
         add_updated = search_for_mr_addition(merges, r, ori_merges, crawl)
@@ -130,15 +130,15 @@ class Command(BaseCommand):
         updated = False
 
         # search for deletion
-        for c in ori_commits:
-            if c.hash_id not in commits_dic:
-                updated = True
-                c.disabled = True
-                c.save()
-                CommitCrawlAssociation.objects.create(
-                    commit=c, crawl=crawl, operation=CrawlerOp.REMOVE
-                )
-                CommitSRAssociation.objects.filter(commit=c).delete()
+        # for c in ori_commits:
+        #     if c.hash_id not in commits_dic:
+        #         updated = True
+        #         c.disabled = True
+        #         c.save()
+        #         CommitCrawlAssociation.objects.create(
+        #             commit=c, crawl=crawl, operation=CrawlerOp.REMOVE
+        #         )
+        #         CommitSRAssociation.objects.filter(commit=c).delete()
 
         # search for addition
         add_upd = search_for_commit_update(commits, r, ori_commits, req, crawl)
@@ -189,15 +189,15 @@ class Command(BaseCommand):
         updated = False
 
         # search for deletion
-        for c in ori_issues:
-            if c.issue_id not in issues_dic:
-                updated = True
-                c.disabled = True
-                c.save()
-                IssueCrawlAssociation.objects.create(
-                    issue=c, crawl=crawl, operation=CrawlerOp.REMOVE
-                )
-                IssueSRAssociation.objects.filter(issue=c).delete()
+        # for c in ori_issues:
+        #     if c.issue_id not in issues_dic:
+        #         updated = True
+        #         c.disabled = True
+        #         c.save()
+        #         IssueCrawlAssociation.objects.create(
+        #             issue=c, crawl=crawl, operation=CrawlerOp.REMOVE
+        #         )
+        #         IssueSRAssociation.objects.filter(issue=c).delete()
 
         # search for addition
         add_update = search_for_issue_update(issues, r, ori_issues, crawl)
