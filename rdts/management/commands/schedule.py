@@ -32,96 +32,6 @@ def now():
 class Command(BaseCommand):
     help = "Run Schedule Tasks"
 
-    def batch_refresh_sr_status(self, mr_c, iss_c, comm_c, r: RemoteRepo):
-        """
-        one step to the final state
-        """
-        MR = MergeCrawlAssociation.objects.filter(
-            crawl=mr_c, operation__in=["update", "insert"]
-        ).order_by("merge__authoredAt")
-        CM = CommitCrawlAssociation.objects.filter(
-            crawl=comm_c, operation__in=["update", "insert"]
-        ).order_by("commit__createdAt")
-        IS = IssueCrawlAssociation.objects.filter(
-            crawl=iss_c, operation__in=["update", "insert"]
-        ).order_by("issue__authoredAt")
-
-        # MR = MergeCrawlAssociation.objects.filter(crawl_id=172, operation__in=['update', 'insert']).order_by(
-        #     'merge__authoredAt')
-        # CM = CommitCrawlAssociation.objects.filter(crawl_id=173, operation__in=['update', 'insert']).order_by(
-        #     'commit__createdAt')
-        # IS = IssueCrawlAssociation.objects.filter(crawl_id=171, operation__in=['update', 'insert']).order_by(
-        #     'issue__authoredAt')
-
-        for c in CM:
-            relation = CommitSRAssociation.objects.filter(commit=c.commit).first()
-            if relation:
-                print(relation.SR.state)
-
-            if (
-                relation
-                and relation.SR.state != SR.SRState.WIP
-                and relation.SR.state != SR.SRState.Reviewing
-                and relation.SR.state != SR.SRState.Done
-            ):
-                SR_Changelog.objects.create(
-                    project=r.repo.project,
-                    SR=relation.SR,
-                    formerState=relation.SR.state,
-                    formerDescription=relation.SR.description,
-                    changedAt=c.commit.createdAt,
-                    autoAdded=True,
-                    autoAddCrawl=comm_c,
-                    autoAddedTriggerType="commit",
-                    autoAddedTriggerValue=c.commit.id,
-                )
-                relation.SR.state = SR.SRState.WIP
-                relation.SR.save()
-
-        for mr in MR:
-            relation = MRSRAssociation.objects.filter(MR=mr.merge).first()
-
-            if relation:
-                print(relation.SR.state)
-            if (
-                relation
-                and relation.SR.state != SR.SRState.Done
-                and relation.SR.state != SR.SRState.Reviewing
-            ):
-                SR_Changelog.objects.create(
-                    project=r.repo.project,
-                    SR=relation.SR,
-                    formerState=relation.SR.state,
-                    formerDescription=relation.SR.description,
-                    changedAt=mr.merge.authoredAt,
-                    autoAdded=True,
-                    autoAddCrawl=mr_c,
-                    autoAddedTriggerType="merge",
-                    autoAddedTriggerValue=mr.merge.id,
-                )
-                relation.SR.state = SR.SRState.Reviewing
-                relation.SR.save()
-
-        for issue in IS:
-            if issue.issue.closedAt:
-                relation = IssueSRAssociation.objects.filter(issue=issue.issue).first()
-                if relation:
-                    print(relation.SR.state)
-                if relation and relation.SR.state != SR.SRState.Done:
-                    SR_Changelog.objects.create(
-                        project=r.repo.project,
-                        SR=relation.SR,
-                        formerState=relation.SR.state,
-                        formerDescription=relation.SR.description,
-                        changedAt=issue.issue.closedAt,
-                        autoAdded=True,
-                        autoAddCrawl=iss_c,
-                        autoAddedTriggerType="issue",
-                        autoAddedTriggerValue=issue.issue.id,
-                    )
-                    relation.SR.state = SR.SRState.Done
-                    relation.SR.save()
-
     def get_merge(self, r: RemoteRepo, req):
         self.stdout.write("begin query merges")
         # make requests
@@ -161,15 +71,15 @@ class Command(BaseCommand):
         updated = False
 
         # search for deletion
-        for c in ori_merges:
-            if c.merge_id not in merges_dic:
-                updated = True
-                c.disabled = True
-                c.save()
-                MergeCrawlAssociation.objects.create(
-                    merge=c, crawl=crawl, operation=CrawlerOp.REMOVE
-                )
-                MRSRAssociation.objects.filter(MR=c).delete()
+        # for c in ori_merges:
+        #     if c.merge_id not in merges_dic:
+        #         updated = True
+        #         c.disabled = True
+        #         c.save()
+        #         MergeCrawlAssociation.objects.create(
+        #             merge=c, crawl=crawl, operation=CrawlerOp.REMOVE
+        #         )
+        #         MRSRAssociation.objects.filter(MR=c).delete()
 
         # search for addition
         add_updated = search_for_mr_addition(merges, r, ori_merges, crawl)
@@ -220,15 +130,15 @@ class Command(BaseCommand):
         updated = False
 
         # search for deletion
-        for c in ori_commits:
-            if c.hash_id not in commits_dic:
-                updated = True
-                c.disabled = True
-                c.save()
-                CommitCrawlAssociation.objects.create(
-                    commit=c, crawl=crawl, operation=CrawlerOp.REMOVE
-                )
-                CommitSRAssociation.objects.filter(commit=c).delete()
+        # for c in ori_commits:
+        #     if c.hash_id not in commits_dic:
+        #         updated = True
+        #         c.disabled = True
+        #         c.save()
+        #         CommitCrawlAssociation.objects.create(
+        #             commit=c, crawl=crawl, operation=CrawlerOp.REMOVE
+        #         )
+        #         CommitSRAssociation.objects.filter(commit=c).delete()
 
         # search for addition
         add_upd = search_for_commit_update(commits, r, ori_commits, req, crawl)
@@ -279,15 +189,15 @@ class Command(BaseCommand):
         updated = False
 
         # search for deletion
-        for c in ori_issues:
-            if c.issue_id not in issues_dic:
-                updated = True
-                c.disabled = True
-                c.save()
-                IssueCrawlAssociation.objects.create(
-                    issue=c, crawl=crawl, operation=CrawlerOp.REMOVE
-                )
-                IssueSRAssociation.objects.filter(issue=c).delete()
+        # for c in ori_issues:
+        #     if c.issue_id not in issues_dic:
+        #         updated = True
+        #         c.disabled = True
+        #         c.save()
+        #         IssueCrawlAssociation.objects.create(
+        #             issue=c, crawl=crawl, operation=CrawlerOp.REMOVE
+        #         )
+        #         IssueSRAssociation.objects.filter(issue=c).delete()
 
         # search for addition
         add_update = search_for_issue_update(issues, r, ori_issues, crawl)
@@ -321,7 +231,8 @@ class Command(BaseCommand):
             sleep(BIG_INTERVAL)
             comm_c = self.get_commit(r, req)
             sleep(BIG_INTERVAL)
-            self.batch_refresh_sr_status(mr_c, iss_c, comm_c, r)
+
+            batch_refresh_sr_status(iss_c, mr_c, comm_c, r)
 
         self.stdout.write("END OF TASK CRAWL")
 
@@ -330,4 +241,4 @@ class Command(BaseCommand):
         self.stdout.write("Scheduler Initialized")
         s.add_job(self.crawl_all, "interval", minutes=5)
         s.start()
-        self.crawl_all()
+        # self.crawl_all()

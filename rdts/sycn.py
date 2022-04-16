@@ -29,7 +29,7 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
         if CommitSRAssociation.objects.filter(commit=comm, auto_added=False).first():
             return
         pattern = extract_sr_pattern(title)
-        print(pattern)
+        print(title, pattern)
         if pattern:
             sr = SR.objects.filter(
                 pattern=pattern, project=r.repo.project, disabled=False
@@ -310,3 +310,87 @@ def search_for_mr_addition(
             update_user_merge(new_c)
             update_merge_issue(new_c)
     return updated
+
+
+def batch_refresh_sr_status(iss_c, mr_c, comm_c, r):
+
+    MR = MergeCrawlAssociation.objects.filter(
+        crawl=mr_c, operation__in=["update", "insert"]
+    ).order_by("merge__authoredAt")
+    CM = CommitCrawlAssociation.objects.filter(
+        crawl=comm_c, operation__in=["update", "insert"]
+    ).order_by("commit__createdAt")
+    IS = IssueCrawlAssociation.objects.filter(
+        crawl=iss_c, operation__in=["update", "insert"]
+    ).order_by("issue__authoredAt")
+
+    print(MR, CM, IS, iss_c, mr_c, comm_c)
+
+    for c in CM:
+        relation = CommitSRAssociation.objects.filter(commit=c.commit).first()
+        if relation:
+            print(relation.SR.state)
+
+        if (
+            relation
+            and relation.SR.state != SR.SRState.WIP
+            and relation.SR.state != SR.SRState.Reviewing
+            and relation.SR.state != SR.SRState.Done
+        ):
+            SR_Changelog.objects.create(
+                project=r.repo.project,
+                SR=relation.SR,
+                formerState=relation.SR.state,
+                formerDescription=relation.SR.description,
+                changedAt=c.commit.createdAt,
+                autoAdded=True,
+                autoAddCrawl=comm_c,
+                autoAddedTriggerType="commit",
+                autoAddedTriggerValue=c.commit.id,
+            )
+            relation.SR.state = SR.SRState.WIP
+            relation.SR.save()
+
+    for mr in MR:
+        relation = MRSRAssociation.objects.filter(MR=mr.merge).first()
+
+        if relation:
+            print(relation.SR.state)
+        if (
+            relation
+            and relation.SR.state != SR.SRState.Done
+            and relation.SR.state != SR.SRState.Reviewing
+        ):
+            SR_Changelog.objects.create(
+                project=r.repo.project,
+                SR=relation.SR,
+                formerState=relation.SR.state,
+                formerDescription=relation.SR.description,
+                changedAt=mr.merge.authoredAt,
+                autoAdded=True,
+                autoAddCrawl=mr_c,
+                autoAddedTriggerType="merge",
+                autoAddedTriggerValue=mr.merge.id,
+            )
+            relation.SR.state = SR.SRState.Reviewing
+            relation.SR.save()
+
+    for issue in IS:
+        if issue.issue.closedAt:
+            relation = IssueSRAssociation.objects.filter(issue=issue.issue).first()
+            if relation:
+                print(relation.SR.state)
+            if relation and relation.SR.state != SR.SRState.Done:
+                SR_Changelog.objects.create(
+                    project=r.repo.project,
+                    SR=relation.SR,
+                    formerState=relation.SR.state,
+                    formerDescription=relation.SR.description,
+                    changedAt=issue.issue.closedAt,
+                    autoAdded=True,
+                    autoAddCrawl=iss_c,
+                    autoAddedTriggerType="issue",
+                    autoAddedTriggerValue=issue.issue.id,
+                )
+                relation.SR.state = SR.SRState.Done
+                relation.SR.save()
