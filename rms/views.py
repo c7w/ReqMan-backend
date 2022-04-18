@@ -1,3 +1,4 @@
+from asyncio import exceptions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -7,6 +8,7 @@ from ums.views import SUCC
 from utils.sessions import SessionAuthentication
 from ums.utils import *
 from rms.utils import *
+from rest_framework import exceptions
 
 
 class RMSViewSet(viewsets.ViewSet):
@@ -25,6 +27,8 @@ class RMSViewSet(viewsets.ViewSet):
         if type == "ir":
             resu = serialize(getIR(proj), ["SR"])
         elif type == "sr":
+            if not is_role(req.user,proj,Role.SYS) and not is_role(req.user,proj,Role.SUPERMASTER) and not is_role(req.user,proj,Role.DEV) and not is_role(req.user,proj,Role.QA):
+                raise exceptions.PermissionDenied
             resu = serialize(getSR(proj), ["IR"])
         elif type == "iteration":
             resu = serialize(getIeration(proj))
@@ -64,16 +68,23 @@ class RMSViewSet(viewsets.ViewSet):
         proj = intify(require(req.data, "project"))
         proj = proj_exist(proj)
         if not proj:
-            return FAIL
+            raise ParamErr(f'No project')
         if (not is_role(req.user, proj, Role.SYS)) and (
             not is_role(req.user, proj, Role.SUPERMASTER)
         ):
-            return FAIL
+            raise exceptions.PermissionDenied
 
         operation = require(req.data, "operation")
 
         type = require(req.data, "type")
-
+        typeAll = ['ir','sr','sr-iteration','iteration','user-iteration','service','service-sr']
+        # if type == 'ir' or type == 'sr' or type == 'sr-iteration' or type=='iteration':
+        if type in typeAll:
+            if not is_role(req.user,proj,Role.SUPERMASTER) and not is_role(req.user,proj,Role.SYS):
+                raise exceptions.PermissionDenied
+        if type == 'SRState':
+            if not is_role(req.user,proj,Role.SYS) and not is_role(req.user,proj,Role.SUPERMASTER) and not is_role(req.user,proj,Role.DEV) and not is_role(req.user,proj,Role.QA):
+                raise exceptions.PermissionDenied
         isFail = False
         if operation == "create":
             isFail = createOperation(proj, type, req.data, req.user)
