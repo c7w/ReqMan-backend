@@ -575,16 +575,23 @@ class RMS_Tests(TestCase):
             "operation": "create",
             "data": {
                 "updateData": {
-                    "userId": self.ums.u1.id,
+                    "userId": self.u4.id,
                     "SRId": self.SR2.id,
                 }
             },
+        }
+        self.postMessage(c, data155, 0)
+        data155 = {
+            "project": self.ums.p1.id,
+            "type": "SRState",
+            "operation": "update",
+            "data": {"id": self.SR2.id, "updateData": {"state": "TODO"}},
         }
         self.postMessage(c, data155, 0)
         data156 = {
             "project": self.ums.p1.id,
             "type": "user-sr",
             "operation": "delete",
-            "data": {"userId": self.ums.u1.id, "SRId": self.SR2.id},
+            "data": {"userId": self.u4.id, "SRId": self.SR2.id},
         }
         self.postMessage(c, data156, 0)
