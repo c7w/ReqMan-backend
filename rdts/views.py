@@ -16,6 +16,7 @@ from django.forms.models import model_to_dict
 from rest_framework.decorators import api_view
 import hashlib
 from utils.model_date import get_timestamp
+from rest_framework import exceptions
 
 
 @api_view(["POST"])
@@ -104,10 +105,14 @@ class RDTSViewSet(viewsets.ViewSet):
         proj = intify(require(req.data, "project"))
         proj = proj_exist(proj)
 
-        if (not is_role(req.user, proj, Role.SYS)) and (
-            not is_role(req.user, proj, Role.SUPERMASTER)
-        ):
-            return FAIL
+        if type == "mr-sr" or type == "issue-mr":
+            if not is_role(req.user, proj, Role.SUPERMASTER) and not is_role(
+                req.user, proj, Role.QA
+            ):
+                raise exceptions.PermissionDenied
+        if type == "repo":
+            if not is_role(req.user, proj, Role.SUPERMASTER):
+                raise exceptions.PermissionDenied
 
         operation = require(req.data, "operation")
         fail = True

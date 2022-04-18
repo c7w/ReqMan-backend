@@ -17,7 +17,7 @@ class RMS_Tests(TestCase):
             name="Dave", password="159357", email="Dave@secoder.net"
         )
         UserProjectAssociation.objects.create(
-            user=self.u4, project=self.ums.p1, role=Role.SYS
+            user=self.u4, project=self.ums.p1, role=Role.SUPERMASTER
         )
         self.IR1 = IR.objects.create(
             project=self.ums.p1,
