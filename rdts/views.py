@@ -13,6 +13,37 @@ from rms.utils import serialize
 from rdts.query_class import type_map
 import json
 from django.forms.models import model_to_dict
+from rest_framework.decorators import api_view
+import hashlib
+from utils.model_date import get_timestamp
+from rest_framework import exceptions
+
+
+@api_view(["POST"])
+def webhook(req: Request):
+    token = req.META.get("HTTP_X_GITLAB_TOKEN")
+    print(token)
+
+    if not token:
+        return FAIL
+
+    remote = RemoteRepo.objects.filter(
+        repo__disabled=False, secret_token=token.strip()
+    ).first()
+
+    if not remote:
+        return FAIL
+
+    if "object_kind" in req.data and req.data["object_kind"] in [
+        "push",
+        "merge_request",
+        "issue",
+    ]:
+        PendingWebhookRequests.objects.create(
+            remote=remote, body=json.dumps(req.data, ensure_ascii=False)
+        )
+
+    return SUCC
 
 
 class RDTSViewSet(viewsets.ViewSet):
@@ -49,7 +80,7 @@ class RDTSViewSet(viewsets.ViewSet):
         if type == "mr":
             resu = serialize(getMR(repo))
         elif type == "commit":
-            resu = serialize(getCommit(repo))
+            resu = serialize(getCommit(repo), ["diff"])
         elif type == "issue":
             resu = serialize(getIssue(repo))
         elif type == "commit-sr":
@@ -70,10 +101,14 @@ class RDTSViewSet(viewsets.ViewSet):
         proj = intify(require(req.data, "project"))
         proj = proj_exist(proj)
 
-        if (not is_role(req.user, proj, Role.SYS)) and (
-            not is_role(req.user, proj, Role.SUPERMASTER)
-        ):
-            return FAIL
+        if type == "mr-sr" or type == "issue-mr":
+            if not is_role(req.user, proj, Role.SUPERMASTER) and not is_role(
+                req.user, proj, Role.QA
+            ):
+                raise exceptions.PermissionDenied
+        if type == "repo":
+            if not is_role(req.user, proj, Role.SUPERMASTER):
+                raise exceptions.PermissionDenied
 
         operation = require(req.data, "operation")
         fail = True
@@ -120,9 +155,25 @@ class RDTSViewSet(viewsets.ViewSet):
         if len(desc) > 1000:
             return STATUS(2)
 
+        if "base_url" not in info:
+            return STATUS(4)
+
+        remote_url = (
+            info["base_url"]
+            .strip()
+            .strip("/")
+            .replace("http://", "")
+            .replace("https://", "")
+        )
+
         if op == "add":
+            secret_token = hashlib.sha3_512(str(get_timestamp()).encode()).hexdigest()
             repo = Repository.objects.create(
-                project=proj, title=title, description=desc, createdBy=req.user
+                project=proj,
+                title=title,
+                description=desc,
+                createdBy=req.user,
+                url=remote_url,
             )
             RemoteRepo.objects.create(
                 type=repo_type,
@@ -131,6 +182,7 @@ class RDTSViewSet(viewsets.ViewSet):
                 enable_crawling=enable_crawling,
                 info=json.dumps(info, ensure_ascii=False),
                 repo=repo,
+                secret_token=secret_token,
             )
             return SUCC
 
@@ -143,8 +195,8 @@ class RDTSViewSet(viewsets.ViewSet):
                 return STATUS(3)
 
             remote_repo = RemoteRepo.objects.filter(repo=repo[0])
-            print(remote_repo)
-            repo.update(title=title, description=desc)
+
+            repo.update(title=title, description=desc, url=remote_url)
             remote_repo.update(
                 type=repo_type,
                 remote_id=remote_id,
@@ -254,11 +306,10 @@ class RDTSViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["POST"])
     def get_recent_activity(self, req: Request):
         digest = require(req.data, "digest", bool)
-        dev_id = require(req.data, "dev_id", int)
+        dev_id = require(req.data, "dev_id", list)
         limit = require(
             req.data,
             "limit",
-            float
         )
 
         if limit == -1:
@@ -266,43 +317,46 @@ class RDTSViewSet(viewsets.ViewSet):
         else:
             begin = now() - limit
 
-        dev = User.objects.filter(id=dev_id, disabled=False).first()
-        if not dev:
-            return STATUS(1)
+        info = []
+        for did in dev_id:
+            dev = User.objects.filter(id=did, disabled=False).first()
+            if not dev:
+                return STATUS(1)
 
-        relation = UserProjectAssociation.objects.filter(
-            project=req.auth["proj"], user=dev
-        ).first()
-        if not relation:
-            return STATUS(1)
+            relation = UserProjectAssociation.objects.filter(
+                project=req.auth["proj"], user=dev
+            ).first()
+            if not relation:
+                return STATUS(1)
 
-        # here we do not strictly limit the role to issue
-        # if relation.role != Role.DEV:
-        #     return STATUS(1)
+            # here we do not strictly limit the role to issue
+            # if relation.role != Role.DEV:
+            #     return STATUS(1)
 
-        merges = MergeRequest.objects.filter(
-            user_authored=dev,
-            authoredAt__gte=begin,
-            repo__project=req.auth["proj"],
-        )
-        commits = Commit.objects.filter(
-            user_committer=dev,
-            createdAt__gte=begin,
-            repo__project=req.auth["proj"],
-        )
-        issues = Issue.objects.filter(
-            user_assignee=dev,
-            closedAt__gte=begin,
-            repo__project=req.auth["proj"],
-        )
+            merges = MergeRequest.objects.filter(
+                user_authored=dev,
+                authoredAt__gte=begin,
+                repo__project=req.auth["proj"],
+            )
+            commits = Commit.objects.filter(
+                user_committer=dev,
+                createdAt__gte=begin,
+                repo__project=req.auth["proj"],
+            )
+            issues = Issue.objects.filter(
+                user_assignee=dev,
+                closedAt__gte=begin,
+                repo__project=req.auth["proj"],
+            )
+            info += [(dev, merges, commits, issues)]
 
         if digest:
-            additions = sum([c.additions for c in commits])
-            deletions = sum([c.deletions for c in commits])
-            return Response(
-                {
-                    "code": 0,
-                    "data": {
+            res = []
+            for dev, merges, commits, issues in info:
+                additions = sum([c.additions for c in commits])
+                deletions = sum([c.deletions for c in commits])
+                res += [
+                    {
                         "mr_count": len(merges),
                         "commit_count": len(commits),
                         "additions": additions,
@@ -311,14 +365,15 @@ class RDTSViewSet(viewsets.ViewSet):
                         "issue_times": [
                             round(i.closedAt - i.authoredAt) for i in issues
                         ],
-                    },
-                }
-            )
+                        "commit_times": [round(c.createdAt) for c in commits],
+                    }
+                ]
+            return Response({"code": 0, "data": res})
         else:
-            return Response(
-                {
-                    "code": 0,
-                    "data": {
+            res = []
+            for dev, merges, commits, issues in info:
+                res += [
+                    {
                         "merges": [
                             {
                                 **model_to_dict(
@@ -362,9 +417,9 @@ class RDTSViewSet(viewsets.ViewSet):
                             }
                             for i in issues
                         ],
-                    },
-                }
-            )
+                    }
+                ]
+            return Response({"code": 0, "data": res})
 
     @project_rights([Role.QA, Role.SUPERMASTER])
     @action(detail=False, methods=["GET"])
@@ -415,3 +470,27 @@ class RDTSViewSet(viewsets.ViewSet):
                 },
             }
         )
+
+    from rdts.query_class import type_map
+
+    @project_rights([Role.QA, Role.SUPERMASTER])
+    @action(detail=False, methods=["GET"])
+    def test_access_token(self, req: Request):
+        repo = require(req.query_params, "repository", int)
+        repo = Repository.objects.filter(id=repo, disabled=False).first()
+
+        if not repo:
+            return STATUS(1)
+
+        remote = RemoteRepo.objects.filter(repo=repo).first()
+
+        if not remote:
+            return STATUS(2)
+
+        req = type_map[remote.type](
+            json.loads(remote.info)["base_url"], remote.remote_id, remote.access_token
+        )
+
+        status, data = req.project()
+
+        return Response({"code": 0, "data": {"status": status, "response": data}})

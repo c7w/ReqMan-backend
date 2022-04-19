@@ -20,6 +20,21 @@ class RemoteRepoFetcher:
     def commit_diff_lines(self, _hash):
         raise NotImplemented
 
+    def branches(self, page):
+        raise NotImplemented
+
+    def single_commit(self, _hash):
+        raise NotImplemented
+
+    def single_issue(self, iid):
+        raise NotImplemented
+
+    def single_merge(self, mid):
+        raise NotImplemented
+
+    def project(self):
+        raise NotImplemented
+
 
 def from_diff_to_lines(diff: str):
     diff = diff.split("\n")
@@ -71,6 +86,21 @@ class Gitlab(RemoteRepoFetcher):
             return status, total_add, total_subs, diffs
         else:
             return status, -1, -1, []
+
+    def branches(self, page):
+        return self.request("repository/branches", page)
+
+    def single_commit(self, _hash):
+        return self.request(f"repository/commits/{_hash}")
+
+    def single_issue(self, iid):
+        return self.request(f"issues/{iid}")
+
+    def single_merge(self, mid):
+        return self.request(f"merge_requests/{mid}")
+
+    def project(self):
+        return self.request("")
 
 
 type_map = {"gitlab": Gitlab}

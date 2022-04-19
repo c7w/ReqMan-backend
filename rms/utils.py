@@ -2,6 +2,7 @@ from tkinter.tix import Tree
 from rms.models import *
 from ums.models import Project
 from ums.utils import *
+from utils.common import extract_local_sr_title
 
 
 def serialize(resu: dict, excludeList=None):
@@ -143,6 +144,7 @@ def createSR(datas: dict):
     judgeTypeInt(data["priority"])
     data["createdBy"] = require(datas, "createdBy")
     data["state"] = require(datas, "state")
+    data["pattern"] = extract_local_sr_title(data["title"], data["project"])
 
     if not data["state"] in ["TODO", "WIP", "Reviewing", "Done"]:
         raise ParamErr(f"wrong type.")
@@ -355,19 +357,12 @@ def updateIR(id: int, datas: dict):
 
 
 def updateSR(id: int, datas: dict, user: User):
-    print("HERE")
     rangeWord = ["title", "description", "rank", "priority", "state"]
     data = {}
     log = {}
     sr = SR.objects.filter(id=id).first()
     if not sr:
         raise ParamErr(f"Wrong SR Id.")
-    log["SR"] = sr
-    log["project"] = sr.project
-    log["formerState"] = sr.state
-    log["formerDescription"] = sr.description
-    log["changedBy"] = user
-    log["description"] = "Changed by " + user.name
     for i in datas:
         if i in rangeWord:
             data[i] = datas[i]
@@ -383,7 +378,15 @@ def updateSR(id: int, datas: dict, user: User):
     if "state" in data:
         if not data["state"] in ["TODO", "WIP", "Reviewing", "Done"]:
             raise ParamErr(f"wrong type.")
+    if "title" in data:
+        data["pattern"] = extract_local_sr_title(data["title"], sr.project)
     SR.objects.filter(id=id).update(**data)
+    log["SR"] = sr
+    log["project"] = sr.project
+    log["formerState"] = sr.state
+    log["formerDescription"] = sr.description
+    log["changedBy"] = user
+    log["description"] = "Changed by " + user.name
     SR_Changelog.objects.create(**log)
 
 
@@ -421,6 +424,31 @@ def updateService(id: int, datas: dict):
     Service.objects.filter(id=id).update(**data)
 
 
+def updateSRState(id, datas, user):
+    sr = SR.objects.filter(id=id).first()
+    if not sr:
+        raise ParamErr(f"Wrong SR Id.")
+    data = {}
+    if "state" in datas:
+        data["state"] = datas["state"]
+        if not data["state"] in ["TODO", "WIP", "Reviewing", "Done"]:
+            raise ParamErr(f"wrong type.")
+    else:
+        return
+    users = UserSRAssociation.objects.filter(sr=sr).first()
+    if users.user != user:
+        raise ParamErr(f"User not associated to SR!")
+    SR.objects.filter(id=id).update(**data)
+    log = {}
+    log["SR"] = sr
+    log["project"] = sr.project
+    log["formerState"] = sr.state
+    log["formerDescription"] = sr.description
+    log["changedBy"] = user
+    log["description"] = "Changed by " + user.name
+    SR_Changelog.objects.create(**log)
+
+
 def updateOperation(proj: Project, type: string, data: dict, user: User):
     dataList = require(data, "data")
     data = require(dataList, "updateData")
@@ -436,6 +464,8 @@ def updateOperation(proj: Project, type: string, data: dict, user: User):
         updateIteration(id, data)
     elif type == "service":
         updateService(id, data)
+    elif type == "SRState":
+        updateSRState(id, data, user)
     else:
         return True
     return False

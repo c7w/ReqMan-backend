@@ -10,11 +10,12 @@ from backend.settings import TIME_ZONE
 from time import sleep
 import json
 from iso8601 import parse_date
+from utils.common import extract_sr_pattern, extract_issue_pattern
+from django.forms.models import model_to_dict
+from rdts.sycn import *
 
-from utils.common import extract_sr_pattern
-
-SMALL_INTERVAL = 0.5
-BIG_INTERVAL = 1
+SMALL_INTERVAL = 0
+BIG_INTERVAL = 0.5
 DIFF_LIMIT = 7 * 24 * 3600
 
 
@@ -32,34 +33,6 @@ class Command(BaseCommand):
     help = "Run Schedule Tasks"
 
     def get_merge(self, r: RemoteRepo, req):
-        def update_sr_merge(mr: MergeRequest, title):
-            if MRSRAssociation.objects.filter(MR=mr, auto_added=False).first():
-                return
-            pattern = extract_sr_pattern(title)
-            print(pattern)
-            if pattern:
-                sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
-                MRSRAssociation.objects.filter(MR=mr, auto_added=True).delete()
-                if sr:
-                    MRSRAssociation.objects.create(MR=mr, SR=sr, auto_added=True)
-
-        def update_user_merge(mr: MergeRequest):
-            _rec = UserRemoteUsernameAssociation.objects.filter(
-                repository=r.repo, remote_name=mr.authoredByUserName
-            ).first()
-
-            if _rec:
-                mr.user_authored = _rec.user
-
-            _rec = UserRemoteUsernameAssociation.objects.filter(
-                repository=r.repo, remote_name=mr.reviewedByUserName
-            ).first()
-
-            if _rec:
-                mr.user_reviewed = _rec.user
-
-            mr.save()
-
         self.stdout.write("begin query merges")
         # make requests
         merges = []
@@ -98,106 +71,27 @@ class Command(BaseCommand):
         updated = False
 
         # search for deletion
-        for c in ori_merges:
-            if c.merge_id not in merges_dic:
-                updated = True
-                c.disabled = True
-                c.save()
-                MergeCrawlAssociation.objects.create(
-                    merge=c, crawl=crawl, operation=CrawlerOp.REMOVE
-                )
-                MRSRAssociation.objects.filter(MR=c).delete()
+        # for c in ori_merges:
+        #     if c.merge_id not in merges_dic:
+        #         updated = True
+        #         c.disabled = True
+        #         c.save()
+        #         MergeCrawlAssociation.objects.create(
+        #             merge=c, crawl=crawl, operation=CrawlerOp.REMOVE
+        #         )
+        #         MRSRAssociation.objects.filter(MR=c).delete()
 
         # search for addition
-        self.stdout.write(str(len(merges)))
-        for c in merges:
-            kw = {
-                "merge_id": c["iid"],
-                "repo": r.repo,
-                "title": c["title"],
-                "description": c["description"],
-                "state": c["state"],
-                "authoredByUserName": c["author"]["username"],
-                "authoredAt": dt.datetime.timestamp(parse_date(c["created_at"])),
-                "reviewedByUserName": c["merged_by"]["username"]
-                if c["merged_by"] is not None
-                else "",
-                "reviewedAt": dt.datetime.timestamp(parse_date(c["merged_at"]))
-                if c["merged_at"] is not None
-                else None,
-                "url": c["web_url"],
-            }
-            mr = ori_merges.filter(merge_id=c["iid"])
-            if len(mr):
-                m: MergeRequest = mr.first()
-                prev_info = {
-                    "merge_id": m.merge_id,
-                    "repo": m.repo,
-                    "title": m.title,
-                    "description": m.description,
-                    "state": m.state,
-                    "authoredByUserName": m.authoredByUserName,
-                    "authoredAt": m.authoredAt,
-                    "reviewedByUserName": m.reviewedByUserName,
-                    "reviewedAt": m.reviewedAt,
-                    "url": m.url,
-                }
-                if prev_info != kw:
-                    updated = True
-                    update_obj(m, kw)
-                    MergeCrawlAssociation.objects.create(
-                        merge=m, crawl=crawl, operation=CrawlerOp.UPDATE
-                    )
-                update_sr_merge(m, kw["title"])
-                update_user_merge(m)
-            else:
-                updated = True
-                new_c = MergeRequest.objects.create(**kw)
-                MergeCrawlAssociation.objects.create(
-                    merge=new_c, crawl=crawl, operation=CrawlerOp.INSERT
-                )
-                update_sr_merge(new_c, kw["title"])
-                update_user_merge(new_c)
+        add_updated = search_for_mr_addition(merges, r, ori_merges, crawl)
+        if not updated:
+            updated = add_updated
 
         crawl.finished = True
         crawl.updated = updated
         crawl.save()
+        return crawl
 
     def get_commit(self, r: RemoteRepo, req):
-        def update_sr_commit(comm: Commit, title):
-            if CommitSRAssociation.objects.filter(
-                commit=comm, auto_added=False
-            ).first():
-                return
-            pattern = extract_sr_pattern(title)
-            print(pattern)
-            if pattern:
-                sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
-                CommitSRAssociation.objects.filter(
-                    commit=comm, auto_added=True
-                ).delete()
-                if sr:
-                    CommitSRAssociation.objects.create(
-                        commit=comm, SR=sr, auto_added=True
-                    )
-
-        def update_user_commit(c: Commit):
-            _rec = UserMinorEmailAssociation.objects.filter(
-                email=c.commiter_email, verified=True
-            ).first()
-
-            if _rec:
-                c.user_committer = _rec.user
-            c.save()
-
-        def append_diff(_kw: dict):
-            diff_status, additions, deletions, diffs = req.commit_diff_lines(c["id"])
-            # print("diff status", diff_status, additions, deletions)
-            _kw["additions"] = additions
-            _kw["deletions"] = deletions
-            _kw["diff"] = json.dumps(diffs, ensure_ascii=False)
-            return _kw
-
         self.stdout.write("begin query commits")
         # make requests
         commits = []
@@ -236,98 +130,27 @@ class Command(BaseCommand):
         updated = False
 
         # search for deletion
-        for c in ori_commits:
-            if c.hash_id not in commits_dic:
-                updated = True
-                c.disabled = True
-                c.save()
-                CommitCrawlAssociation.objects.create(
-                    commit=c, crawl=crawl, operation=CrawlerOp.REMOVE
-                )
-                CommitSRAssociation.objects.filter(commit=c).delete()
+        # for c in ori_commits:
+        #     if c.hash_id not in commits_dic:
+        #         updated = True
+        #         c.disabled = True
+        #         c.save()
+        #         CommitCrawlAssociation.objects.create(
+        #             commit=c, crawl=crawl, operation=CrawlerOp.REMOVE
+        #         )
+        #         CommitSRAssociation.objects.filter(commit=c).delete()
 
         # search for addition
-        for c in commits:
-            kw = {
-                "hash_id": c["id"],
-                "repo": r.repo,
-                "title": c["title"],
-                "message": c["message"],
-                "commiter_email": c["committer_email"],
-                "commiter_name": c["committer_name"],
-                "createdAt": dt.datetime.timestamp(parse_date(c["created_at"])),
-                "url": c["web_url"],
-            }
-            cs = ori_commits.filter(hash_id=c["id"])
-            if len(cs):
-                oc: Commit = cs.first()
-                old_key = {
-                    "hash_id": oc.hash_id,
-                    "repo": oc.repo,
-                    "title": oc.title,
-                    "message": oc.message,
-                    "commiter_email": oc.commiter_email,
-                    "commiter_name": oc.commiter_name,
-                    "createdAt": oc.createdAt,
-                    "url": oc.url,
-                }
-                if old_key != kw:
-                    updated = True
-                    kw = append_diff(kw)
-                    update_obj(oc, kw)
-                    CommitCrawlAssociation.objects.create(
-                        commit=oc, crawl=crawl, operation=CrawlerOp.UPDATE
-                    )
-                update_sr_commit(oc, kw["title"])
-                update_user_commit(oc)
-            else:
-                updated = True
-                kw = append_diff(kw)
-                print("create", kw["additions"], kw["commiter_email"])
-                new_c = Commit.objects.create(**kw)
-                CommitCrawlAssociation.objects.create(
-                    commit=new_c, crawl=crawl, operation=CrawlerOp.INSERT
-                )
-                update_sr_commit(new_c, kw["title"])
-                update_user_commit(new_c)
+        add_upd = search_for_commit_update(commits, r, ori_commits, req, crawl)
+        if add_upd:
+            updated = True
+
         crawl.finished = True
         crawl.updated = updated
         crawl.save()
+        return crawl
 
     def get_issue(self, r: RemoteRepo, req):
-        def update_sr_issue(iss: Issue, title):
-            if IssueSRAssociation.objects.filter(issue=iss, auto_added=False).first():
-                return
-            pattern = extract_sr_pattern(title)
-            print(pattern)
-            if pattern:
-                sr = SR.objects.filter(pattern=pattern, project=r.repo.project).first()
-                IssueSRAssociation.objects.filter(issue=iss, auto_added=True).delete()
-                if sr:
-                    IssueSRAssociation.objects.create(issue=iss, SR=sr, auto_added=True)
-
-        def update_user_issue(iss: Issue):
-            _rec = UserRemoteUsernameAssociation.objects.filter(
-                repository=r.repo, remote_name=iss.assigneeUserName
-            ).first()
-            if _rec:
-                iss.user_assignee = _rec.user
-
-            _rec = UserRemoteUsernameAssociation.objects.filter(
-                repository=r.repo, remote_name=iss.authoredByUserName
-            ).first()
-            if _rec:
-                iss.user_authored = _rec.user
-
-            _rec = UserRemoteUsernameAssociation.objects.filter(
-                repository=r.repo, remote_name=iss.closedByUserName
-            ).first()
-
-            if _rec:
-                iss.user_closed = _rec.user
-
-            iss.save()
-
         self.stdout.write("begin query issues")
         # make requests
         issues = []
@@ -366,82 +189,29 @@ class Command(BaseCommand):
         updated = False
 
         # search for deletion
-        for c in ori_issues:
-            if c.issue_id not in issues_dic:
-                updated = True
-                c.disabled = True
-                c.save()
-                IssueCrawlAssociation.objects.create(
-                    issue=c, crawl=crawl, operation=CrawlerOp.REMOVE
-                )
-                IssueSRAssociation.objects.filter(issue=c).delete()
+        # for c in ori_issues:
+        #     if c.issue_id not in issues_dic:
+        #         updated = True
+        #         c.disabled = True
+        #         c.save()
+        #         IssueCrawlAssociation.objects.create(
+        #             issue=c, crawl=crawl, operation=CrawlerOp.REMOVE
+        #         )
+        #         IssueSRAssociation.objects.filter(issue=c).delete()
 
-        for c in issues:
-            kw = {
-                "issue_id": c["iid"],
-                "repo": r.repo,
-                "title": c["title"],
-                "description": c["description"],
-                "state": c["state"],
-                "authoredByUserName": c["author"]["username"],
-                "authoredAt": dt.datetime.timestamp(parse_date(c["created_at"])),
-                "updatedAt": dt.datetime.timestamp(parse_date(c["updated_at"])),
-                "closedByUserName": c["closed_by"]["username"]
-                if c["closed_by"] is not None
-                else "",
-                "closedAt": dt.datetime.timestamp(parse_date(c["closed_at"]))
-                if c["closed_at"] is not None
-                else None,
-                "assigneeUserName": c["assignee"]["username"]
-                if c["assignee"] is not None
-                else "",
-                "url": c["web_url"],
-                "labels": json.dumps(c["labels"], ensure_ascii=False),
-                "is_bug": "bug" in c["labels"],
-            }
-            iss = ori_issues.filter(issue_id=c["iid"])
-            if len(iss):
-                m: Issue = iss.first()
-                prev_info = {
-                    "issue_id": m.issue_id,
-                    "repo": m.repo,
-                    "title": m.title,
-                    "description": m.description,
-                    "state": m.state,
-                    "authoredByUserName": m.authoredByUserName,
-                    "authoredAt": m.authoredAt,
-                    "updatedAt": m.updatedAt,
-                    "closedByUserName": m.closedByUserName,
-                    "closedAt": m.closedAt,
-                    "assigneeUserName": m.assigneeUserName,
-                    "url": m.url,
-                    "labels": m.labels,
-                    "is_bug": m.is_bug,
-                }
-                if prev_info != kw:
-                    updated = True
-                    update_obj(m, kw)
-                    IssueCrawlAssociation.objects.create(
-                        issue=m, crawl=crawl, operation=CrawlerOp.UPDATE
-                    )
-                update_sr_issue(m, kw["title"])
-                update_user_issue(m)
-            else:
-                updated = True
-                new_c = Issue.objects.create(**kw)
-                IssueCrawlAssociation.objects.create(
-                    issue=new_c, crawl=crawl, operation=CrawlerOp.INSERT
-                )
-                update_sr_issue(new_c, kw["title"])
-                update_user_issue(new_c)
+        # search for addition
+        add_update = search_for_issue_update(issues, r, ori_issues, crawl)
+        if add_update:
+            updated = add_update
 
         crawl.finished = True
         crawl.updated = updated
         crawl.save()
+        return crawl
 
     def crawl_all(self):
-        remote_repos = RemoteRepo.objects.filter(
-            enable_crawling=True, repo__disabled=False
+        remote_repos = list(
+            RemoteRepo.objects.filter(enable_crawling=True, repo__disabled=False)
         )
         self.stdout.write("Repos: " + ", ".join([str(r.id) for r in remote_repos]))
 
@@ -455,12 +225,14 @@ class Command(BaseCommand):
                 json.loads(r.info)["base_url"], r.remote_id, r.access_token
             )
 
-            self.get_issue(r, req)
+            iss_c = self.get_issue(r, req)
             sleep(BIG_INTERVAL)
-            self.get_commit(r, req)
+            mr_c = self.get_merge(r, req)
             sleep(BIG_INTERVAL)
-            self.get_merge(r, req)
+            comm_c = self.get_commit(r, req)
             sleep(BIG_INTERVAL)
+
+            batch_refresh_sr_status(iss_c, mr_c, comm_c, r)
 
         self.stdout.write("END OF TASK CRAWL")
 

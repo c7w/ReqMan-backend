@@ -304,7 +304,7 @@ class RDTS_Tests(TestCase):
                 },
             },
         }
-        self.post_message(c, data, 0)
+        self.post_message(c, data, -1)
 
         # test delete
         data = {
@@ -511,6 +511,7 @@ class ScheduleFunctionTest(TestCase):
             type="gitlab",
             access_token="vzDY55aaS-5rjeeYYxxn",
             info='{"base_url": "https://gitlab.secoder.net"}',
+            secret_token="",
         )
 
     def test_fetch_function(self):

@@ -494,7 +494,7 @@ class UserViewSet(viewsets.ViewSet):
     def email_modify_password_request(self, req: Request):
         email = require(req.data, "email").lower()
         user = all_users().filter(email=email).first()
-        if user and user.email_verified:
+        if user:
             hash1 = hashlib.sha256(str(get_timestamp()).encode()).hexdigest()
             PendingModifyPasswordEmail.objects.create(
                 user=user,
@@ -562,22 +562,26 @@ class UserViewSet(viewsets.ViewSet):
 
         raise ParamErr("invalid stage")
 
-    @project_rights("AnyMember")
     @action(detail=False, methods=["POST"])
+    @require_login
     def set_remote_username(self, req: Request):
-        repo = require(req.data, "repo", int)
+        url = require(req.data, "url")
         remote_name = require(req.data, "remote_name")
 
-        repo = Repository.objects.filter(id=repo, disabled=False).first()
+        projects = req.user.project.filter(disabled=False)
+        urls = set()
+        for p in projects:
+            for r in Repository.objects.filter(project=p, disabled=False):
+                urls.add(r.url)
 
-        if not repo or repo.project.id != req.auth["proj"].id:
+        if url not in urls:
             return STATUS(2)
 
         if len(remote_name) > 255:
             return STATUS(1)
 
         relation = UserRemoteUsernameAssociation.objects.filter(
-            user=req.user, repository=repo
+            user=req.user, url=url
         ).first()
 
         if relation:
@@ -585,7 +589,43 @@ class UserViewSet(viewsets.ViewSet):
             relation.save()
         else:
             UserRemoteUsernameAssociation.objects.create(
-                user=req.user, repository=repo, remote_name=remote_name
+                user=req.user, url=url, remote_name=remote_name
             )
+
+        return SUCC
+
+    @action(detail=False, methods=["GET"])
+    @require_login
+    def urls_to_set_remote_name(self, req: Request):
+        projects = req.user.project.filter(disabled=False)
+        mapping = {}
+        for p in projects:
+            for r in Repository.objects.filter(project=p, disabled=False):
+                if r.url in mapping:
+                    mapping[r.url] += [r.title]
+                else:
+                    mapping[r.url] = [r.title]
+        exist = UserRemoteUsernameAssociation.objects.filter(user=req.user)
+        exist_dic = {}
+        for r in exist:
+            exist_dic[r.url] = r.remote_name
+        return Response(
+            {"code": 0, "data": {"all_urls": mapping, "exist_usernames": exist_dic}}
+        )
+
+    @project_rights(Role.SUPERMASTER)
+    @action(detail=False, methods=["POST"])
+    def config_regex(self, req: Request):
+        local_sr = require(req.data, "local_sr_title_pattern_extract")
+        remote_sr = require(req.data, "remote_sr_pattern_extract")
+        remote_issue = require(req.data, "remote_issue_iid_extract")
+
+        if len(local_sr) > 1000 or len(remote_sr) > 1000 or len(remote_issue) > 1000:
+            return FAIL
+
+        req.auth["proj"].local_sr_title_pattern_extract = local_sr
+        req.auth["proj"].remote_sr_pattern_extract = remote_sr
+        req.auth["proj"].remote_issue_iid_extract = remote_issue
+        req.auth["proj"].save()
 
         return SUCC

@@ -286,6 +286,7 @@ def createOpertion(proj: Project, type: str, data: dict, user: User):
 
 
 def updateRepo(id: int, datas: dict):
+    raise ParamErr("this interface is obsolete")
     data = {}
     rangeWord = ["url", "project", "title", "description", "createdBy", "createdAt"]
     for i in datas:

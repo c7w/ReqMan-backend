@@ -2,6 +2,7 @@ import re
 from random import sample
 import string
 from functools import wraps
+import humanize
 
 from rest_framework.request import Request
 from utils.exceptions import ParamErr
@@ -41,6 +42,11 @@ def require(lst, attr_name, attr_type=None):
 
     if attr_type == bool:
         return booleanfy(attr)
+
+    if attr_type == list and type(attr) != list:
+        raise ParamErr(
+            f"Expecting array for {attr_name}, got {type(attr)} instead, '{attr_name}' = {attr}"
+        )
 
     return attr
 
@@ -93,6 +99,9 @@ def user_to_list(user: User, proj: Project = None):
     """
 
     data = model_to_dict(user, exclude=["password", "disabled", "project"])
+    minors = UserMinorEmailAssociation.objects.filter(user=user)
+    data["minor_emails"] = [(r.email, r.verified) for r in minors]
+
     if not proj:
         return data
 
@@ -104,6 +113,7 @@ def user_to_list(user: User, proj: Project = None):
         return data
 
     data["role"] = relation.role
+
     return data
 
 
@@ -296,11 +306,20 @@ def send_mail(receiver: str, content: str = "", subject: str = "") -> bool:
     if subject == "":
         subject = "subject not yet configured"
 
-    username = "reqman@foxmail.com"
-    host = "smtp.qq.com"
-    auth = "ousjljeyregndcab"
+    try:
+        username = Config.objects.filter(key="email_username").first().value
+        host = Config.objects.filter(key="email_host").first().value
+        auth = Config.objects.filter(key="email_auth").first().value
+    except Exception as e:
+        print(
+            "fail to load email sending config from db, use default. Error Message:",
+            e.__str__(),
+        )
+        username = "reqman@foxmail.com"
+        host = "smtp.qq.com"
+        auth = "ousjljeyregndcab"
 
-    msg = MIMEText(content)
+    msg = MIMEText(content, "html")
     msg["From"] = f"ReqMan<{username}>"
     msg["Subject"] = subject
     msg["To"] = receiver
@@ -317,23 +336,44 @@ def send_mail(receiver: str, content: str = "", subject: str = "") -> bool:
 
 
 def email_password_reset(email: str, hash1: str):
-    return send_mail(
-        email,
-        f"""
-    now, your hash1 to modify password is {hash1}, it will be expired in {EMAIL_EXPIRE_SECONDS}.
-    """,
-        "ReqMan: Password Reset",
-    )
+    try:
+        template = Config.objects.filter(key="reset_email_template").first().value
+        title = Config.objects.filter(key="reset_email_title").first().value
+        url = Config.objects.filter(key="front_url").first().value.strip("/")
+        humanize.i18n.activate("zh_CN")
+        expire = humanize.naturaldelta(EMAIL_EXPIRE_SECONDS)
+        template = key_render(
+            template, {"front_url": url, "expire": expire, "hash1": hash1}
+        )
+    except Exception as e:
+        print("Fail to load template, use default. Error Message:", e.__str__())
+        template = f"Your hash1 to modify password is {hash1}, it will be expired in {EMAIL_EXPIRE_SECONDS}."
+        title = "ReqMan: Password Reset"
+    return send_mail(email, template, title)
 
 
-def email_verify(email: str, hash: str):
-    return send_mail(
-        email,
-        f"""
-    now, your hash to verify email is {hash}, it will be expired in {EMAIL_EXPIRE_SECONDS}.
-    """,
-        "ReqMan: Email Verify",
-    )
+def key_render(template: str, dic: dict):
+    for k, v in dic.items():
+        template = template.replace(f"<{k}>", v)
+    return template
+
+
+def email_verify(email: str, _hash: str):
+    try:
+        template = Config.objects.filter(key="verify_email_template").first().value
+        title = Config.objects.filter(key="verify_email_title").first().value
+        url = Config.objects.filter(key="front_url").first().value.strip("/")
+        humanize.i18n.activate("zh_CN")
+        expire = humanize.naturaldelta(EMAIL_EXPIRE_SECONDS)
+        template = key_render(
+            template, {"front_url": url, "expire": expire, "hash": _hash}
+        )
+    except Exception as e:
+        print("Fail to load template, use default. Error Message:", e.__str__())
+        template = f"Your hash to verify email is {_hash}, it will be expired in {EMAIL_EXPIRE_SECONDS}."
+        title = "ReqMan: Email Verify"
+
+    return send_mail(email, template, title)
 
 
 def new_verify_email(user: User, email: str, major: bool = False):

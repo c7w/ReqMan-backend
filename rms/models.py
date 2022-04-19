@@ -125,7 +125,7 @@ class SR_Changelog(models.Model):
     id = models.BigAutoField(primary_key=True)
     project = models.ForeignKey("ums.Project", on_delete=models.CASCADE)
     SR = models.ForeignKey(SR, on_delete=models.CASCADE)
-    description = models.TextField()
+    description = models.TextField(default="")
 
     class SRState(models.TextChoices):
         TODO = "TODO"
@@ -135,8 +135,17 @@ class SR_Changelog(models.Model):
 
     formerState = models.TextField(choices=SRState.choices)
     formerDescription = models.TextField()
-    changedBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
+    changedBy = models.ForeignKey(
+        "ums.User", on_delete=models.CASCADE, null=True, default=None
+    )
     changedAt = models.FloatField(default=getTime.get_timestamp)
+
+    autoAdded = models.BooleanField(default=False)
+    autoAddCrawl = models.ForeignKey(
+        "rdts.CrawlLog", on_delete=models.CASCADE, default=None, null=True
+    )
+    autoAddedTriggerType = models.CharField(max_length=10, null=True, default="")
+    autoAddedTriggerValue = models.IntegerField(default=None, null=True)
 
 
 class ServiceSRAssociation(models.Model):

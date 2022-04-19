@@ -9,7 +9,7 @@ import utils.model_date as getTime
 
 class Repository(models.Model):
     id = models.BigAutoField(primary_key=True)
-    # url = models.CharField(max_length=255)
+    url = models.CharField(max_length=255)
     project = models.ForeignKey("ums.Project", on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField()
@@ -22,6 +22,7 @@ class Repository(models.Model):
             models.Index(fields=["title", "project"]),
             models.Index(fields=["project"]),
             models.Index(fields=["title"]),
+            models.Index(fields=["url"]),
         ]
 
 
@@ -187,21 +188,20 @@ class RemoteRepo(models.Model):
     type = models.CharField(
         max_length=50
     )  # 远程仓库类型，用于在query_class.py 中匹配相应的请求类， 目前支持的字符串 'gitlab'
-    remote_id = models.TextField()  # 远程仓库id，有意设为String
-    access_token = models.TextField()
+    remote_id = models.TextField(default="")  # 远程仓库id，有意设为String
+    access_token = models.TextField(default="")
     enable_crawling = models.BooleanField(default=True)  # 是否同步仓库
     info = models.TextField(default="{}")  # 额外信息，如网址
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE)  # 对应的本地仓库
+    secret_token = models.CharField(max_length=255, default="")
 
     class Meta:
-        indexes = [
-            models.Index(fields=["repo"]),
-        ]
+        indexes = [models.Index(fields=["repo"]), models.Index(fields=["secret_token"])]
 
 
 class CrawlLog(models.Model):
     """
-    记录每一次
+    记录每一次 **爬取或者webhook**
     """
 
     id = models.BigAutoField(primary_key=True)
@@ -216,6 +216,7 @@ class CrawlLog(models.Model):
     updated = models.BooleanField(
         default=False
     )  # 本次爬取是否对数据库做了修改，加上是考虑到大部分爬取都没有修改，用这个字段可以加速查询速度
+    is_webhook = models.BooleanField(default=False)
 
 
 class CrawlerOp(models.TextChoices):
@@ -259,3 +260,8 @@ class IssueCrawlAssociation(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
     crawl = models.ForeignKey(CrawlLog, on_delete=models.CASCADE)
     operation = models.CharField(max_length=10)
+
+
+class PendingWebhookRequests(models.Model):
+    remote = models.ForeignKey(RemoteRepo, on_delete=models.CASCADE)
+    body = models.TextField()
