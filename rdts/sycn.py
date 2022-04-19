@@ -265,7 +265,7 @@ def search_for_mr_addition(
         issue_str = extract_issue_pattern(_mr.title, r.repo.project)
         if issue_str:
             issue_id = int(issue_str)
-            issue = Issue.objects.filter(issue_id=issue_id).first()
+            issue = Issue.objects.filter(issue_id=issue_id, repo=r.repo).first()
             IssueMRAssociation.objects.filter(MR=_mr, auto_added=True).delete()
             print("pattern", issue_id, "issue", issue)
             if issue:
