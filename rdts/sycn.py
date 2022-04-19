@@ -42,11 +42,14 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
         _rec = UserMinorEmailAssociation.objects.filter(
             email=c.commiter_email,  # verified=True
         ).first()
-
         if _rec:
             c.user_committer = _rec.user
         else:
-            c.user_committer = None
+            _rec = User.objects.filter(disabled=False, email=c.commiter_email).first()  # verified=True
+            if _rec:
+                c.user_committer = _rec
+            else:
+                c.user_committer = None
         c.save()
 
     def append_diff(_kw: dict):
