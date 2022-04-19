@@ -45,6 +45,8 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
 
         if _rec:
             c.user_committer = _rec.user
+        else:
+            c.user_committer = None
         c.save()
 
     def append_diff(_kw: dict):
@@ -124,12 +126,16 @@ def search_for_issue_update(issues, r: RemoteRepo, ori_issues, crawl=None):
         ).first()
         if _rec:
             iss.user_assignee = _rec.user
+        else:
+            iss.user_assignee = None
 
         _rec = UserRemoteUsernameAssociation.objects.filter(
             url=r.repo.url, remote_name=iss.authoredByUserName
         ).first()
         if _rec:
             iss.user_authored = _rec.user
+        else:
+            iss.user_authored = None
 
         _rec = UserRemoteUsernameAssociation.objects.filter(
             url=r.repo.url, remote_name=iss.closedByUserName
@@ -137,6 +143,8 @@ def search_for_issue_update(issues, r: RemoteRepo, ori_issues, crawl=None):
 
         if _rec:
             iss.user_closed = _rec.user
+        else:
+            iss.user_closed = None
 
         iss.save()
 
@@ -232,6 +240,8 @@ def search_for_mr_addition(
 
         if _rec:
             _mr.user_authored = _rec.user
+        else:
+            _mr.user_authored = None
 
         _rec = UserRemoteUsernameAssociation.objects.filter(
             url=r.repo.url, remote_name=_mr.reviewedByUserName
@@ -239,6 +249,8 @@ def search_for_mr_addition(
 
         if _rec:
             _mr.user_reviewed = _rec.user
+        else:
+            _mr.user_reviewed = None
 
         _mr.save()
 
