@@ -397,6 +397,7 @@ class RDTS_Tests(TestCase):
         }
         self.post_message(c, data, 0)
 
+
 class RemoteAndAnalysis(TestCase):
     def setUp(self):
         self.user = User.objects.create(name="bla", password="****", email="e@e.e")
@@ -414,84 +415,140 @@ class RemoteAndAnalysis(TestCase):
             access_token="vzDY55aaS-5rjeeYYxxn",
             info='{"base_url": "https://gitlab.secoder.net"}',
         )
-        self.iter = Iteration.objects.create(project=self.proj, sid=1, title='iter title', begin=0.111, end=0.999)
-        self.IR = IR.objects.create(project=self.proj, title='IR title', description='IR desc', rank=1, createdBy=self.user)
-        self.SR = SR.objects.create(project=self.proj, title='SR title', description='SR desc', priority=1, rank=1, state="TODO", createdBy=self.user)
+        self.iter = Iteration.objects.create(
+            project=self.proj, sid=1, title="iter title", begin=0.111, end=0.999
+        )
+        self.IR = IR.objects.create(
+            project=self.proj,
+            title="IR title",
+            description="IR desc",
+            rank=1,
+            createdBy=self.user,
+        )
+        self.SR = SR.objects.create(
+            project=self.proj,
+            title="SR title",
+            description="SR desc",
+            priority=1,
+            rank=1,
+            state="TODO",
+            createdBy=self.user,
+        )
         IRSRAssociation.objects.create(IR=self.IR, SR=self.SR)
         SRIterationAssociation.objects.create(iteration=self.iter, SR=self.SR)
-        UserProjectAssociation.objects.create(user=self.user, project=self.proj, role='supermaster')
-        self.issue = Issue.objects.create(issue_id=233, repo=self.repo, title='title', description='desc', is_bug=True)
+        UserProjectAssociation.objects.create(
+            user=self.user, project=self.proj, role="supermaster"
+        )
+        self.issue = Issue.objects.create(
+            issue_id=233, repo=self.repo, title="title", description="desc", is_bug=True
+        )
         IssueSRAssociation.objects.create(issue=self.issue, SR=self.SR)
-        self.unrelated_user = User.objects.create(name="blaaa", password="****", email="e@e.ce")
-
+        self.unrelated_user = User.objects.create(
+            name="blaaa", password="****", email="e@e.ce"
+        )
 
     def test_iteration_bugs(self):
         c = Client()
-        c.cookies['sessionId'] = '1'
-        resp = c.post("/ums/login/", data={"identity": self.user.name, "password": self.user.password}).json()
-        self.assertEqual(resp['code'], 0)
+        c.cookies["sessionId"] = "1"
+        resp = c.post(
+            "/ums/login/",
+            data={"identity": self.user.name, "password": self.user.password},
+        ).json()
+        self.assertEqual(resp["code"], 0)
 
-        resp = c.get(f"/rdts/iteration_bugs/", data={"iteration":self.iter.id + 1000, "project":self.proj.id}).json()
-        self.assertEqual(resp['code'], 1)
+        resp = c.get(
+            f"/rdts/iteration_bugs/",
+            data={"iteration": self.iter.id + 1000, "project": self.proj.id},
+        ).json()
+        self.assertEqual(resp["code"], 1)
 
-        resp = c.get(f"/rdts/iteration_bugs/", data={"iteration":self.iter.id, "project":self.proj.id}).json()
-        self.assertEqual(resp['code'], 0)
-        self.assertNotEqual(len(resp['data']['bug_issues']), 0)
+        resp = c.get(
+            f"/rdts/iteration_bugs/",
+            data={"iteration": self.iter.id, "project": self.proj.id},
+        ).json()
+        self.assertEqual(resp["code"], 0)
+        self.assertNotEqual(len(resp["data"]["bug_issues"]), 0)
 
     def test_get_recent_activity(self):
         c = Client()
-        c.cookies['sessionId'] = '2'
-        resp = c.post("/ums/login/", data={"identity": self.user.name, "password": self.user.password}).json()
-        self.assertEqual(resp['code'], 0)
+        c.cookies["sessionId"] = "2"
+        resp = c.post(
+            "/ums/login/",
+            data={"identity": self.user.name, "password": self.user.password},
+        ).json()
+        self.assertEqual(resp["code"], 0)
 
+        d = DefaultClient()
         # succ digest
-        resp = c.post('/rdts/get_recent_activity/', data={
-            "project": self.proj.id,
-            "digest": True,
-            "dev_id": self.user.id,
-            "limit": -1
-        }).json()
-        self.assertEqual(resp['code'], 0)
+        resp = d.post(
+            "/rdts/get_recent_activity/",
+            data=json.dumps(
+                {
+                    "project": self.proj.id,
+                    "digest": True,
+                    "dev_id": [self.user.id],
+                    "limit": -1,
+                    "sessionId": "2",
+                }
+            ),
+            content_type="application/json",
+        ).json()
+        self.assertEqual(resp["code"], 0)
 
         # succ no digest
-        resp = c.post('/rdts/get_recent_activity/', data={
-            "project": self.proj.id,
-            "digest": False,
-            "dev_id": self.user.id,
-            "limit": -1
-        }).json()
-        self.assertEqual(resp['code'], 0)
-
-
+        resp = d.post(
+            "/rdts/get_recent_activity/",
+            data=json.dumps(
+                {
+                    "project": self.proj.id,
+                    "digest": False,
+                    "dev_id": [self.user.id],
+                    "limit": -1,
+                    "sessionId": "2",
+                }
+            ),
+            content_type="application/json",
+        ).json()
+        self.assertEqual(resp["code"], 0)
 
     def test_repo_op(self):
         c = Client()
-        c.cookies['sessionId'] = '3'
-        resp = c.post("/ums/login/", data={"identity": self.user.name, "password": self.user.password}).json()
-        self.assertEqual(resp['code'], 0)
+        c.cookies["sessionId"] = "3"
+        resp = c.post(
+            "/ums/login/",
+            data={"identity": self.user.name, "password": self.user.password},
+        ).json()
+        self.assertEqual(resp["code"], 0)
 
         d = DefaultClient()
-        resp = d.post("/rdts/repo_op/", data=f'{{    "sessionId": "3",    "project": {self.proj.id},    "type": "gitlab",    "remote_id": "791",    "access_token": "vzDY55aaSA-5rjeeYYxxn",    "enable_crawling": true,    "info": {{        "base_url": "https://gitlab.secoder.net"    }},    "title": "Hello! Repo Sync!",    "description": "A remote gitlab repo",    "op": "add"}}', content_type="application/json").json()
+        resp = d.post(
+            "/rdts/repo_op/",
+            data=f'{{    "sessionId": "3",    "project": {self.proj.id},    "type": "gitlab",    "remote_id": "791",    "access_token": "vzDY55aaSA-5rjeeYYxxn",    "enable_crawling": true,    "info": {{        "base_url": "https://gitlab.secoder.net"    }},    "title": "Hello! Repo Sync!",    "description": "A remote gitlab repo",    "op": "add"}}',
+            content_type="application/json",
+        ).json()
         print(resp)
-        self.assertEqual(resp['code'], 0)
+        self.assertEqual(resp["code"], 0)
 
-        resp = d.post("/rdts/repo_op/",
-                      data=f'{{"sessionId": "3",    "project": {self.proj.id},    "type": "gitlab",    "remote_id": "791",    "access_token": "vzDY55aaSA-5rjeeYYxxn",    "enable_crawling": true,    "info": {{"base_url": "https://gitlab.secoder.net"    }},    "title": "Hello! Repo Sync!",    "description": "A remote gitlab repo",    "op": "modify", "id":{self.repo.id}}}',
-                      content_type="application/json").json()
-        self.assertEqual(resp['code'], 0)
+        resp = d.post(
+            "/rdts/repo_op/",
+            data=f'{{"sessionId": "3",    "project": {self.proj.id},    "type": "gitlab",    "remote_id": "791",    "access_token": "vzDY55aaSA-5rjeeYYxxn",    "enable_crawling": true,    "info": {{"base_url": "https://gitlab.secoder.net"    }},    "title": "Hello! Repo Sync!",    "description": "A remote gitlab repo",    "op": "modify", "id":{self.repo.id}}}',
+            content_type="application/json",
+        ).json()
+        self.assertEqual(resp["code"], 0)
 
-        resp = d.post("/rdts/repo_op/",
-                      data=f'{{"sessionId": "3",    "project": {self.proj.id},    "type": "gitlab",    "remote_id": "791",    "access_token": "vzDY55aaSA-5rjeeYYxxn",    "enable_crawling": true,    "info": {{"base_url": "https://gitlab.secoder.net"    }},    "title": "{"i"*300}",    "description": "A remote gitlab repo",    "op": "modify", "id":{self.repo.id}}}',
-                      content_type="application/json").json()
-        self.assertEqual(resp['code'], 1)
+        resp = d.post(
+            "/rdts/repo_op/",
+            data=f'{{"sessionId": "3",    "project": {self.proj.id},    "type": "gitlab",    "remote_id": "791",    "access_token": "vzDY55aaSA-5rjeeYYxxn",    "enable_crawling": true,    "info": {{"base_url": "https://gitlab.secoder.net"    }},    "title": "{"i"*300}",    "description": "A remote gitlab repo",    "op": "modify", "id":{self.repo.id}}}',
+            content_type="application/json",
+        ).json()
+        self.assertEqual(resp["code"], 1)
 
-        resp = d.post("/rdts/repo_op/",
-                      data=f'{{"sessionId": "3",    "project": {self.proj.id},    "type": "gitlab",    "remote_id": "791",    "access_token": "vzDY55aaSA-5rjeeYYxxn",    "enable_crawling": true,    "info": {{"base_url": "https://gitlab.secoder.net"    }},    "title": "Hello! Repo Sync!",    "description": "{"i"*1200}",    "op": "modify", "id":{self.repo.id}}}',
-                      content_type="application/json").json()
-        self.assertEqual(resp['code'], 2)
-
-
-
+        resp = d.post(
+            "/rdts/repo_op/",
+            data=f'{{"sessionId": "3",    "project": {self.proj.id},    "type": "gitlab",    "remote_id": "791",    "access_token": "vzDY55aaSA-5rjeeYYxxn",    "enable_crawling": true,    "info": {{"base_url": "https://gitlab.secoder.net"    }},    "title": "Hello! Repo Sync!",    "description": "{"i"*1200}",    "op": "modify", "id":{self.repo.id}}}',
+            content_type="application/json",
+        ).json()
+        self.assertEqual(resp["code"], 2)
 
 
 class ScheduleFunctionTest(TestCase):

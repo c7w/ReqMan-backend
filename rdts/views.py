@@ -203,7 +203,7 @@ class RDTSViewSet(viewsets.ViewSet):
                 access_token=access_token,
                 enable_crawling=enable_crawling,
                 info=json.dumps(info, ensure_ascii=False),
-                repo=repo,
+                repo=repo.first(),
             )
             return SUCC
 
