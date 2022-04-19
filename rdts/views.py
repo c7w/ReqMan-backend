@@ -34,10 +34,6 @@ def webhook(req: Request):
     if not remote:
         return FAIL
 
-    if remote.enable_crawling:
-        remote.enable_crawling = False
-        remote.save()
-
     if "object_kind" in req.data and req.data["object_kind"] in [
         "push",
         "merge_request",
