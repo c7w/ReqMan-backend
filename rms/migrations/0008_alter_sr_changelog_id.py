@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rms', '0007_alter_ir_unique_together_and_more'),
+        ("rms", "0007_alter_ir_unique_together_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='sr_changelog',
-            name='id',
+            model_name="sr_changelog",
+            name="id",
             field=models.BigAutoField(primary_key=True, serialize=False),
         ),
     ]

@@ -6,37 +6,37 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ums', '0006_alter_project_createdat_alter_sessionpool_expireat_and_more'),
-        ('rms', '0006_projectiterationassociation_iriterationassociation'),
+        ("ums", "0006_alter_project_createdat_alter_sessionpool_expireat_and_more"),
+        ("rms", "0006_projectiterationassociation_iriterationassociation"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='ir',
+            name="ir",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='service',
+            name="service",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='sr',
+            name="sr",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='irsrassociation',
-            unique_together={('IR', 'SR')},
+            name="irsrassociation",
+            unique_together={("IR", "SR")},
         ),
         migrations.AlterUniqueTogether(
-            name='projectiterationassociation',
-            unique_together={('iteration', 'project')},
+            name="projectiterationassociation",
+            unique_together={("iteration", "project")},
         ),
         migrations.AlterUniqueTogether(
-            name='servicesrassociation',
-            unique_together={('service', 'SR')},
+            name="servicesrassociation",
+            unique_together={("service", "SR")},
         ),
         migrations.AlterUniqueTogether(
-            name='sriterationassociation',
-            unique_together={('iteration', 'SR')},
+            name="sriterationassociation",
+            unique_together={("iteration", "SR")},
         ),
     ]

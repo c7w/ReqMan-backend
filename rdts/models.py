@@ -13,9 +13,7 @@ class Repository(models.Model):
     project = models.ForeignKey("ums.Project", on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField()
-    createdAt = models.FloatField(
-        default=getTime.get_timestamp
-    )
+    createdAt = models.FloatField(default=getTime.get_timestamp)
     createdBy = models.ForeignKey("ums.User", on_delete=models.CASCADE)
     disabled = models.BooleanField(default=False)
 
@@ -24,6 +22,7 @@ class Repository(models.Model):
             models.Index(fields=["title", "project"]),
             models.Index(fields=["project"]),
             models.Index(fields=["title"]),
+            models.Index(fields=["url"]),
         ]
 
 
@@ -45,6 +44,13 @@ class Commit(models.Model):
             models.Index(fields=["commiter_name"]),
             models.Index(fields=["repo"]),
         ]
+
+    user_committer = models.ForeignKey(
+        "ums.User", on_delete=models.CASCADE, null=True, default=None, related_name="+"
+    )
+    diff = models.TextField(default="")
+    additions = models.IntegerField(default=-1)
+    deletions = models.IntegerField(default=-1)
 
 
 class MergeRequest(models.Model):
@@ -68,6 +74,13 @@ class MergeRequest(models.Model):
     reviewedAt = models.FloatField(null=True, blank=True)
     disabled = models.BooleanField(default=False)
     url = models.TextField()
+
+    user_authored = models.ForeignKey(
+        "ums.User", on_delete=models.CASCADE, null=True, default=None, related_name="+"
+    )
+    user_reviewed = models.ForeignKey(
+        "ums.User", on_delete=models.CASCADE, null=True, default=None, related_name="+"
+    )
 
     class Meta:
         indexes = [
@@ -100,6 +113,27 @@ class Issue(models.Model):
     labels = models.TextField(default="[]")  # 以json 形式存下所有label, 频繁用的label直接取出来当布尔键存
     is_bug = models.BooleanField(default=False)
 
+    user_assignee = models.ForeignKey(
+        "ums.User",
+        on_delete=models.CASCADE,
+        null=True,
+        default=None,
+        related_name="+",
+    )
+    user_authored = models.ForeignKey(
+        "ums.User",
+        on_delete=models.CASCADE,
+        null=True,
+        default=None,
+        related_name="+",
+    )
+    user_closed = models.ForeignKey(
+        "ums.User",
+        on_delete=models.CASCADE,
+        null=True,
+        default=None,
+        related_name="+",
+    )
 
     class Meta:
         indexes = [
@@ -112,25 +146,37 @@ class Issue(models.Model):
 class CommitSRAssociation(models.Model):
     commit = models.ForeignKey(Commit, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
+    auto_added = models.BooleanField(models.BooleanField, default=False)
 
     class Meta:
-        unique_together = ['commit','SR']
+        unique_together = ["commit", "SR"]
 
 
 class MRSRAssociation(models.Model):
     MR = models.ForeignKey(MergeRequest, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
+    auto_added = models.BooleanField(models.BooleanField, default=False)
 
     class Meta:
-        unique_together = ['MR','SR']
+        unique_together = ["MR", "SR"]
 
 
 class IssueSRAssociation(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
     SR = models.ForeignKey("rms.SR", on_delete=models.CASCADE)
+    auto_added = models.BooleanField(models.BooleanField, default=False)
 
     class Meta:
-        unique_together = ['issue','SR']
+        unique_together = ["issue", "SR"]
+
+
+class IssueMRAssociation(models.Model):
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
+    MR = models.ForeignKey(MergeRequest, on_delete=models.CASCADE)
+    auto_added = models.BooleanField(models.BooleanField, default=False)
+
+    class Meta:
+        unique_together = ["issue", "MR"]
 
 
 class RemoteRepo(models.Model):
@@ -142,21 +188,20 @@ class RemoteRepo(models.Model):
     type = models.CharField(
         max_length=50
     )  # 远程仓库类型，用于在query_class.py 中匹配相应的请求类， 目前支持的字符串 'gitlab'
-    remote_id = models.TextField()  # 远程仓库id，有意设为String
-    access_token = models.TextField()
+    remote_id = models.TextField(default="")  # 远程仓库id，有意设为String
+    access_token = models.TextField(default="")
     enable_crawling = models.BooleanField(default=True)  # 是否同步仓库
     info = models.TextField(default="{}")  # 额外信息，如网址
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE)  # 对应的本地仓库
+    secret_token = models.CharField(max_length=255, default="")
 
     class Meta:
-        indexes = [
-            models.Index(fields=["repo"]),
-        ]
+        indexes = [models.Index(fields=["repo"]), models.Index(fields=["secret_token"])]
 
 
 class CrawlLog(models.Model):
     """
-    记录每一次
+    记录每一次 **爬取或者webhook**
     """
 
     id = models.BigAutoField(primary_key=True)
@@ -171,6 +216,7 @@ class CrawlLog(models.Model):
     updated = models.BooleanField(
         default=False
     )  # 本次爬取是否对数据库做了修改，加上是考虑到大部分爬取都没有修改，用这个字段可以加速查询速度
+    is_webhook = models.BooleanField(default=False)
 
 
 class CrawlerOp(models.TextChoices):
@@ -214,3 +260,8 @@ class IssueCrawlAssociation(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
     crawl = models.ForeignKey(CrawlLog, on_delete=models.CASCADE)
     operation = models.CharField(max_length=10)
+
+
+class PendingWebhookRequests(models.Model):
+    remote = models.ForeignKey(RemoteRepo, on_delete=models.CASCADE)
+    body = models.TextField()

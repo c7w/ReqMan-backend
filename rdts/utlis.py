@@ -1,9 +1,13 @@
 from rdts.models import *
-from rms.utils import judgeTypeFloat, judgeTypeInt, judgeTypeStr,judgeStrLen
+from rms.utils import judgeTypeFloat, judgeTypeInt, judgeTypeStr, judgeStrLen
 from ums.models import *
 from rms.models import *
 from ums.utils import require
 from utils.exceptions import ParamErr
+
+
+def now():
+    return dt.datetime.timestamp(dt.datetime.now(pytz.timezone(TIME_ZONE)))
 
 
 def repoExist(id: int):
@@ -43,38 +47,49 @@ def getIssueSR(repo: Repository):
     return IssueSRAssociation.objects.filter(issue__in=issue)
 
 
+def getIssueMR(issueId: int):
+    issue = Issue.objects.filter(id=issueId).first()
+    if not issue:
+        raise ParamErr(f"Wrong issueId")
+    return IssueMRAssociation.objects.filter(issue=issue)
+
+
 def createRepo(datas: dict):
+    """
+    this interface have been moved !!!
+    """
     data = {}
-    data["url"] = require(datas, "url")
+    # data["url"] = require(datas, "url")
     data["project"] = require(datas, "project")
     data["title"] = require(datas, "title")
     data["description"] = require(datas, "description")
     data["createdBy"] = require(datas, "createdBy")
-    judgeTypeStr(data["url"])
-    judgeStrLen(data['url'],255)
+    # judgeTypeStr(data["url"])
+    # judgeStrLen(data["url"], 255)
     judgeTypeStr(data["title"])
-    judgeStrLen(data['title'],255)
+    judgeStrLen(data["title"], 255)
     judgeTypeStr(data["description"])
     Repository.objects.create(**data)
+    raise ParamErr("this interface is obsolete")
 
 
 def createCommit(datas: dict):
     data = {}
     data["hash_id"] = require(datas, "hash_id")
-    judgeTypeStr(data['hash_id'])
-    judgeStrLen(data['hash_id'],255)
+    judgeTypeStr(data["hash_id"])
+    judgeStrLen(data["hash_id"], 255)
     data["repo"] = require(datas, "repo")
     data["title"] = require(datas, "title")
     judgeTypeStr(data["title"])
-    judgeStrLen(data['title'],255)
+    judgeStrLen(data["title"], 255)
     data["message"] = require(datas, "message")
     judgeTypeStr(data["message"])
     data["commiter_email"] = require(datas, "commiter_email")
     judgeTypeStr(data["commiter_email"])
-    judgeStrLen(data['commiter_email'],255)
+    judgeStrLen(data["commiter_email"], 255)
     data["commiter_name"] = require(datas, "commiter_name")
     judgeTypeStr(data["commiter_name"])
-    judgeStrLen(data['commiter_name'],255)
+    judgeStrLen(data["commiter_name"], 255)
     data["createdAt"] = require(datas, "createdAt")
     judgeTypeFloat(data["createdAt"])
     data["url"] = require(datas, "url")
@@ -89,7 +104,7 @@ def createMR(datas: dict):
     data["repo"] = require(datas, "repo")
     data["title"] = require(datas, "title")
     judgeTypeStr(data["title"])
-    judgeStrLen(data['title'],255)
+    judgeStrLen(data["title"], 255)
     data["description"] = require(datas, "description")
     judgeTypeStr(data["description"])
     data["state"] = require(datas, "state")
@@ -110,18 +125,18 @@ def createMR(datas: dict):
             data[i] = datas[i]
     if "authoredByEmail" in data:
         judgeTypeStr(data["authoredByEmail"])
-        judgeStrLen(data['authoredByEmail'],255)
+        judgeStrLen(data["authoredByEmail"], 255)
     if "authoredByUserName" in data:
         judgeTypeStr(data["authoredByUserName"])
-        judgeStrLen(data['authoredByUserName'],255)
+        judgeStrLen(data["authoredByUserName"], 255)
     if "authoredAt" in data:
         judgeTypeFloat(data["authoredAt"])
     if "reviewedByEmail" in data:
         judgeTypeStr(data["reviewedByEmail"])
-        judgeStrLen(data['reviewedByEmail'],255)
+        judgeStrLen(data["reviewedByEmail"], 255)
     if "reviewedByUserName" in data:
         judgeTypeStr(data["reviewedByUserName"])
-        judgeStrLen(data['reviewedByUserName'],255)
+        judgeStrLen(data["reviewedByUserName"], 255)
     if "reviewedAt" in data:
         judgeTypeFloat(data["reviewedAt"])
     MergeRequest.objects.create(**data)
@@ -136,7 +151,7 @@ def createIssue(datas: dict):
     judgeTypeStr(data["description"])
     data["title"] = require(datas, "title")
     judgeTypeStr(data["title"])
-    judgeStrLen(data['title'],255)
+    judgeStrLen(data["title"], 255)
     data["url"] = require(datas, "url")
     judgeTypeStr(data["url"])
     data["state"] = require(datas, "state")
@@ -155,19 +170,19 @@ def createIssue(datas: dict):
             data[i] = datas[i]
     if "authoredByUserName" in data:
         judgeTypeStr(data["authoredByUserName"])
-        judgeStrLen(data['authoredByUserName'],255)
+        judgeStrLen(data["authoredByUserName"], 255)
     if "authoredAt" in data:
         judgeTypeFloat(data["authoredAt"])
     if "updateAt" in data:
         judgeTypeFloat(data["updateAt"])
     if "closedByUserName" in data:
         judgeTypeStr(data["closedByUserName"])
-        judgeStrLen(data['closedByUserName'],255)
+        judgeStrLen(data["closedByUserName"], 255)
     if "closedAt" in data:
         judgeTypeFloat(data["closedAt"])
     if "assigneeUserName" in data:
         judgeTypeStr(data["assigneeUserName"])
-        judgeStrLen(data['assigneeUserName'],255)
+        judgeStrLen(data["assigneeUserName"], 255)
     Issue.objects.create(**data)
 
 
@@ -181,7 +196,7 @@ def createMRSR(datas: dict):
     if not mr or not sr:
         raise ParamErr(f"wrong MR/SR Id.")
     data = {"MR": mr, "SR": sr}
-    exist = MRSRAssociation.objects.filter(MR=mr,SR=sr).first()
+    exist = MRSRAssociation.objects.filter(MR=mr, SR=sr).first()
     if exist:
         raise ParamErr("Association Exist")
     MRSRAssociation.objects.create(**data)
@@ -197,7 +212,7 @@ def createCommitSR(datas: dict):
     if not commit or not sr:
         raise ParamErr(f"wrong Commit/SR Id.")
     data = {"commit": commit, "SR": sr}
-    exist = CommitSRAssociation.objects.filter(commit=commit,SR=sr).first()
+    exist = CommitSRAssociation.objects.filter(commit=commit, SR=sr).first()
     if exist:
         raise ParamErr("Association Exist")
     CommitSRAssociation.objects.create(**data)
@@ -213,10 +228,26 @@ def createIssueSR(datas: dict):
     if not issue or not sr:
         raise ParamErr(f"wrong Issue/SR Id.")
     data = {"issue": issue, "SR": sr}
-    exist = IssueSRAssociation.objects.filter(issue=issue,SR=sr).first()
+    exist = IssueSRAssociation.objects.filter(issue=issue, SR=sr).first()
     if exist:
         raise ParamErr("Association Exist")
     IssueSRAssociation.objects.create(**data)
+
+
+def createIssueMR(datas: dict):
+    issue = require(datas, "issueId")
+    judgeTypeInt(issue)
+    mr = require(datas, "MRId")
+    judgeTypeInt(mr)
+    issue = Issue.objects.filter(id=issue).first()
+    mr = MergeRequest.objects.filter(id=mr).first()
+    if not issue or not mr:
+        raise ParamErr(f"Wrong issueId or MRId")
+    exist = IssueMRAssociation.objects.filter(issue=issue, MR=mr).first()
+    if exist:
+        raise ParamErr("Association existed.")
+    data = {"issue": issue, "MR": mr}
+    IssueMRAssociation.objects.create(**data)
 
 
 def createOpertion(proj: Project, type: str, data: dict, user: User):
@@ -249,10 +280,13 @@ def createOpertion(proj: Project, type: str, data: dict, user: User):
         createIssueSR(create)
     elif type == "commit-sr":
         createCommitSR(create)
+    elif type == "issue-mr":
+        createIssueMR(create)
     return False
 
 
 def updateRepo(id: int, datas: dict):
+    raise ParamErr("this interface is obsolete")
     data = {}
     rangeWord = ["url", "project", "title", "description", "createdBy", "createdAt"]
     for i in datas:
@@ -260,10 +294,10 @@ def updateRepo(id: int, datas: dict):
             data[i] = datas[i]
     if "url" in data:
         judgeTypeStr(data["url"])
-        judgeStrLen(data['url'],255)
+        judgeStrLen(data["url"], 255)
     if "title" in data:
         judgeTypeStr(data["title"])
-        judgeStrLen(data['title'],255)
+        judgeStrLen(data["title"], 255)
     if "description" in data:
         judgeTypeStr(data["description"])
     if "createdAt" in data:
@@ -306,7 +340,7 @@ def updateMR(id: int, datas: dict):
         judgeTypeInt(data["merge_id"])
     if "title" in data:
         judgeTypeStr(data["title"])
-        judgeStrLen(data['title'],255)
+        judgeStrLen(data["title"], 255)
     if "description" in data:
         judgeTypeStr(data["description"])
     if "state" in data:
@@ -314,18 +348,18 @@ def updateMR(id: int, datas: dict):
             raise ParamErr(f"wrong state type.")
     if "authoredByEmail" in data:
         judgeTypeStr(data["authoredByEmail"])
-        judgeStrLen(data['authoredByEmail'],255)
+        judgeStrLen(data["authoredByEmail"], 255)
     if "authoredByUserName" in data:
         judgeTypeStr(data["authoredByUserName"])
-        judgeStrLen(data['authoredByUserName'],255)
+        judgeStrLen(data["authoredByUserName"], 255)
     if "authoredAt" in data:
         judgeTypeFloat(data["authoredAt"])
     if "reviewedByEmail" in data:
         judgeTypeStr(data["reviewedByEmail"])
-        judgeStrLen(data['reviewedByEmail'],255)
+        judgeStrLen(data["reviewedByEmail"], 255)
     if "reviewedByUserName" in data:
         judgeTypeStr(data["reviewedByUserName"])
-        judgeStrLen(data['reviewedByUserName'],255)
+        judgeStrLen(data["reviewedByUserName"], 255)
     if "reviewedAt" in data:
         judgeTypeFloat(data["reviewedAt"])
     if "url" in data:
@@ -356,18 +390,18 @@ def updateCommit(id: int, datas: dict):
             data[i] = datas[i]
     if "hash_id" in data:
         judgeTypeStr(data["hash_id"])
-        judgeStrLen(data['hash_id'],255)
+        judgeStrLen(data["hash_id"], 255)
     if "title" in data:
         judgeTypeStr(data["title"])
-        judgeStrLen(data['title'],255)
+        judgeStrLen(data["title"], 255)
     if "message" in data:
         judgeTypeStr(data["message"])
     if "commiter_email" in data:
         judgeTypeStr(data["commiter_email"])
-        judgeStrLen(data['commiter_email'],255)
+        judgeStrLen(data["commiter_email"], 255)
     if "commiter_name" in data:
         judgeTypeStr(data["commiter_name"])
-        judgeStrLen(data['commiter_name'],255)
+        judgeStrLen(data["commiter_name"], 255)
     if "createdAt" in data:
         judgeTypeFloat(data["createdAt"])
     if "url" in data:
@@ -404,7 +438,7 @@ def updateIssue(id: int, datas: dict):
         judgeTypeInt(data["issue_id"])
     if "title" in data:
         judgeTypeStr(data["title"])
-        judgeStrLen(data['title'],255)
+        judgeStrLen(data["title"], 255)
     if "description" in data:
         judgeTypeStr(data["description"])
     if "state" in data:
@@ -412,19 +446,19 @@ def updateIssue(id: int, datas: dict):
             raise ParamErr(f"wrong type.")
     if "authoredByUserName" in data:
         judgeTypeStr(data["authoredByUserName"])
-        judgeStrLen(data['authoredByUserName'],255)
+        judgeStrLen(data["authoredByUserName"], 255)
     if "authoredAt" in data:
         judgeTypeFloat(data["authoredAt"])
     if "updateAt" in data:
         judgeTypeFloat(data["updateAt"])
     if "closedByUserName" in data:
         judgeTypeStr(data["closedByUserName"])
-        judgeStrLen(data['closedByUserName'],255)
+        judgeStrLen(data["closedByUserName"], 255)
     if "closedAt" in data:
         judgeTypeFloat(data["closedAt"])
     if "assigneeUserName" in data:
         judgeTypeStr(data["assigneeUserName"])
-        judgeStrLen(data['assigneeUserName'],255)
+        judgeStrLen(data["assigneeUserName"], 255)
     if "url" in data:
         judgeTypeStr(data["url"])
     if "repo" in data:
@@ -499,4 +533,10 @@ def deleteOperation(proj: Project, type: str, data: dict):
         sr = SR.objects.filter(id=sr).first()
         commit = Commit.objects.filter(id=commit).first()
         CommitSRAssociation.objects.filter(SR=sr, commit=commit).delete()
+    elif type == "issue-mr":
+        issue = require(datas, "issueId")
+        judgeTypeInt(issue)
+        mr = require(datas, "MRId")
+        judgeTypeInt(mr)
+        IssueMRAssociation.objects.filter(issue__id=issue, MR__id=mr).delete()
     return False

@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env["site"]["secret_key"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env['site']['debug']
+DEBUG = env["site"]["debug"]
 # DEBUG = True
 
 if "*" in env["site"]["allowed_hosts"]:
@@ -156,10 +156,8 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exceptions.handler",
     "DEFAULT_THROTTLE_RATES": {
         # general throttles
-        "user": "60/min",
-        "visitor": "30/min",
-        # special throttles
-        "register": "10/day",
+        "user": "50/min",
+        "visitor": "20/min",
     },
 }
 

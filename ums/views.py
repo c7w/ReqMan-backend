@@ -7,9 +7,12 @@ from ums.models import *
 from utils.sessions import *
 from ums.utils import *
 from utils.permissions import GeneralPermission, project_rights, require_login
+
+# from utils.throttle import GeneralThrottle
 from django.conf import settings
 import hashlib
 from utils.model_date import get_timestamp
+from rdts.models import Repository
 
 DEFAULT_INVITED_ROLE = "member"
 
@@ -36,11 +39,7 @@ class UserViewSet(viewsets.ViewSet):
         email = require(req.data, "email")
         return Response({"code": 1 if email_exist(email) else 0})
 
-    @action(
-        detail=False,
-        methods=["POST"],
-        #    throttle_classes=throttle_classes + [SpecialThrottle("register")],
-    )
+    @action(detail=False, methods=["POST"])
     def register(self, req: Request):
         if req.user:
             return FAIL
@@ -197,8 +196,8 @@ class UserViewSet(viewsets.ViewSet):
         return SUCC
 
     @project_rights("AnyMember")
-    @action(detail=False, methods=["POST"])
-    def project(self, req: Request):
+    @action(detail=False, methods=["POST"], url_path="project")
+    def show_project_detail(self, req: Request):
         proj = req.auth["proj"]
         avatar = proj.avatar
         users = [user_to_list(u, proj) for u in all_users().filter(project=proj)]
@@ -495,7 +494,7 @@ class UserViewSet(viewsets.ViewSet):
     def email_modify_password_request(self, req: Request):
         email = require(req.data, "email").lower()
         user = all_users().filter(email=email).first()
-        if user and user.email_verified:
+        if user:
             hash1 = hashlib.sha256(str(get_timestamp()).encode()).hexdigest()
             PendingModifyPasswordEmail.objects.create(
                 user=user,
@@ -562,3 +561,71 @@ class UserViewSet(viewsets.ViewSet):
             return SUCC
 
         raise ParamErr("invalid stage")
+
+    @action(detail=False, methods=["POST"])
+    @require_login
+    def set_remote_username(self, req: Request):
+        url = require(req.data, "url")
+        remote_name = require(req.data, "remote_name")
+
+        projects = req.user.project.filter(disabled=False)
+        urls = set()
+        for p in projects:
+            for r in Repository.objects.filter(project=p, disabled=False):
+                urls.add(r.url)
+
+        if url not in urls:
+            return STATUS(2)
+
+        if len(remote_name) > 255:
+            return STATUS(1)
+
+        relation = UserRemoteUsernameAssociation.objects.filter(
+            user=req.user, url=url
+        ).first()
+
+        if relation:
+            relation.remote_name = remote_name
+            relation.save()
+        else:
+            UserRemoteUsernameAssociation.objects.create(
+                user=req.user, url=url, remote_name=remote_name
+            )
+
+        return SUCC
+
+    @action(detail=False, methods=["GET"])
+    @require_login
+    def urls_to_set_remote_name(self, req: Request):
+        projects = req.user.project.filter(disabled=False)
+        mapping = {}
+        for p in projects:
+            for r in Repository.objects.filter(project=p, disabled=False):
+                if r.url in mapping:
+                    mapping[r.url] += [r.title]
+                else:
+                    mapping[r.url] = [r.title]
+        exist = UserRemoteUsernameAssociation.objects.filter(user=req.user)
+        exist_dic = {}
+        for r in exist:
+            exist_dic[r.url] = r.remote_name
+        return Response(
+            {"code": 0, "data": {"all_urls": mapping, "exist_usernames": exist_dic}}
+        )
+
+    @project_rights(Role.SUPERMASTER)
+    @action(detail=False, methods=["POST"])
+    def config_regex(self, req: Request):
+        local_sr = require(req.data, "local_sr_title_pattern_extract")
+        remote_sr = require(req.data, "remote_sr_pattern_extract")
+        remote_issue = require(req.data, "remote_issue_iid_extract")
+
+        if len(local_sr) > 1000 or len(remote_sr) > 1000 or len(remote_issue) > 1000:
+            return FAIL
+
+        req.auth["proj"].local_sr_title_pattern_extract = local_sr
+        req.auth["proj"].remote_sr_pattern_extract = remote_sr
+        req.auth["proj"].remote_issue_iid_extract = remote_issue
+        req.auth["proj"].save()
+
+        return SUCC
