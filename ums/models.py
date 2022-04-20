@@ -30,9 +30,9 @@ class Project(models.Model):
 
 class User(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     password = models.TextField()
-    email = models.CharField(max_length=255, unique=True)
+    email = models.CharField(max_length=255)
     avatar = models.TextField(default="")
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(default=getTime.get_timestamp)
