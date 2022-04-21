@@ -134,7 +134,7 @@ class SR_Changelog(models.Model):
         Reviewing = "Reviewing"
 
     formerState = models.TextField(choices=SRState.choices)
-    formerDescription = models.TextField()
+    formerDescription = models.TextField(default="")
     changedBy = models.ForeignKey(
         "ums.User", on_delete=models.CASCADE, null=True, default=None
     )
