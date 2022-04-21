@@ -45,7 +45,9 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
         if _rec:
             c.user_committer = _rec.user
         else:
-            _rec = User.objects.filter(disabled=False, email=c.commiter_email).first()  # verified=True
+            _rec = User.objects.filter(
+                disabled=False, email=c.commiter_email
+            ).first()  # verified=True
             if _rec:
                 c.user_committer = _rec
             else:
@@ -356,7 +358,7 @@ def batch_refresh_sr_status(iss_c, mr_c, comm_c, r):
                 project=r.repo.project,
                 SR=relation.SR,
                 formerState=relation.SR.state,
-                formerDescription=relation.SR.description,
+                # formerDescription=relation.SR.description,
                 changedAt=c.commit.createdAt,
                 autoAdded=True,
                 autoAddCrawl=comm_c,
@@ -380,7 +382,7 @@ def batch_refresh_sr_status(iss_c, mr_c, comm_c, r):
                 project=r.repo.project,
                 SR=relation.SR,
                 formerState=relation.SR.state,
-                formerDescription=relation.SR.description,
+                # formerDescription=relation.SR.description,
                 changedAt=mr.merge.authoredAt,
                 autoAdded=True,
                 autoAddCrawl=mr_c,
@@ -400,7 +402,7 @@ def batch_refresh_sr_status(iss_c, mr_c, comm_c, r):
                     project=r.repo.project,
                     SR=relation.SR,
                     formerState=relation.SR.state,
-                    formerDescription=relation.SR.description,
+                    # formerDescription=relation.SR.description,
                     changedAt=issue.issue.closedAt,
                     autoAdded=True,
                     autoAddCrawl=iss_c,

@@ -554,7 +554,6 @@ def roll_back(relation: UserProjectAssociation):
             SR=sr,
             description="rollback",
             formerState=sr.state,
-            formerDescription=sr.description,
             changedBy=relation.user,
             autoAdded=True,
         )
