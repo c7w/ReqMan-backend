@@ -13,6 +13,8 @@ from django.conf import settings
 import hashlib
 from utils.model_date import get_timestamp
 from rdts.models import Repository
+from rms.utils import roll_back
+from django.db.transaction import atomic
 
 DEFAULT_INVITED_ROLE = "member"
 
@@ -137,10 +139,16 @@ class UserViewSet(viewsets.ViewSet):
         if role not in Role:
             return FAIL
 
-        relation.role = role
-        relation.save()
-
-        return SUCC
+        if relation.role == Role.DEV and role != Role.DEV:
+            with atomic():
+                roll_back_cnt = roll_back(relation)
+                relation.role = role
+                relation.save()
+                return Response({"code": 0, "data": {"rollback": roll_back_cnt}})
+        else:
+            relation.role = role
+            relation.save()
+            return SUCC
 
     @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=["POST"])
