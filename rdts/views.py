@@ -17,6 +17,7 @@ from rest_framework.decorators import api_view
 import hashlib
 from utils.model_date import get_timestamp
 from rest_framework import exceptions
+from func_timeout import func_set_timeout, FunctionTimedOut
 
 
 @api_view(["POST"])
@@ -473,14 +474,14 @@ class RDTSViewSet(viewsets.ViewSet):
 
     from rdts.query_class import type_map
 
-    @project_rights([Role.QA, Role.SUPERMASTER])
+    @project_rights([Role.SUPERMASTER])
     @action(detail=False, methods=["GET"])
     def test_access_token(self, req: Request):
         repo = require(req.query_params, "repository", int)
         repo = Repository.objects.filter(id=repo, disabled=False).first()
 
         if not repo:
-            return STATUS(1)
+            return STATUS(2)
 
         remote = RemoteRepo.objects.filter(repo=repo).first()
 
@@ -491,6 +492,15 @@ class RDTSViewSet(viewsets.ViewSet):
             json.loads(remote.info)["base_url"], remote.remote_id, remote.access_token
         )
 
-        status, data = req.project()
+        @func_set_timeout(1)
+        def send_request():
+            return req.project()
+
+        try:
+            status, data = send_request()
+        except FunctionTimedOut:
+            return STATUS(1)
+        except:
+            return STATUS(3)
 
         return Response({"code": 0, "data": {"status": status, "response": data}})
