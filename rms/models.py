@@ -80,7 +80,6 @@ class SR(models.Model):
             models.Index(fields=["project"]),
             models.Index(fields=["title"]),
             models.Index(fields=["title", "project"]),
-            models.Index(fields=["pattern"]),
         ]
 
 
