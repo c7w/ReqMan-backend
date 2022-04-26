@@ -2,7 +2,7 @@ from tkinter.tix import Tree
 from rms.models import *
 from ums.models import Project
 from ums.utils import *
-from utils.common import extract_local_sr_title
+
 from django.db import transaction
 
 
