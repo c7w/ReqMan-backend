@@ -63,9 +63,6 @@ class SR(models.Model):
         IR,
         through="IRSRAssociation",
     )
-    pattern = models.CharField(
-        max_length=100, default=None, null=True
-    )  # the pattern of the sub_request
 
     class SRState(models.TextChoices):
         TODO = "TODO"

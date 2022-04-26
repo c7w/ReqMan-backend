@@ -16,7 +16,6 @@ class Project(models.Model):
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(default=getTime.get_timestamp)
     avatar = models.TextField(default="")
-    local_sr_title_pattern_extract = models.TextField(default="[\s\S]*")
     remote_sr_pattern_extract = models.TextField(
         default="(?<=\[)SR.\d{3}.\d{3}(?=(.[I/F/B])?])"
     )
