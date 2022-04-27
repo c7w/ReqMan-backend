@@ -53,7 +53,9 @@ class Command(BaseCommand):
                     time=now(),
                     request_type="merge",
                     status=part[0],
-                    message=part[1]["message"],
+                    message=part[1]["message"]
+                    if "message" in part[1]
+                    else str(part[1]),
                 )
                 return
         self.stdout.write(str(len(merges)))

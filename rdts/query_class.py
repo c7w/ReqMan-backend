@@ -82,7 +82,7 @@ class Gitlab(RemoteRepoFetcher):
                 try_cnt -= 1
             else:
                 break
-        if not resp:
+        if resp is None:
             return -1, {}
         return resp.status_code, resp.json()
 
