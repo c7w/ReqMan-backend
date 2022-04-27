@@ -53,7 +53,9 @@ class Command(BaseCommand):
                     time=now(),
                     request_type="merge",
                     status=part[0],
-                    message=part[1]["message"],
+                    message=part[1]["message"]
+                    if "message" in part[1]
+                    else str(part[1]),
                 )
                 return
         self.stdout.write(str(len(merges)))
@@ -112,7 +114,9 @@ class Command(BaseCommand):
                     time=now(),
                     request_type="commit",
                     status=part[0],
-                    message=part[1]["message"],
+                    message=part[1]["message"]
+                    if "message" in part[1]
+                    else str(part[1]),
                 )
                 return
         self.stdout.write(str(len(commits)))
@@ -171,7 +175,9 @@ class Command(BaseCommand):
                     time=now(),
                     request_type="issue",
                     status=part[0],
-                    message=part[1]["message"] if message in part[1] else part[1],
+                    message=part[1]["message"]
+                    if "message" in part[1]
+                    else str(part[1]),
                 )
                 return
         self.stdout.write(str(len(issues)))
@@ -237,8 +243,8 @@ class Command(BaseCommand):
         self.stdout.write("END OF TASK CRAWL")
 
     def handle(self, *args, **options):
-        s = BlockingScheduler()
-        self.stdout.write("Scheduler Initialized")
-        s.add_job(self.crawl_all, "interval", minutes=5)
-        s.start()
-        # self.crawl_all()
+        # s = BlockingScheduler()
+        # self.stdout.write("Scheduler Initialized")
+        # s.add_job(self.crawl_all, "interval", minutes=5)
+        # s.start()
+        self.crawl_all()
