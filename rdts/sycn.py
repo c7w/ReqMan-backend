@@ -57,13 +57,13 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
                 c.user_committer = None
         c.save()
 
-    def append_diff(_cmt):
-        diff_status, additions, deletions, diffs = req.commit_diff_lines(_cmt.hash_id)
+    def append_diff(_kw: dict):
+        diff_status, additions, deletions, diffs = req.commit_diff_lines(_kw["hash_id"])
         print("diff status", diff_status, additions, deletions)
-        _cmt.additions = additions
-        _cmt.deletions = deletions
-        _cmt.diff = json.dumps(diffs, ensure_ascii=False)
-        _cmt.save()
+        _kw["additions"] = additions
+        _kw["deletions"] = deletions
+        _kw["diff"] = json.dumps(diffs, ensure_ascii=False)
+        return _kw
 
     updated = False
     for c in commits:
@@ -92,6 +92,7 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
             }
             if old_key != kw:
                 updated = True
+                kw = append_diff(kw)
                 update_obj(oc, kw)
                 if crawl:
                     CommitCrawlAssociation.objects.create(
@@ -101,6 +102,8 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
             update_user_commit(oc)
         else:
             updated = True
+            kw = append_diff(kw)
+            print("create", kw["additions"], kw["deletions"], kw["commiter_email"])
             new_c = Commit.objects.create(**kw)
             if crawl:
                 CommitCrawlAssociation.objects.create(
@@ -108,10 +111,6 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
                 )
             update_sr_commit(new_c, kw["title"])
             update_user_commit(new_c)
-    to_be_diffed = Commit.objects.filter(repo=r.repo, diff="")
-    for cmt in to_be_diffed:
-        append_diff(cmt)
-
     return updated
 
 
