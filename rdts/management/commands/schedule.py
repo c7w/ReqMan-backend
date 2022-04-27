@@ -171,7 +171,7 @@ class Command(BaseCommand):
                     time=now(),
                     request_type="issue",
                     status=part[0],
-                    message=part[1]["message"],
+                    message=part[1]["message"] if message in part[1] else part[1],
                 )
                 return
         self.stdout.write(str(len(issues)))

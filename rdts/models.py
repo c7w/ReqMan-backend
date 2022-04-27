@@ -30,7 +30,7 @@ class Commit(models.Model):
     id = models.BigAutoField(primary_key=True)
     hash_id = models.CharField(max_length=255)
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
+    title = models.TextField()
     message = models.TextField()
     commiter_email = models.CharField(max_length=255)
     commiter_name = models.CharField(max_length=255)
