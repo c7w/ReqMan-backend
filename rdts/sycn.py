@@ -25,12 +25,15 @@ def now():
 
 
 def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=None):
+    sr_pattern = r.repo.project.remote_sr_pattern_extract
+    print("SR pattern", sr_pattern)
+
     def update_sr_commit(comm: Commit, title):
         if CommitSRAssociation.objects.filter(commit=comm, auto_added=False).first():
             return
-        pattern = extract_sr_pattern(title, r.repo.project)
-        print(title, pattern)
+        pattern = extract_sr_pattern(title, r.repo.project, sr_pattern)
         if pattern:
+            print("SR pattern match", title, pattern)
             sr = SR.objects.filter(
                 title=pattern, project=r.repo.project, disabled=False
             ).first()
@@ -45,7 +48,9 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
         if _rec:
             c.user_committer = _rec.user
         else:
-            _rec = User.objects.filter(disabled=False, email=c.commiter_email).first()  # verified=True
+            _rec = User.objects.filter(
+                disabled=False, email=c.commiter_email
+            ).first()  # verified=True
             if _rec:
                 c.user_committer = _rec
             else:
@@ -53,7 +58,7 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
         c.save()
 
     def append_diff(_kw: dict):
-        diff_status, additions, deletions, diffs = req.commit_diff_lines(c["id"])
+        diff_status, additions, deletions, diffs = req.commit_diff_lines(_kw["hash_id"])
         print("diff status", diff_status, additions, deletions)
         _kw["additions"] = additions
         _kw["deletions"] = deletions
@@ -110,10 +115,12 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
 
 
 def search_for_issue_update(issues, r: RemoteRepo, ori_issues, crawl=None):
+    sr_pattern = r.repo.project.remote_sr_pattern_extract
+
     def update_sr_issue(iss: Issue, title):
         if IssueSRAssociation.objects.filter(issue=iss, auto_added=False).first():
             return
-        pattern = extract_sr_pattern(title, r.repo.project)
+        pattern = extract_sr_pattern(title, r.repo.project, sr_pattern)
         print(pattern)
         if pattern:
             sr = SR.objects.filter(
@@ -222,11 +229,13 @@ def search_for_mr_addition(
     crawl=None,
 ):
     updated = False
+    sr_pattern = r.repo.project.remote_sr_pattern_extract
+    iss_pattern = r.repo.project.remote_issue_iid_extract
 
     def update_sr_merge(_mr: MergeRequest, title):
         if MRSRAssociation.objects.filter(MR=_mr, auto_added=False).first():
             return
-        pattern = extract_sr_pattern(title, r.repo.project)
+        pattern = extract_sr_pattern(title, r.repo.project, sr_pattern)
         print(pattern)
         if pattern:
             sr = SR.objects.filter(
@@ -262,7 +271,7 @@ def search_for_mr_addition(
             MR=_mr, auto_added=False
         ).first():  # manual top priority
             return
-        issue_str = extract_issue_pattern(_mr.title, r.repo.project)
+        issue_str = extract_issue_pattern(_mr.title, r.repo.project, iss_pattern)
         if issue_str:
             issue_id = int(issue_str)
             issue = Issue.objects.filter(issue_id=issue_id, repo=r.repo).first()
@@ -356,7 +365,7 @@ def batch_refresh_sr_status(iss_c, mr_c, comm_c, r):
                 project=r.repo.project,
                 SR=relation.SR,
                 formerState=relation.SR.state,
-                formerDescription=relation.SR.description,
+                # formerDescription=relation.SR.description,
                 changedAt=c.commit.createdAt,
                 autoAdded=True,
                 autoAddCrawl=comm_c,
@@ -380,7 +389,7 @@ def batch_refresh_sr_status(iss_c, mr_c, comm_c, r):
                 project=r.repo.project,
                 SR=relation.SR,
                 formerState=relation.SR.state,
-                formerDescription=relation.SR.description,
+                # formerDescription=relation.SR.description,
                 changedAt=mr.merge.authoredAt,
                 autoAdded=True,
                 autoAddCrawl=mr_c,
@@ -400,7 +409,7 @@ def batch_refresh_sr_status(iss_c, mr_c, comm_c, r):
                     project=r.repo.project,
                     SR=relation.SR,
                     formerState=relation.SR.state,
-                    formerDescription=relation.SR.description,
+                    # formerDescription=relation.SR.description,
                     changedAt=issue.issue.closedAt,
                     autoAdded=True,
                     autoAddCrawl=iss_c,

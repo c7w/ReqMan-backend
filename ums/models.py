@@ -16,7 +16,6 @@ class Project(models.Model):
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(default=getTime.get_timestamp)
     avatar = models.TextField(default="")
-    local_sr_title_pattern_extract = models.TextField(default="[\s\S]*")
     remote_sr_pattern_extract = models.TextField(
         default="(?<=\[)SR.\d{3}.\d{3}(?=(.[I/F/B])?])"
     )
@@ -30,9 +29,9 @@ class Project(models.Model):
 
 class User(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     password = models.TextField()
-    email = models.CharField(max_length=255, unique=True)
+    email = models.CharField(max_length=255)
     avatar = models.TextField(default="")
     disabled = models.BooleanField(default=False)
     createdAt = models.FloatField(default=getTime.get_timestamp)

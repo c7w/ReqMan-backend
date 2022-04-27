@@ -1,3 +1,5 @@
+import time
+
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -66,10 +68,24 @@ class Gitlab(RemoteRepoFetcher):
             self.base.strip("/")
             + ("/api/v4/projects/%d/" % self.repo)
             + req_type
-            + (f"?page={page}" if page else "")
+            + (f"?page={page}&per_page=1000" if page else "")
         )
         print(url)
-        resp = requests.get(url, headers={"PRIVATE-TOKEN": self.token})
+        try_cnt = 5
+        resp = None
+        err_msg = ''
+        while try_cnt:
+            try:
+                resp = requests.get(url, headers={"PRIVATE-TOKEN": self.token})
+            except Exception as e:
+                print("Request Error", e)
+                err_msg += str(e) + "|"
+                time.sleep(5)
+                try_cnt -= 1
+            else:
+                break
+        if resp is None:
+            return -1, {"message": err_msg}
         return resp.status_code, resp.json()
 
     def commit_diff_lines(self, _hash: str):

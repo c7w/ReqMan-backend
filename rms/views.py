@@ -32,6 +32,7 @@ class RMSViewSet(viewsets.ViewSet):
                 and not is_role(req.user, proj, Role.SUPERMASTER)
                 and not is_role(req.user, proj, Role.DEV)
                 and not is_role(req.user, proj, Role.QA)
+                and not is_role(req.user,proj,Role.MEMBER)
             ):
                 raise exceptions.PermissionDenied
             resu = serialize(getSR(proj), ["IR"])

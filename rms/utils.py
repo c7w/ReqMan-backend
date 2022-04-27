@@ -2,7 +2,8 @@ from tkinter.tix import Tree
 from rms.models import *
 from ums.models import Project
 from ums.utils import *
-from utils.common import extract_local_sr_title
+
+from django.db import transaction
 
 
 def serialize(resu: dict, excludeList=None):
@@ -144,7 +145,6 @@ def createSR(datas: dict):
     judgeTypeInt(data["priority"])
     data["createdBy"] = require(datas, "createdBy")
     data["state"] = require(datas, "state")
-    data["pattern"] = extract_local_sr_title(data["title"], data["project"])
 
     if not data["state"] in ["TODO", "WIP", "Reviewing", "Done"]:
         raise ParamErr(f"wrong type.")
@@ -378,8 +378,6 @@ def updateSR(id: int, datas: dict, user: User):
     if "state" in data:
         if not data["state"] in ["TODO", "WIP", "Reviewing", "Done"]:
             raise ParamErr(f"wrong type.")
-    if "title" in data:
-        data["pattern"] = extract_local_sr_title(data["title"], sr.project)
     SR.objects.filter(id=id).update(**data)
     log["SR"] = sr
     log["project"] = sr.project
@@ -541,3 +539,20 @@ def deleteOperation(proj: Project, type: string, data: dict):
         judgeTypeInt(sr)
         UserSRAssociation.objects.filter(user__id=user, sr__id=sr).delete()
     return False
+
+
+def roll_back(relation: UserProjectAssociation):
+    qs = SR.objects.filter(
+        project=relation.project, disabled=False, usersrassociation__user=relation.user
+    ).exclude(state=SR.SRState.Done)
+    for sr in qs:
+        SR_Changelog.objects.create(
+            project=relation.project,
+            SR=sr,
+            description="rollback",
+            formerState=sr.state,
+            changedBy=relation.user,
+            autoAdded=True,
+        )
+    qs.update(state=SR.SRState.TODO)
+    return len(qs)

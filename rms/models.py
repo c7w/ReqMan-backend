@@ -63,9 +63,6 @@ class SR(models.Model):
         IR,
         through="IRSRAssociation",
     )
-    pattern = models.CharField(
-        max_length=100, default=None, null=True
-    )  # the pattern of the sub_request
 
     class SRState(models.TextChoices):
         TODO = "TODO"
@@ -83,7 +80,6 @@ class SR(models.Model):
             models.Index(fields=["project"]),
             models.Index(fields=["title"]),
             models.Index(fields=["title", "project"]),
-            models.Index(fields=["pattern"]),
         ]
 
 
@@ -134,7 +130,7 @@ class SR_Changelog(models.Model):
         Reviewing = "Reviewing"
 
     formerState = models.TextField(choices=SRState.choices)
-    formerDescription = models.TextField()
+    formerDescription = models.TextField(default="")
     changedBy = models.ForeignKey(
         "ums.User", on_delete=models.CASCADE, null=True, default=None
     )

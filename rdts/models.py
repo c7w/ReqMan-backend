@@ -30,7 +30,7 @@ class Commit(models.Model):
     id = models.BigAutoField(primary_key=True)
     hash_id = models.CharField(max_length=255)
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
+    title = models.TextField()
     message = models.TextField()
     commiter_email = models.CharField(max_length=255)
     commiter_name = models.CharField(max_length=255)
@@ -193,7 +193,7 @@ class RemoteRepo(models.Model):
     enable_crawling = models.BooleanField(default=True)  # 是否同步仓库
     info = models.TextField(default="{}")  # 额外信息，如网址
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE)  # 对应的本地仓库
-    secret_token = models.CharField(max_length=255, default="")
+    secret_token = models.CharField(max_length=255, default="", unique=True)
 
     class Meta:
         indexes = [models.Index(fields=["repo"]), models.Index(fields=["secret_token"])]
