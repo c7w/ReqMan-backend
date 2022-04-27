@@ -504,3 +504,99 @@ class RDTSViewSet(viewsets.ViewSet):
             return STATUS(3)
 
         return Response({"code": 0, "data": {"status": status, "response": data}})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["POST"])
+    def get_user_activity(self, req: Request):
+        digest = require(req.data, "digest", bool)
+        limit = require(
+            req.data,
+            "limit",
+        )
+
+        if limit == -1:
+            begin = 0
+        else:
+            begin = now() - limit
+
+        dev = req.user
+
+        # here we do not strictly limit the role to issue
+        # if relation.role != Role.DEV:
+        #     return STATUS(1)
+
+        merges = MergeRequest.objects.filter(
+            user_authored=dev,
+            authoredAt__gte=begin,
+            repo__project=req.auth["proj"],
+        )
+        commits = Commit.objects.filter(
+            user_committer=dev,
+            createdAt__gte=begin,
+            repo__project=req.auth["proj"],
+        )
+        issues = Issue.objects.filter(
+            user_assignee=dev,
+            closedAt__gte=begin,
+            repo__project=req.auth["proj"],
+        )
+
+        if digest:
+            additions = sum([c.additions for c in commits])
+            deletions = sum([c.deletions for c in commits])
+            res = {
+                "mr_count": len(merges),
+                "commit_count": len(commits),
+                "additions": additions,
+                "deletions": deletions,
+                "issue_count": len(issues),
+                "issue_times": [round(i.closedAt - i.authoredAt) for i in issues],
+                "commit_times": [round(c.createdAt) for c in commits],
+            }
+            return Response({"code": 0, "data": res})
+        else:
+            res = {
+                "merges": [
+                    {
+                        **model_to_dict(m, fields=["id", "merge_id", "title", "url"]),
+                        "repo": m.repo.title,
+                    }
+                    for m in merges
+                ],
+                "commits": [
+                    {
+                        **model_to_dict(
+                            c,
+                            fields=[
+                                "id",
+                                "hash_id",
+                                "message",
+                                "createdAt",
+                                "url",
+                                "additions",
+                                "deletions",
+                            ],
+                        ),
+                        "repo": c.repo.title,
+                    }
+                    for c in commits
+                ],
+                "issues": [
+                    {
+                        **model_to_dict(
+                            i,
+                            fields=[
+                                "id",
+                                "issue_id",
+                                "title",
+                                "authoredAt",
+                                "closedAt",
+                                "url",
+                            ],
+                        ),
+                        "repo": i.repo.title,
+                    }
+                    for i in issues
+                ],
+            }
+            return Response({"code": 0, "data": res})
