@@ -25,12 +25,15 @@ def now():
 
 
 def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=None):
+    sr_pattern = r.repo.project.remote_sr_pattern_extract
+    print("SR pattern", sr_pattern)
+
     def update_sr_commit(comm: Commit, title):
         if CommitSRAssociation.objects.filter(commit=comm, auto_added=False).first():
             return
-        pattern = extract_sr_pattern(title, r.repo.project)
-        print(title, pattern)
+        pattern = extract_sr_pattern(title, r.repo.project, sr_pattern)
         if pattern:
+            print("SR pattern match", title, pattern)
             sr = SR.objects.filter(
                 title=pattern, project=r.repo.project, disabled=False
             ).first()
@@ -54,13 +57,13 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
                 c.user_committer = None
         c.save()
 
-    def append_diff(_kw: dict):
-        diff_status, additions, deletions, diffs = req.commit_diff_lines(c["id"])
+    def append_diff(_cmt):
+        diff_status, additions, deletions, diffs = req.commit_diff_lines(_cmt.hash_id)
         print("diff status", diff_status, additions, deletions)
-        _kw["additions"] = additions
-        _kw["deletions"] = deletions
-        _kw["diff"] = json.dumps(diffs, ensure_ascii=False)
-        return _kw
+        _cmt.additions = additions
+        _cmt.deletions = deletions
+        _cmt.diff = json.dumps(diffs, ensure_ascii=False)
+        _cmt.save()
 
     updated = False
     for c in commits:
@@ -89,7 +92,6 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
             }
             if old_key != kw:
                 updated = True
-                kw = append_diff(kw)
                 update_obj(oc, kw)
                 if crawl:
                     CommitCrawlAssociation.objects.create(
@@ -99,8 +101,6 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
             update_user_commit(oc)
         else:
             updated = True
-            kw = append_diff(kw)
-            print("create", kw["additions"], kw["deletions"], kw["commiter_email"])
             new_c = Commit.objects.create(**kw)
             if crawl:
                 CommitCrawlAssociation.objects.create(
@@ -108,14 +108,20 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
                 )
             update_sr_commit(new_c, kw["title"])
             update_user_commit(new_c)
+    to_be_diffed = Commit.objects.filter(repo=r.repo, diff="")
+    for cmt in to_be_diffed:
+        append_diff(cmt)
+
     return updated
 
 
 def search_for_issue_update(issues, r: RemoteRepo, ori_issues, crawl=None):
+    sr_pattern = r.repo.project.remote_sr_pattern_extract
+
     def update_sr_issue(iss: Issue, title):
         if IssueSRAssociation.objects.filter(issue=iss, auto_added=False).first():
             return
-        pattern = extract_sr_pattern(title, r.repo.project)
+        pattern = extract_sr_pattern(title, r.repo.project, sr_pattern)
         print(pattern)
         if pattern:
             sr = SR.objects.filter(
@@ -224,11 +230,13 @@ def search_for_mr_addition(
     crawl=None,
 ):
     updated = False
+    sr_pattern = r.repo.project.remote_sr_pattern_extract
+    iss_pattern = r.repo.project.remote_issue_iid_extract
 
     def update_sr_merge(_mr: MergeRequest, title):
         if MRSRAssociation.objects.filter(MR=_mr, auto_added=False).first():
             return
-        pattern = extract_sr_pattern(title, r.repo.project)
+        pattern = extract_sr_pattern(title, r.repo.project, sr_pattern)
         print(pattern)
         if pattern:
             sr = SR.objects.filter(
@@ -264,7 +272,7 @@ def search_for_mr_addition(
             MR=_mr, auto_added=False
         ).first():  # manual top priority
             return
-        issue_str = extract_issue_pattern(_mr.title, r.repo.project)
+        issue_str = extract_issue_pattern(_mr.title, r.repo.project, iss_pattern)
         if issue_str:
             issue_id = int(issue_str)
             issue = Issue.objects.filter(issue_id=issue_id, repo=r.repo).first()
