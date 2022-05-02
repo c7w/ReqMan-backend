@@ -2,12 +2,13 @@ import time
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
+from ums.utils import intify
 
 
 class RemoteRepoFetcher:
     def __init__(self, base_url: str, repo, access_token: str):
         self.base = base_url.strip("/")
-        self.repo = int(repo)
+        self.repo = intify(repo)
         self.token = access_token
 
     def merges(self, page):
