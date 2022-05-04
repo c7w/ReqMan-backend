@@ -472,8 +472,6 @@ class RDTSViewSet(viewsets.ViewSet):
             }
         )
 
-    from rdts.query_class import type_map
-
     @project_rights([Role.SUPERMASTER])
     @action(detail=False, methods=["GET"])
     def test_access_token(self, req: Request):
