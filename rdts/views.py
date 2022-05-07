@@ -796,9 +796,23 @@ class RDTSViewSet(viewsets.ViewSet):
     @project_rights("AnyMember")
     @action(detail=False, methods=["GET"])
     def project_single_bug(self, req: Request):
-        pass
+        bug_id = require(req.query_params, "id", int)
+        bug = Issue.objects.filter(
+            repo__project=req.auth["proj"], repo__disabled=False, id=bug_id, is_bug=True
+        ).first()
+        if not bug:
+            return FAIL
+
+        return Response({"code": 0, "data": model_to_dict(bug)})
 
     @project_rights("AnyMember")
     @action(detail=False, methods=["GET"])
     def project_single_merge(self, req: Request):
-        pass
+        merge_id = require(req.query_params, "id", int)
+        merge = MergeRequest.objects.filter(
+            repo__project=req.auth["proj"], repo__disabled=False, id=merge_id
+        ).first()
+        if not merge:
+            return FAIL
+
+        return Response({"code": 0, "data": model_to_dict(merge)})
