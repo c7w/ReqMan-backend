@@ -79,9 +79,7 @@ class Gitlab(RemoteRepoFetcher):
             self.base.strip("/")
             + ("/api/v4/projects/%d/" % self.repo)
             + req_type
-            + ("?" + post_fix)
-            if post_fix
-            else ""
+            + (("?" + post_fix) if post_fix else "")
         )
         print(url)
         try_cnt = 5

@@ -624,7 +624,16 @@ class RDTSViewSet(viewsets.ViewSet):
             json.loads(r.info)["base_url"], r.remote_id, r.access_token
         )
 
-        code, body = fetcher.tree(ref, path)
+        @func_set_timeout(3)
+        def request_to_tree():
+            return fetcher.tree(ref, path)
+
+        try:
+            code, body = request_to_tree()
+        except FunctionTimedOut:
+            return STATUS(4)
+        except:
+            return STATUS(5)
 
         return Response({"code": 0, "data": {"http_status": code, "body": body}})
 
@@ -646,7 +655,16 @@ class RDTSViewSet(viewsets.ViewSet):
             json.loads(r.info)["base_url"], r.remote_id, r.access_token
         )
 
-        code, body = fetcher.branches()
+        @func_set_timeout(3)
+        def request_to_branches():
+            return fetcher.branches()
+
+        try:
+            code, body = request_to_branches()
+        except FunctionTimedOut:
+            return STATUS(4)
+        except:
+            return STATUS(5)
 
         return Response({"code": 0, "data": {"http_status": code, "body": body}})
 
@@ -670,7 +688,16 @@ class RDTSViewSet(viewsets.ViewSet):
             json.loads(r.info)["base_url"], r.remote_id, r.access_token
         )
 
-        code, body = fetcher.blame(path, ref)
+        @func_set_timeout(2)
+        def request_to_blame():
+            return fetcher.blame(path, ref)
+
+        try:
+            code, body = request_to_blame()
+        except FunctionTimedOut:
+            return STATUS(4)
+        except:
+            return STATUS(5)
 
         if code != 200:
             return Response({"code": 3, "data": {"code": code}})
