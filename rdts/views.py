@@ -609,6 +609,7 @@ class RDTSViewSet(viewsets.ViewSet):
     def forward_tree(self, req: Request):
         repo = require(req.query_params, "repo", int)
         path = req.query_params.get("path", None)
+        ref = require(req.query_params, "ref", str)
 
         r = RemoteRepo.objects.filter(
             repo__disabled=False, repo__id=repo, repo__project=req.auth["proj"]
@@ -623,7 +624,7 @@ class RDTSViewSet(viewsets.ViewSet):
             json.loads(r.info)["base_url"], r.remote_id, r.access_token
         )
 
-        code, body = fetcher.tree(path)
+        code, body = fetcher.tree(ref, path)
 
         return Response({"code": 0, "data": {"http_status": code, "body": body}})
 
@@ -687,7 +688,6 @@ class RDTSViewSet(viewsets.ViewSet):
             sr = None
             if local_commit:
                 sr = CommitSRAssociation.objects.filter(commit=local_commit).first()
-                print(sr)
                 if sr:
                     sr = sr.SR
                     SRs[sr.id] = model_to_dict(sr, exclude=["IR"])

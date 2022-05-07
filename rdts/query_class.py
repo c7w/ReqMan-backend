@@ -64,12 +64,14 @@ class Gitlab(RemoteRepoFetcher):
     def commits(self, page):
         return self.request("repository/commits", page)
 
-    def request(self, req_type: str, page=None, headers=False, path=None):
+    def request(self, req_type: str, page=None, headers=False, path=None, ref=None):
         params = []
         if page:
             params += [("page", page), ("per_page", 100)]
         if path:
             params += [("path", path)]
+        if ref:
+            params += [("ref", ref)]
 
         post_fix = urlencode(params)
 
@@ -77,8 +79,9 @@ class Gitlab(RemoteRepoFetcher):
             self.base.strip("/")
             + ("/api/v4/projects/%d/" % self.repo)
             + req_type
-            + (f"?page={page}&per_page=1000" if page else "")
-            + post_fix
+            + ("?" + post_fix)
+            if post_fix
+            else ""
         )
         print(url)
         try_cnt = 5
@@ -144,7 +147,6 @@ class Gitlab(RemoteRepoFetcher):
                 bodies += body
             else:
                 bodies += [body]
-            print(bodies)
 
             if code != 200:
                 return code, bodies
@@ -157,8 +159,8 @@ class Gitlab(RemoteRepoFetcher):
             else:
                 return code, bodies
 
-    def tree(self, path=None):
-        return self.page_summon("repository/tree", path=path)
+    def tree(self, ref, path=None):
+        return self.page_summon("repository/tree", path=path, ref=ref)
 
     def blame(self, file, ref):
         return self.request(
