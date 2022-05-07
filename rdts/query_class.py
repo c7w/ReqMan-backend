@@ -73,7 +73,7 @@ class Gitlab(RemoteRepoFetcher):
         print(url)
         try_cnt = 5
         resp = None
-        err_msg = ''
+        err_msg = ""
         while try_cnt:
             try:
                 resp = requests.get(url, headers={"PRIVATE-TOKEN": self.token})
