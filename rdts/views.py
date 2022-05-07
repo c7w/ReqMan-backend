@@ -607,12 +607,47 @@ class RDTSViewSet(viewsets.ViewSet):
     @project_rights("AnyMember")
     @action(detail=False, methods=["GET"])
     def forward_tree(self, req: Request):
-        pass
+        repo = require(req.query_params, "repo", int)
+        path = req.query_params.get("path", None)
+
+        r = RemoteRepo.objects.filter(
+            repo__disabled=False, repo__id=repo, repo__project=req.auth["proj"]
+        ).first()
+        if not r:
+            return STATUS(1)
+
+        if r.type not in type_map:
+            return STATUS(2)
+
+        fetcher = type_map[r.type](
+            json.loads(r.info)["base_url"], r.remote_id, r.access_token
+        )
+
+        code, body = fetcher.tree(path)
+
+        return Response({"code": 0, "data": {"http_status": code, "body": body}})
 
     @project_rights("AnyMember")
     @action(detail=False, methods=["GET"])
     def forward_branches(self, req: Request):
-        pass
+        repo = require(req.query_params, "repo", int)
+
+        r = RemoteRepo.objects.filter(
+            repo__disabled=False, repo__id=repo, repo__project=req.auth["proj"]
+        ).first()
+        if not r:
+            return STATUS(1)
+
+        if r.type not in type_map:
+            return STATUS(2)
+
+        fetcher = type_map[r.type](
+            json.loads(r.info)["base_url"], r.remote_id, r.access_token
+        )
+
+        code, body = fetcher.branches()
+
+        return Response({"code": 0, "data": {"http_status": code, "body": body}})
 
     @project_rights("AnyMember")
     @action(detail=False, methods=["GET"])
@@ -640,6 +675,8 @@ class RDTSViewSet(viewsets.ViewSet):
             return Response({"code": 3, "data": {"code": code}})
 
         resp = []
+        SRs = {}
+        Commits = {}
 
         for relation in body:
             remote_commit = relation["commit"]
@@ -650,18 +687,22 @@ class RDTSViewSet(viewsets.ViewSet):
             sr = None
             if local_commit:
                 sr = CommitSRAssociation.objects.filter(commit=local_commit).first()
+                print(sr)
                 if sr:
                     sr = sr.SR
-
+                    SRs[sr.id] = model_to_dict(sr, exclude=["IR"])
+                Commits[local_commit.hash_id] = model_to_dict(
+                    local_commit, exclude=["diff"]
+                )
             resp += [
                 {
-                    "local_commit": model_to_dict(local_commit, exclude=["diff"])
-                    if local_commit
-                    else None,
+                    "local_commit": local_commit.id if local_commit else None,
                     "remote_commit": None if local_commit else remote_commit,
                     "lines": lines,
-                    "SR": model_to_dict(sr) if sr else None,
+                    "SR": sr.id if sr else None,
                 }
             ]
 
-        return Response({"code": 0, "data": resp})
+        return Response(
+            {"code": 0, "data": {"relationship": resp, "SR": SRs, "Commits": Commits}}
+        )
