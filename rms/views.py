@@ -9,10 +9,13 @@ from utils.sessions import SessionAuthentication
 from ums.utils import *
 from rms.utils import *
 from rest_framework import exceptions
+from utils.permissions import project_rights, GeneralPermission
+from rdts.utlis import pagination
 
 
 class RMSViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
+    permission_classes = [GeneralPermission]
 
     def projectGET(self, req: Request):
         proj = intify(require(req.query_params, "project"))
@@ -32,7 +35,7 @@ class RMSViewSet(viewsets.ViewSet):
                 and not is_role(req.user, proj, Role.SUPERMASTER)
                 and not is_role(req.user, proj, Role.DEV)
                 and not is_role(req.user, proj, Role.QA)
-                and not is_role(req.user,proj,Role.MEMBER)
+                and not is_role(req.user, proj, Role.MEMBER)
             ):
                 raise exceptions.PermissionDenied
             resu = serialize(getSR(proj), ["IR"])
@@ -120,3 +123,44 @@ class RMSViewSet(viewsets.ViewSet):
             return RMSViewSet.projectPOST(self, req)
         elif req.method == "GET":
             return RMSViewSet.projectGET(self, req)
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_sr(self, req: Request):
+        from_num = require(req.query_params, "from", int)
+        size = require(req.query_params, "size", int)
+
+        def _add_ir(x):
+            ir = x.IR.filter(disabled=False).first()
+            return {"IR": ir.id if ir else None}
+
+        return Response(
+            pagination(
+                SR.objects.filter(project=req.auth["proj"], disabled=False),
+                from_num,
+                size,
+                exclude=["IR", "disabled"],
+                addon=_add_ir,
+            )
+        )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_single_sr(self, req: Request):
+        sr_id = require(req.query_params, "id", int)
+        sr = SR.objects.filter(
+            disabled=False, project=req.auth["proj"], id=sr_id
+        ).first()
+        if sr:
+            ir = sr.IR.filter(disabled=False).first()
+            return Response(
+                {
+                    "code": 0,
+                    "data": {
+                        **model_to_dict(sr, exclude=["IR", "disabled"]),
+                        "IR": model_to_dict(ir, exclude=["disabled"]) if ir else None,
+                    },
+                }
+            )
+
+        return FAIL

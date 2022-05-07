@@ -544,13 +544,28 @@ def deleteOperation(proj: Project, type: str, data: dict):
 
 
 def pagination(
-    QS, from_num, size, order=None, exclude=None, fields=None, related_set=None
+    QS,
+    from_num,
+    size,
+    order=None,
+    exclude=None,
+    fields=None,
+    related_set=None,
+    addon=None,
 ):
     all_count = QS.count()
     if not order:
         order = "-createdAt"
     objects = QS.order_by(order)[from_num : from_num + size]
-    objects = [model_to_dict(c, exclude=exclude, fields=fields) for c in objects]
+
+    if addon:
+        objects = [
+            {**model_to_dict(c, exclude=exclude, fields=fields), **addon(c)}
+            for c in objects
+        ]
+    else:
+        objects = [model_to_dict(c, exclude=exclude, fields=fields) for c in objects]
+
     return {
         "code": 0,
         "data": {

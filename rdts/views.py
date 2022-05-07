@@ -1,5 +1,3 @@
-import sre_parse
-
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
@@ -782,3 +780,39 @@ class RDTSViewSet(viewsets.ViewSet):
                 order="-authoredAt",
             )
         )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_single_commit(self, req: Request):
+        commit_id = require(req.query_params, "id", int)
+        commit = Commit.objects.filter(
+            repo__project=req.auth["proj"], repo__disabled=False, id=commit_id
+        ).first()
+        if not commit:
+            return FAIL
+
+        return Response({"code": 0, "data": model_to_dict(commit)})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_single_bug(self, req: Request):
+        bug_id = require(req.query_params, "id", int)
+        bug = Issue.objects.filter(
+            repo__project=req.auth["proj"], repo__disabled=False, id=bug_id, is_bug=True
+        ).first()
+        if not bug:
+            return FAIL
+
+        return Response({"code": 0, "data": model_to_dict(bug)})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_single_merge(self, req: Request):
+        merge_id = require(req.query_params, "id", int)
+        merge = MergeRequest.objects.filter(
+            repo__project=req.auth["proj"], repo__disabled=False, id=merge_id
+        ).first()
+        if not merge:
+            return FAIL
+
+        return Response({"code": 0, "data": model_to_dict(merge)})
