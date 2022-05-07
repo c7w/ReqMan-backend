@@ -4,6 +4,7 @@ import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from urllib.parse import urlencode
 
+
 class RemoteRepoFetcher:
     def __init__(self, base_url: str, repo, access_token: str):
         self.base = base_url.strip("/")
@@ -66,9 +67,9 @@ class Gitlab(RemoteRepoFetcher):
     def request(self, req_type: str, page=None, headers=False, path=None):
         params = []
         if page:
-            params += [('page', page), ('per_page', 100)]
+            params += [("page", page), ("per_page", 100)]
         if path:
-            params += [('path', path)]
+            params += [("path", path)]
 
         post_fix = urlencode(params)
 
@@ -82,7 +83,7 @@ class Gitlab(RemoteRepoFetcher):
         print(url)
         try_cnt = 5
         resp = None
-        err_msg = ''
+        err_msg = ""
         while try_cnt:
             try:
                 resp = requests.get(url, headers={"PRIVATE-TOKEN": self.token})
@@ -148,8 +149,8 @@ class Gitlab(RemoteRepoFetcher):
             if code != 200:
                 return code, bodies
 
-            if 'x-total_pages' in header:
-                if page >= header['x-total-pages']:
+            if "x-total_pages" in header:
+                if page >= header["x-total-pages"]:
                     return code, bodies
                 else:
                     page += 1
@@ -160,6 +161,9 @@ class Gitlab(RemoteRepoFetcher):
         return self.page_summon("repository/tree", path=path)
 
     def blame(self, file, ref):
-        return self.request(f'repository/files/{file.replace("/", "%2F")}/blame?ref={ref}')
+        return self.request(
+            f'repository/files/{file.replace("/", "%2F")}/blame?ref={ref}'
+        )
+
 
 type_map = {"gitlab": Gitlab}
