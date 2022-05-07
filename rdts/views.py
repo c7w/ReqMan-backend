@@ -475,8 +475,6 @@ class RDTSViewSet(viewsets.ViewSet):
             }
         )
 
-    from rdts.query_class import type_map
-
     @project_rights([Role.SUPERMASTER])
     @action(detail=False, methods=["GET"])
     def test_access_token(self, req: Request):
@@ -732,4 +730,55 @@ class RDTSViewSet(viewsets.ViewSet):
 
         return Response(
             {"code": 0, "data": {"relationship": resp, "SR": SRs, "Commits": Commits}}
+        )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_commits(self, req: Request):
+        from_num = require(req.query_params, "from", int)
+        size = require(req.query_params, "size", int)
+        return Response(
+            pagination(
+                Commit.objects.filter(
+                    repo__project=req.auth["proj"], repo__disabled=False, disabled=False
+                ),
+                from_num,
+                size,
+                exclude=["diff", "disabled"],
+            )
+        )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_bugs(self, req: Request):
+        from_num = require(req.query_params, "from", int)
+        size = require(req.query_params, "size", int)
+        return Response(
+            pagination(
+                Issue.objects.filter(
+                    repo__project=req.auth["proj"],
+                    repo__disabled=False,
+                    disabled=False,
+                    is_bug=True,
+                ),
+                from_num,
+                size,
+                order="-authoredAt",
+            )
+        )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_merges(self, req: Request):
+        from_num = require(req.query_params, "from", int)
+        size = require(req.query_params, "size", int)
+        return Response(
+            pagination(
+                MergeRequest.objects.filter(
+                    repo__project=req.auth["proj"], repo__disabled=False, disabled=False
+                ),
+                from_num,
+                size,
+                order="-authoredAt",
+            )
         )

@@ -4,6 +4,7 @@ from ums.models import *
 from rms.models import *
 from ums.utils import require
 from utils.exceptions import ParamErr
+from django.forms.models import model_to_dict
 
 
 def now():
@@ -540,3 +541,23 @@ def deleteOperation(proj: Project, type: str, data: dict):
         judgeTypeInt(mr)
         IssueMRAssociation.objects.filter(issue__id=issue, MR__id=mr).delete()
     return False
+
+
+def pagination(
+    QS, from_num, size, order=None, exclude=None, fields=None, related_set=None
+):
+    all_count = QS.count()
+    if not order:
+        order = "-createdAt"
+    objects = QS.order_by(order)[from_num : from_num + size]
+    objects = [model_to_dict(c, exclude=exclude, fields=fields) for c in objects]
+    return {
+        "code": 0,
+        "data": {
+            "payload": objects,
+            "total_size": all_count,
+            "from": from_num,
+            "data_size": size,
+            "related_set": related_set,
+        },
+    }
