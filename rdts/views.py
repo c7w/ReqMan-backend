@@ -18,6 +18,7 @@ import hashlib
 from utils.model_date import get_timestamp
 from rest_framework import exceptions
 from func_timeout import func_set_timeout, FunctionTimedOut
+from rdts.query_class import Gitlab, type_map
 
 
 @api_view(["POST"])
@@ -472,8 +473,6 @@ class RDTSViewSet(viewsets.ViewSet):
             }
         )
 
-    from rdts.query_class import type_map
-
     @project_rights([Role.SUPERMASTER])
     @action(detail=False, methods=["GET"])
     def test_access_token(self, req: Request):
@@ -600,3 +599,220 @@ class RDTSViewSet(viewsets.ViewSet):
                 ],
             }
             return Response({"code": 0, "data": res})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def forward_tree(self, req: Request):
+        repo = require(req.query_params, "repo", int)
+        path = req.query_params.get("path", None)
+        ref = require(req.query_params, "ref", str)
+
+        r = RemoteRepo.objects.filter(
+            repo__disabled=False, repo__id=repo, repo__project=req.auth["proj"]
+        ).first()
+        if not r:
+            return STATUS(1)
+
+        if r.type not in type_map:
+            return STATUS(2)
+
+        fetcher = type_map[r.type](
+            json.loads(r.info)["base_url"], r.remote_id, r.access_token
+        )
+
+        @func_set_timeout(3)
+        def request_to_tree():
+            return fetcher.tree(ref, path)
+
+        try:
+            code, body = request_to_tree()
+        except FunctionTimedOut:
+            return STATUS(4)
+        except:
+            return STATUS(5)
+
+        return Response({"code": 0, "data": {"http_status": code, "body": body}})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def forward_branches(self, req: Request):
+        repo = require(req.query_params, "repo", int)
+
+        r = RemoteRepo.objects.filter(
+            repo__disabled=False, repo__id=repo, repo__project=req.auth["proj"]
+        ).first()
+        if not r:
+            return STATUS(1)
+
+        if r.type not in type_map:
+            return STATUS(2)
+
+        fetcher = type_map[r.type](
+            json.loads(r.info)["base_url"], r.remote_id, r.access_token
+        )
+
+        @func_set_timeout(3)
+        def request_to_branches():
+            return fetcher.branches()
+
+        try:
+            code, body = request_to_branches()
+        except FunctionTimedOut:
+            return STATUS(4)
+        except:
+            return STATUS(5)
+
+        return Response({"code": 0, "data": {"http_status": code, "body": body}})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def forward_code_sr(self, req: Request):
+        path = require(req.query_params, "path", str)
+        ref = require(req.query_params, "ref", str)
+        repo = require(req.query_params, "repo", int)
+
+        r = RemoteRepo.objects.filter(
+            repo__disabled=False, repo__id=repo, repo__project=req.auth["proj"]
+        ).first()
+        if not r:
+            return STATUS(1)
+
+        if r.type not in type_map:
+            return STATUS(2)
+
+        fetcher = type_map[r.type](
+            json.loads(r.info)["base_url"], r.remote_id, r.access_token
+        )
+
+        @func_set_timeout(2)
+        def request_to_blame():
+            return fetcher.blame(path, ref)
+
+        try:
+            code, body = request_to_blame()
+        except FunctionTimedOut:
+            return STATUS(4)
+        except:
+            return STATUS(5)
+
+        if code != 200:
+            return Response({"code": 3, "data": {"code": code}})
+
+        resp = []
+        SRs = {}
+        Commits = {}
+
+        for relation in body:
+            remote_commit = relation["commit"]
+            lines = relation["lines"]
+            local_commit = Commit.objects.filter(
+                repo__project=req.auth["proj"], hash_id=remote_commit["id"]
+            ).first()
+            sr = None
+            if local_commit:
+                sr = CommitSRAssociation.objects.filter(commit=local_commit).first()
+                if sr:
+                    sr = sr.SR
+                    SRs[sr.id] = model_to_dict(sr, exclude=["IR"])
+                Commits[local_commit.hash_id] = model_to_dict(
+                    local_commit, exclude=["diff"]
+                )
+            resp += [
+                {
+                    "local_commit": local_commit.id if local_commit else None,
+                    "remote_commit": None if local_commit else remote_commit,
+                    "lines": lines,
+                    "SR": sr.id if sr else None,
+                }
+            ]
+
+        return Response(
+            {"code": 0, "data": {"relationship": resp, "SR": SRs, "Commits": Commits}}
+        )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_commits(self, req: Request):
+        from_num = require(req.query_params, "from", int)
+        size = require(req.query_params, "size", int)
+        return Response(
+            pagination(
+                Commit.objects.filter(
+                    repo__project=req.auth["proj"], repo__disabled=False, disabled=False
+                ),
+                from_num,
+                size,
+                exclude=["diff", "disabled"],
+            )
+        )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_bugs(self, req: Request):
+        from_num = require(req.query_params, "from", int)
+        size = require(req.query_params, "size", int)
+        return Response(
+            pagination(
+                Issue.objects.filter(
+                    repo__project=req.auth["proj"],
+                    repo__disabled=False,
+                    disabled=False,
+                    is_bug=True,
+                ),
+                from_num,
+                size,
+                order="-authoredAt",
+            )
+        )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_merges(self, req: Request):
+        from_num = require(req.query_params, "from", int)
+        size = require(req.query_params, "size", int)
+        return Response(
+            pagination(
+                MergeRequest.objects.filter(
+                    repo__project=req.auth["proj"], repo__disabled=False, disabled=False
+                ),
+                from_num,
+                size,
+                order="-authoredAt",
+            )
+        )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_single_commit(self, req: Request):
+        commit_id = require(req.query_params, "id", int)
+        commit = Commit.objects.filter(
+            repo__project=req.auth["proj"], repo__disabled=False, id=commit_id
+        ).first()
+        if not commit:
+            return FAIL
+
+        return Response({"code": 0, "data": model_to_dict(commit)})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_single_bug(self, req: Request):
+        bug_id = require(req.query_params, "id", int)
+        bug = Issue.objects.filter(
+            repo__project=req.auth["proj"], repo__disabled=False, id=bug_id, is_bug=True
+        ).first()
+        if not bug:
+            return FAIL
+
+        return Response({"code": 0, "data": model_to_dict(bug)})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def project_single_merge(self, req: Request):
+        merge_id = require(req.query_params, "id", int)
+        merge = MergeRequest.objects.filter(
+            repo__project=req.auth["proj"], repo__disabled=False, id=merge_id
+        ).first()
+        if not merge:
+            return FAIL
+
+        return Response({"code": 0, "data": model_to_dict(merge)})

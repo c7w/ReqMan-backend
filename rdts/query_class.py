@@ -2,6 +2,7 @@ import time
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
+from urllib.parse import urlencode
 
 
 class RemoteRepoFetcher:
@@ -22,7 +23,7 @@ class RemoteRepoFetcher:
     def commit_diff_lines(self, _hash):
         raise NotImplemented
 
-    def branches(self, page):
+    def branches(self):
         raise NotImplemented
 
     def single_commit(self, _hash):
@@ -63,17 +64,27 @@ class Gitlab(RemoteRepoFetcher):
     def commits(self, page):
         return self.request("repository/commits", page)
 
-    def request(self, req_type: str, page=None):
+    def request(self, req_type: str, page=None, headers=False, path=None, ref=None):
+        params = []
+        if page:
+            params += [("page", page), ("per_page", 100)]
+        if path:
+            params += [("path", path)]
+        if ref:
+            params += [("ref", ref)]
+
+        post_fix = urlencode(params)
+
         url = (
             self.base.strip("/")
             + ("/api/v4/projects/%d/" % self.repo)
             + req_type
-            + (f"?page={page}&per_page=1000" if page else "")
+            + (("?" + post_fix) if post_fix else "")
         )
         print(url)
         try_cnt = 5
         resp = None
-        err_msg = ''
+        err_msg = ""
         while try_cnt:
             try:
                 resp = requests.get(url, headers={"PRIVATE-TOKEN": self.token})
@@ -86,7 +97,10 @@ class Gitlab(RemoteRepoFetcher):
                 break
         if resp is None:
             return -1, {"message": err_msg}
-        return resp.status_code, resp.json()
+        if headers:
+            return resp.status_code, resp.json(), resp.headers
+        else:
+            return resp.status_code, resp.json()
 
     def commit_diff_lines(self, _hash: str):
         status, res = self.request(f"repository/commits/{_hash}/diff")
@@ -117,6 +131,39 @@ class Gitlab(RemoteRepoFetcher):
 
     def project(self):
         return self.request("")
+
+    def branches(self):
+        return self.page_summon("repository/branches")
+
+    def page_summon(self, req_type: str, **kw):
+        page = 1
+        bodies = []
+        while True:
+            code, body, header = self.request(req_type, page, headers=True, **kw)
+
+            if type(body) == list:
+                bodies += body
+            else:
+                bodies += [body]
+
+            if code != 200:
+                return code, bodies
+
+            if "x-total_pages" in header:
+                if page >= header["x-total-pages"]:
+                    return code, bodies
+                else:
+                    page += 1
+            else:
+                return code, bodies
+
+    def tree(self, ref, path=None):
+        return self.page_summon("repository/tree", path=path, ref=ref)
+
+    def blame(self, file, ref):
+        return self.request(
+            f'repository/files/{file.replace("/", "%2F")}/blame?ref={ref}'
+        )
 
 
 type_map = {"gitlab": Gitlab}
