@@ -93,8 +93,10 @@ class RMSViewSet(viewsets.ViewSet):
         ]
         # if type == 'ir' or type == 'sr' or type == 'sr-iteration' or type=='iteration':
         if type in typeAll:
-            if not is_role(req.user, proj, Role.SUPERMASTER) and not is_role(
-                req.user, proj, Role.SYS
+            if (
+                not is_role(req.user, proj, Role.SUPERMASTER)
+                and not is_role(req.user, proj, Role.SYS)
+                and not is_role(req.user, proj, Role.QA)
             ):
                 raise exceptions.PermissionDenied
         if type == "SRState":
