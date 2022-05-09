@@ -304,7 +304,7 @@ class RDTSViewSet(viewsets.ViewSet):
             }
         )
 
-    @project_rights([Role.QA, Role.SUPERMASTER])
+    @project_rights("AnyMember")
     @action(detail=False, methods=["POST"])
     def get_recent_activity(self, req: Request):
         digest = require(req.data, "digest", bool)
