@@ -706,7 +706,7 @@ class RDTSViewSet(viewsets.ViewSet):
             remote_commit = relation["commit"]
             lines = relation["lines"]
             local_commit = Commit.objects.filter(
-                repo__project=req.auth["proj"], hash_id=remote_commit["id"]
+                repo__project=req.auth["proj"], hash_id=remote_commit["id"], repo__id=repo
             ).first()
             sr = None
             if local_commit:
