@@ -82,7 +82,7 @@ class RDTSViewSet(viewsets.ViewSet):
         if type == "mr":
             resu = serialize(getMR(repo))
         elif type == "commit":
-            resu = serialize(getCommit(repo), ["diff"])
+            resu = serialize(getCommit(repo))
         elif type == "issue":
             resu = serialize(getIssue(repo))
         elif type == "commit-sr":
@@ -314,6 +314,8 @@ class RDTSViewSet(viewsets.ViewSet):
             "limit",
         )
 
+        ACTIVITY_LIMIT = 20
+
         if limit == -1:
             begin = 0
         else:
@@ -334,22 +336,38 @@ class RDTSViewSet(viewsets.ViewSet):
             # here we do not strictly limit the role to issue
             # if relation.role != Role.DEV:
             #     return STATUS(1)
-
-            merges = MergeRequest.objects.filter(
-                user_authored=dev,
-                authoredAt__gte=begin,
-                repo__project=req.auth["proj"],
-            )
-            commits = Commit.objects.filter(
-                user_committer=dev,
-                createdAt__gte=begin,
-                repo__project=req.auth["proj"],
-            )
-            issues = Issue.objects.filter(
-                user_assignee=dev,
-                closedAt__gte=begin,
-                repo__project=req.auth["proj"],
-            )
+            if not digest:
+                merges = MergeRequest.objects.filter(
+                    user_authored=dev,
+                    authoredAt__gte=begin,
+                    repo__project=req.auth["proj"],
+                ).order_by("-authoredAt")[:ACTIVITY_LIMIT]
+                commits = Commit.objects.filter(
+                    user_committer=dev,
+                    createdAt__gte=begin,
+                    repo__project=req.auth["proj"],
+                ).order_by("-createdAt")[:ACTIVITY_LIMIT]
+                issues = Issue.objects.filter(
+                    user_assignee=dev,
+                    closedAt__gte=begin,
+                    repo__project=req.auth["proj"],
+                ).order_by("-closedAt")[:ACTIVITY_LIMIT]
+            else:
+                merges = MergeRequest.objects.filter(
+                    user_authored=dev,
+                    authoredAt__gte=begin,
+                    repo__project=req.auth["proj"],
+                )
+                commits = Commit.objects.filter(
+                    user_committer=dev,
+                    createdAt__gte=begin,
+                    repo__project=req.auth["proj"],
+                )
+                issues = Issue.objects.filter(
+                    user_assignee=dev,
+                    closedAt__gte=begin,
+                    repo__project=req.auth["proj"],
+                )
             info += [(dev, merges, commits, issues)]
 
         if digest:
@@ -706,7 +724,9 @@ class RDTSViewSet(viewsets.ViewSet):
             remote_commit = relation["commit"]
             lines = relation["lines"]
             local_commit = Commit.objects.filter(
-                repo__project=req.auth["proj"], hash_id=remote_commit["id"], repo__id=repo
+                repo__project=req.auth["proj"],
+                hash_id=remote_commit["id"],
+                repo__id=repo,
             ).first()
             sr = None
             if local_commit:
@@ -715,7 +735,7 @@ class RDTSViewSet(viewsets.ViewSet):
                     sr = sr.SR
                     SRs[sr.id] = model_to_dict(sr, exclude=["IR"])
                 Commits[local_commit.hash_id] = model_to_dict(
-                    local_commit, exclude=["diff"]
+                    local_commit, exclude=["disabled"]
                 )
             resp += [
                 {
@@ -742,7 +762,7 @@ class RDTSViewSet(viewsets.ViewSet):
                 ),
                 from_num,
                 size,
-                exclude=["diff", "disabled"],
+                exclude=["disabled"],
             )
         )
 

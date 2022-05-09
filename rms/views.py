@@ -168,7 +168,10 @@ class RMSViewSet(viewsets.ViewSet):
                         **model_to_dict(sr, exclude=["IR", "disabled"]),
                         "IR": [model_to_dict(i, exclude=["disabled"]) for i in ir],
                         "commit": [
-                            [model_to_dict(c.commit, exclude=["diff"]), c.auto_added]
+                            [
+                                model_to_dict(c.commit, exclude=["disabled"]),
+                                c.auto_added,
+                            ]
                             for c in commits
                         ],
                         "issue": [
