@@ -322,59 +322,92 @@ class RDTSViewSet(viewsets.ViewSet):
             begin = now() - limit
 
         info = []
+
+        d_commits = {}
+        d_merges = {}
+        d_issues = {}
+
         for did in dev_id:
-            dev = User.objects.filter(id=did, disabled=False).first()
-            if not dev:
+            dev = User.objects.filter(id=did, disabled=False).values("id")
+            if len(dev) == 0:
                 return STATUS(1)
 
             relation = UserProjectAssociation.objects.filter(
-                project=req.auth["proj"], user=dev
-            ).first()
-            if not relation:
+                project=req.auth["proj"], user__id=did
+            ).count()
+            if relation == 0:
                 return STATUS(1)
 
-            # here we do not strictly limit the role to issue
-            # if relation.role != Role.DEV:
-            #     return STATUS(1)
-            if not digest:
+            d_commits[did] = []
+            d_issues[did] = []
+            d_merges[did] = []
+
+        if digest:
+            merges = MergeRequest.objects.filter(
+                user_authored__in=dev_id,
+                authoredAt__gte=begin,
+                repo__project=req.auth["proj"],
+            ).values("authoredAt", "user_authored")
+            for m in merges:
+                d_merges[m["user_authored"]] += [m]
+
+            commits = Commit.objects.filter(
+                user_committer__in=dev_id,
+                createdAt__gte=begin,
+                repo__project=req.auth["proj"],
+            ).values("additions", "deletions", "createdAt", "title", "user_committer")
+            for c in commits:
+                d_commits[c["user_committer"]] += [c]
+
+            issues = Issue.objects.filter(
+                user_assignee__in=dev_id,
+                closedAt__gte=begin,
+                repo__project=req.auth["proj"],
+            ).values("closedAt", "authoredAt", "user_assignee")
+            for i in issues:
+                d_issues[i["user_assignee"]] += [i]
+
+        else:
+            for did in dev_id:
+                # here we do not strictly limit the role to issue
+                # if relation.role != Role.DEV:
+                #     return STATUS(1)
                 merges = MergeRequest.objects.filter(
-                    user_authored=dev,
+                    user_authored__id=did,
                     authoredAt__gte=begin,
                     repo__project=req.auth["proj"],
                 ).order_by("-authoredAt")[:ACTIVITY_LIMIT]
                 commits = Commit.objects.filter(
-                    user_committer=dev,
+                    user_committer__id=did,
                     createdAt__gte=begin,
                     repo__project=req.auth["proj"],
                 ).order_by("-createdAt")[:ACTIVITY_LIMIT]
                 issues = Issue.objects.filter(
-                    user_assignee=dev,
+                    user_assignee__id=did,
                     closedAt__gte=begin,
                     repo__project=req.auth["proj"],
                 ).order_by("-closedAt")[:ACTIVITY_LIMIT]
-            else:
-                merges = MergeRequest.objects.filter(
-                    user_authored=dev,
-                    authoredAt__gte=begin,
-                    repo__project=req.auth["proj"],
-                )
-                commits = Commit.objects.filter(
-                    user_committer=dev,
-                    createdAt__gte=begin,
-                    repo__project=req.auth["proj"],
-                )
-                issues = Issue.objects.filter(
-                    user_assignee=dev,
-                    closedAt__gte=begin,
-                    repo__project=req.auth["proj"],
-                )
-            info += [(dev, merges, commits, issues)]
+                info += [(did, merges, commits, issues)]
 
         if digest:
+            # lines = [0, 0, 0, 0, 0, 0]
             res = []
-            for dev, merges, commits, issues in info:
-                additions = sum([c.additions for c in commits])
-                deletions = sum([c.deletions for c in commits])
+            for did in dev_id:
+                merges = d_merges[did]
+                commits = d_commits[did]
+                issues = d_issues[did]
+                additions = sum([c["additions"] for c in commits])
+                deletions = sum([c["deletions"] for c in commits])
+                personal_lines = [c["additions"] + c["deletions"] for c in commits]
+                # for c in commits:
+                #     delta = c["additions"] + c["deletions"]
+                #     personal_lines += [delta]
+                #     delta = delta // 100
+                #     if delta > 5:
+                #         # print(c["title"], c["additions"], c["deletions"])
+                #         delta = 5
+                #     lines[delta] += 1
+
                 res += [
                     {
                         "mr_count": len(merges),
@@ -383,9 +416,11 @@ class RDTSViewSet(viewsets.ViewSet):
                         "deletions": deletions,
                         "issue_count": len(issues),
                         "issue_times": [
-                            round(i.closedAt - i.authoredAt) for i in issues
+                            round(i["closedAt"] - i["authoredAt"]) for i in issues
                         ],
-                        "commit_times": [round(c.createdAt) for c in commits],
+                        "commit_times": [round(c["createdAt"]) for c in commits],
+                        "mr_times": [round(m["authoredAt"]) for m in merges],
+                        "commit_lines": personal_lines,
                     }
                 ]
             return Response({"code": 0, "data": res})
