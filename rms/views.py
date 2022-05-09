@@ -8,9 +8,11 @@ from ums.views import SUCC
 from utils.sessions import SessionAuthentication
 from ums.utils import *
 from rms.utils import *
+from rdts.models import *
 from rest_framework import exceptions
 from utils.permissions import project_rights, GeneralPermission
 from rdts.utlis import pagination
+from django.db.models import OuterRef, Subquery
 
 
 class RMSViewSet(viewsets.ViewSet):
@@ -154,13 +156,25 @@ class RMSViewSet(viewsets.ViewSet):
             disabled=False, project=req.auth["proj"], id=sr_id
         ).first()
         if sr:
-            ir = sr.IR.filter(disabled=False).first()
+            ir = sr.IR.filter(disabled=False)
+            commits = CommitSRAssociation.objects.filter(SR=sr).all()
+            issues = IssueSRAssociation.objects.filter(SR=sr).all()
+            mrs = MRSRAssociation.objects.filter(SR=sr).all()
+
             return Response(
                 {
                     "code": 0,
                     "data": {
                         **model_to_dict(sr, exclude=["IR", "disabled"]),
-                        "IR": model_to_dict(ir, exclude=["disabled"]) if ir else None,
+                        "IR": [model_to_dict(i, exclude=["disabled"]) for i in ir],
+                        "commit": [
+                            [model_to_dict(c.commit, exclude=["diff"]), c.auto_added]
+                            for c in commits
+                        ],
+                        "issue": [
+                            [model_to_dict(c.issue), c.auto_added] for c in issues
+                        ],
+                        "mr": [[model_to_dict(c.MR), c.auto_added] for c in mrs],
                     },
                 }
             )
