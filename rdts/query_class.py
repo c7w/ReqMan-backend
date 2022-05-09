@@ -105,15 +105,15 @@ class Gitlab(RemoteRepoFetcher):
     def commit_diff_lines(self, _hash: str):
         status, res = self.request(f"repository/commits/{_hash}/diff")
         if status == 200:
-            diffs = []
+            # diffs = []
             total_add = 0
             total_subs = 0
             for file in res:
                 add, subs = from_diff_to_lines(file["diff"])
                 total_add += add
                 total_subs += subs
-                diffs += [file["diff"]]
-            return status, total_add, total_subs, diffs
+                # diffs += [file["diff"]]
+            return status, total_add, total_subs, ""
         else:
             return status, -1, -1, []
 
