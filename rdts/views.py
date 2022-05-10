@@ -390,7 +390,7 @@ class RDTSViewSet(viewsets.ViewSet):
                         "id",
                         "merge_id",
                         "title",
-                        "repo",
+                        "description" "repo",
                         "url",
                         "authoredAt",
                         "reviewedAt",
@@ -419,6 +419,9 @@ class RDTSViewSet(viewsets.ViewSet):
                 )
                 issues = (
                     Issue.objects.filter(
+                        Q(user_closed__id=did) | Q(user_authored__id=did)
+                    )
+                    .filter(
                         user_assignee__id=did,
                         closedAt__gte=begin,
                         repo__project=req.auth["proj"],
@@ -431,7 +434,7 @@ class RDTSViewSet(viewsets.ViewSet):
                         "issue_id",
                         "repo",
                         "title",
-                        "authoredAt",
+                        "description" "authoredAt",
                         "closedAt",
                         "user_authored",
                         "user_closed",
