@@ -1,3 +1,4 @@
+import sre_parse
 from tkinter.tix import Tree
 from rms.models import *
 from ums.models import Project
@@ -206,7 +207,7 @@ def createUserIterationAssociation(datas: dict):
     if not user or not it:
         raise ParamErr(f"wrong It/User Id.")
     data = {"user": user, "iteration": it}
-    exist = UserIterationAssociation.objects.filter(user=user, iteration=it).first()
+    exist = UserIterationAssociation.objects.filter(iteration=it).first()
     if exist:
         raise ParamErr("Association Exist")
     UserIterationAssociation.objects.create(**data)
@@ -542,17 +543,32 @@ def deleteOperation(proj: Project, type: string, data: dict):
 
 
 def roll_back(relation: UserProjectAssociation):
-    qs = SR.objects.filter(
-        project=relation.project, disabled=False, usersrassociation__user=relation.user
-    ).exclude(state=SR.SRState.Done)
-    for sr in qs:
-        SR_Changelog.objects.create(
+    qs = (
+        SR.objects.filter(
             project=relation.project,
-            SR=sr,
-            description="rollback",
-            formerState=sr.state,
-            changedBy=relation.user,
-            autoAdded=True,
+            disabled=False,
+            usersrassociation__user=relation.user,
         )
-    qs.update(state=SR.SRState.TODO)
+        .exclude(state=SR.SRState.Done)
+        .values("id", "state")
+    )
+    qs_id = list(map(lambda x: x["id"], qs))
+    SR.objects.filter(
+        project=relation.project, disabled=False, usersrassociation__user=relation.user
+    ).exclude(state=SR.SRState.Done).update(state=SR.SRState.TODO)
+    UserSRAssociation.objects.filter(user_id__in=qs_id).delete()
+    changes = []
+    for sr in qs:
+        changes += [
+            SR_Changelog(
+                project=relation.project,
+                SR_id=sr["id"],
+                description="rollback",
+                formerState=sr["state"],
+                changedBy=relation.user,
+                autoAdded=True,
+            )
+        ]
+    SR_Changelog.objects.bulk_create(changes)
+    UserIterationAssociation.objects.filter(user=relation.user).delete()
     return len(qs)

@@ -65,7 +65,7 @@ class Role(models.TextChoices):
 class UserProjectAssociation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    role = models.TextField(choices=Role.choices)
+    role = models.CharField(max_length=12, choices=Role.choices)
 
     class Meta:
         unique_together = ["user", "project"]
@@ -79,7 +79,7 @@ class UserProjectAssociation(models.Model):
 class ProjectInvitationAssociation(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     invitation = models.CharField(max_length=64)
-    role = models.TextField(choices=Role.choices)
+    role = models.CharField(max_length=12, choices=Role.choices)
 
     class Meta:
         indexes = [
