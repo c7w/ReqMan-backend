@@ -122,7 +122,7 @@ class UserViewSet(viewsets.ViewSet):
             {
                 "code": 0,
                 "data": {
-                    "schedule": {"done": [], "wip": [], "todo": []},
+                    # "schedule": {"done": [], "wip": [], "todo": []},
                     **user_and_projects(req.user),
                 },
             }
