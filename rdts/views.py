@@ -19,6 +19,7 @@ from utils.model_date import get_timestamp
 from rest_framework import exceptions
 from func_timeout import func_set_timeout, FunctionTimedOut
 from rdts.query_class import Gitlab, type_map
+from django.db.models import Q
 
 
 @api_view(["POST"])
@@ -347,6 +348,7 @@ class RDTSViewSet(viewsets.ViewSet):
                 user_authored__in=dev_id,
                 authoredAt__gte=begin,
                 repo__project=req.auth["proj"],
+                repo__disabled=False,
             ).values("authoredAt", "user_authored")
             for m in merges:
                 d_merges[m["user_authored"]] += [m]
@@ -355,6 +357,7 @@ class RDTSViewSet(viewsets.ViewSet):
                 user_committer__in=dev_id,
                 createdAt__gte=begin,
                 repo__project=req.auth["proj"],
+                repo__disabled=False,
             ).values("additions", "deletions", "createdAt", "title", "user_committer")
             for c in commits:
                 d_commits[c["user_committer"]] += [c]
@@ -363,6 +366,7 @@ class RDTSViewSet(viewsets.ViewSet):
                 user_assignee__in=dev_id,
                 closedAt__gte=begin,
                 repo__project=req.auth["proj"],
+                repo__disabled=False,
             ).values("closedAt", "authoredAt", "user_assignee")
             for i in issues:
                 d_issues[i["user_assignee"]] += [i]
@@ -372,21 +376,68 @@ class RDTSViewSet(viewsets.ViewSet):
                 # here we do not strictly limit the role to issue
                 # if relation.role != Role.DEV:
                 #     return STATUS(1)
-                merges = MergeRequest.objects.filter(
-                    user_authored__id=did,
-                    authoredAt__gte=begin,
-                    repo__project=req.auth["proj"],
-                ).order_by("-authoredAt")[:ACTIVITY_LIMIT]
-                commits = Commit.objects.filter(
-                    user_committer__id=did,
-                    createdAt__gte=begin,
-                    repo__project=req.auth["proj"],
-                ).order_by("-createdAt")[:ACTIVITY_LIMIT]
-                issues = Issue.objects.filter(
-                    user_assignee__id=did,
-                    closedAt__gte=begin,
-                    repo__project=req.auth["proj"],
-                ).order_by("-closedAt")[:ACTIVITY_LIMIT]
+                merges = (
+                    MergeRequest.objects.filter(
+                        Q(user_authored__id=did) | Q(user_reviewed__id=did)
+                    )
+                    .filter(
+                        authoredAt__gte=begin,
+                        repo__project=req.auth["proj"],
+                        repo__disabled=False,
+                    )
+                    .order_by("-authoredAt")
+                    .values(
+                        "id",
+                        "merge_id",
+                        "title",
+                        "repo",
+                        "url",
+                        "authoredAt",
+                        "reviewedAt",
+                        "user_authored",
+                        "user_reviewed",
+                    )[:ACTIVITY_LIMIT]
+                )
+                commits = (
+                    Commit.objects.filter(
+                        user_committer__id=did,
+                        createdAt__gte=begin,
+                        repo__project=req.auth["proj"],
+                        repo__disabled=False,
+                    )
+                    .order_by("-createdAt")
+                    .values(
+                        "id",
+                        "hash_id",
+                        "repo",
+                        "title",
+                        "createdAt",
+                        "user_committer",
+                        "additions",
+                        "deletions",
+                    )[:ACTIVITY_LIMIT]
+                )
+                issues = (
+                    Issue.objects.filter(
+                        user_assignee__id=did,
+                        closedAt__gte=begin,
+                        repo__project=req.auth["proj"],
+                        repo__disabled=False,
+                        is_bug=True,
+                    )
+                    .order_by("-closedAt")
+                    .values(
+                        "id",
+                        "issue_id",
+                        "repo",
+                        "title",
+                        "authoredAt",
+                        "closedAt",
+                        "user_authored",
+                        "user_closed",
+                    )[:ACTIVITY_LIMIT]
+                )
+
                 info += [(did, merges, commits, issues)]
 
         if digest:
@@ -429,49 +480,9 @@ class RDTSViewSet(viewsets.ViewSet):
             for dev, merges, commits, issues in info:
                 res += [
                     {
-                        "merges": [
-                            {
-                                **model_to_dict(
-                                    m, fields=["id", "merge_id", "title", "url"]
-                                ),
-                                "repo": m.repo.title,
-                            }
-                            for m in merges
-                        ],
-                        "commits": [
-                            {
-                                **model_to_dict(
-                                    c,
-                                    fields=[
-                                        "id",
-                                        "hash_id",
-                                        "message",
-                                        "createdAt",
-                                        "url",
-                                        "additions",
-                                        "deletions",
-                                    ],
-                                ),
-                                "repo": c.repo.title,
-                            }
-                            for c in commits
-                        ],
-                        "issues": [
-                            {
-                                **model_to_dict(
-                                    i,
-                                    fields=[
-                                        "id",
-                                        "issue_id",
-                                        "title",
-                                        "authoredAt",
-                                        "closedAt",
-                                    ],
-                                ),
-                                "repo": i.repo.title,
-                            }
-                            for i in issues
-                        ],
+                        "merges": merges,
+                        "commits": commits,
+                        "issues": issues,
                     }
                 ]
             return Response({"code": 0, "data": res})
@@ -790,15 +801,42 @@ class RDTSViewSet(viewsets.ViewSet):
     def project_commits(self, req: Request):
         from_num = require(req.query_params, "from", int)
         size = require(req.query_params, "size", int)
-        return Response(
-            pagination(
-                Commit.objects.filter(
-                    repo__project=req.auth["proj"], repo__disabled=False, disabled=False
-                ),
-                from_num,
-                size,
-                exclude=["disabled"],
+
+        if size > 100:
+            size = 100
+        commits = (
+            Commit.objects.filter(
+                repo__project=req.auth["proj"], repo__disabled=False, disabled=False
             )
+            .order_by("-createdAt")
+            .values(
+                "id",
+                "hash_id",
+                "repo",
+                "title",
+                "commiter_email",
+                "commiter_name",
+                "createdAt",
+                "user_committer",
+                "additions",
+                "deletions",
+            )[from_num : size + from_num]
+        )
+        return Response(
+            {
+                "code": 0,
+                "data": {
+                    "payload": commits,
+                    "total_size": Commit.objects.filter(
+                        repo__project=req.auth["proj"],
+                        repo__disabled=False,
+                        disabled=False,
+                    ).count(),
+                    "from": from_num,
+                    "data_size": size,
+                    "related_set": None,
+                },
+            }
         )
 
     @project_rights("AnyMember")
