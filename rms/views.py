@@ -208,3 +208,45 @@ class RMSViewSet(viewsets.ViewSet):
             )
 
         return Response({"code": 0, "data": res})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def dashboard(self, req: Request):
+        limit = require(req.query_params, "limit", int)
+
+        if limit > 10:
+            limit = 10
+
+        wip = [
+            model_to_dict(s, exclude=["IR"])
+            for s in SR.objects.filter(
+                usersrassociation__user=req.user,
+                project=req.auth["proj"],
+                state=SR.SRState.WIP,
+                disabled=False,
+            ).order_by("-priority", "-createdAt")[:limit]
+        ]
+
+        todo = [
+            model_to_dict(s, exclude=["IR"])
+            for s in SR.objects.filter(
+                usersrassociation__user=req.user,
+                project=req.auth["proj"],
+                state=SR.SRState.TODO,
+                disabled=False,
+            ).order_by("-priority", "-createdAt")[:limit]
+        ]
+
+        reviewing = [
+            model_to_dict(s, exclude=["IR"])
+            for s in SR.objects.filter(
+                usersrassociation__user=req.user,
+                project=req.auth["proj"],
+                state=SR.SRState.Reviewing,
+                disabled=False,
+            ).order_by("-priority", "-createdAt")[:limit]
+        ]
+
+        return Response(
+            {"code": 0, "data": {"wip": wip, "todo": todo, "reviewing": reviewing}}
+        )
