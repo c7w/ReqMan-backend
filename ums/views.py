@@ -211,9 +211,7 @@ class UserViewSet(viewsets.ViewSet):
         users = [user_to_list(u, proj) for u in all_users().filter(project=proj)]
         proj = proj_to_list(proj)
 
-        return Response(
-            {"code": 0, "data": {"project": proj, "users": users, "avatar": avatar}}
-        )
+        return Response({"code": 0, "data": {"project": proj, "users": users}})
 
     @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=["POST"])

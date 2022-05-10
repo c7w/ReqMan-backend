@@ -440,8 +440,7 @@ class RDTSViewSet(viewsets.ViewSet):
                         "state",
                         "authoredAt",
                         "closedAt",
-                        "url"
-                        "user_assignee",
+                        "url" "user_assignee",
                         "user_authored",
                         "user_closed",
                     )[:ACTIVITY_LIMIT]
