@@ -312,7 +312,7 @@ class RMS_Tests(TestCase):
                 }
             },
         }
-        self.postMessage(c, data8, 0)
+        # self.postMessage(c, data8, 0)
 
         data9 = {
             "project": self.ums.p1.id,
