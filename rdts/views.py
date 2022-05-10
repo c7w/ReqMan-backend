@@ -19,6 +19,7 @@ from utils.model_date import get_timestamp
 from rest_framework import exceptions
 from func_timeout import func_set_timeout, FunctionTimedOut
 from rdts.query_class import Gitlab, type_map
+from django.db.models import Q
 
 
 @api_view(["POST"])
@@ -871,3 +872,36 @@ class RDTSViewSet(viewsets.ViewSet):
             return FAIL
 
         return Response({"code": 0, "data": model_to_dict(merge)})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["POST"])
+    def search_merge(self, req: Request):
+        title_only = require(req.data, "title_only", bool)
+        kw = require(req.data, "kw", str)
+        limit = require(req.data, "limit", int)
+        vals = ("id", "merge_id", "repo", "title", "description", "state", "authoredAt")
+        if title_only:
+            res = (
+                MergeRequest.objects.filter(
+                    repo__project=req.auth["proj"], repo__disabled=False, disabled=False
+                )
+                .filter(title__contains=kw)
+                .order_by("-authoredAt")
+                .values(*vals)[:limit]
+            )
+        else:
+            res = (
+                MergeRequest.objects.filter(
+                    repo__project=req.auth["proj"], repo__disabled=False, disabled=False
+                )
+                .filter(Q(title__contains=kw) | Q(description__contains=kw))
+                .order_by("-authoredAt")
+                .values(*vals)[:limit]
+            )
+
+        return Response(
+            {
+                "code": 0,
+                "data": res,
+            }
+        )
