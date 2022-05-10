@@ -556,7 +556,7 @@ def roll_back(relation: UserProjectAssociation):
     SR.objects.filter(
         project=relation.project, disabled=False, usersrassociation__user=relation.user
     ).exclude(state=SR.SRState.Done).update(state=SR.SRState.TODO)
-    UserSRAssociation.objects.filter(user_id__in=qs_id).delete()
+    UserSRAssociation.objects.filter(user=relation.user).delete()
     changes = []
     for sr in qs:
         changes += [
