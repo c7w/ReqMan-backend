@@ -438,6 +438,7 @@ class RDTSViewSet(viewsets.ViewSet):
                         "description",
                         "authoredAt",
                         "closedAt",
+                        "url"
                         "user_authored",
                         "user_closed",
                     )[:ACTIVITY_LIMIT]
