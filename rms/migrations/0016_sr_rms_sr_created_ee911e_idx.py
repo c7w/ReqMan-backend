@@ -6,12 +6,12 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rms', '0015_remove_sr_rms_sr_pattern_708bb8_idx_and_more'),
+        ("rms", "0015_remove_sr_rms_sr_pattern_708bb8_idx_and_more"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='sr',
-            index=models.Index(fields=['createdAt'], name='rms_sr_created_ee911e_idx'),
+            model_name="sr",
+            index=models.Index(fields=["createdAt"], name="rms_sr_created_ee911e_idx"),
         ),
     ]

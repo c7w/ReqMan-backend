@@ -1,3 +1,4 @@
+import sre_parse
 from asyncio import exceptions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,7 +13,7 @@ from rdts.models import *
 from rest_framework import exceptions
 from utils.permissions import project_rights, GeneralPermission
 from rdts.utlis import pagination
-from django.db.models import OuterRef, Subquery
+from django.db.models import OuterRef, Subquery, Q
 
 
 class RMSViewSet(viewsets.ViewSet):
@@ -183,3 +184,27 @@ class RMSViewSet(viewsets.ViewSet):
             )
 
         return FAIL
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["POST"])
+    def search_sr(self, req: Request):
+        title_only = require(req.data, "title_only", bool)
+        kw = require(req.data, "kw", str)
+        limit = require(req.data, "limit", int)
+        vals = ("id", "title", "description", "state", "createdBy", "createdAt")
+        if title_only:
+            res = (
+                SR.objects.filter(project=req.auth["proj"], disabled=False)
+                .filter(title__contains=kw)
+                .order_by("-createdAt")
+                .values(*vals)[:limit]
+            )
+        else:
+            res = (
+                SR.objects.filter(project=req.auth["proj"], disabled=False)
+                .filter(Q(title__contains=kw) | Q(description__contains=kw))
+                .order_by("-createdAt")
+                .values(*vals)[:limit]
+            )
+
+        return Response({"code": 0, "data": res})
