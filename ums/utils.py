@@ -289,7 +289,7 @@ def user_and_projects(x: User):
             }
             for r in UserProjectAssociation.objects.filter(user=x)
         ],
-        "avatar": x.avatar,
+        # "avatar": x.avatar,
     }
 
 

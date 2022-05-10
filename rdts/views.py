@@ -392,6 +392,7 @@ class RDTSViewSet(viewsets.ViewSet):
                         "title",
                         "description",
                         "repo",
+                        "state",
                         "url",
                         "authoredAt",
                         "reviewedAt",
@@ -429,15 +430,17 @@ class RDTSViewSet(viewsets.ViewSet):
                         repo__disabled=False,
                         is_bug=True,
                     )
-                    .order_by("-closedAt")
+                    .order_by("-authoredAt")
                     .values(
                         "id",
                         "issue_id",
                         "repo",
                         "title",
                         "description",
+                        "state",
                         "authoredAt",
                         "closedAt",
+                        "url" "user_assignee",
                         "user_authored",
                         "user_closed",
                     )[:ACTIVITY_LIMIT]
