@@ -1,3 +1,4 @@
+import sre_parse
 from asyncio import exceptions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -8,9 +9,11 @@ from ums.views import SUCC
 from utils.sessions import SessionAuthentication
 from ums.utils import *
 from rms.utils import *
+from rdts.models import *
 from rest_framework import exceptions
 from utils.permissions import project_rights, GeneralPermission
 from rdts.utlis import pagination
+from django.db.models import OuterRef, Subquery, Q
 
 
 class RMSViewSet(viewsets.ViewSet):
@@ -93,8 +96,10 @@ class RMSViewSet(viewsets.ViewSet):
         ]
         # if type == 'ir' or type == 'sr' or type == 'sr-iteration' or type=='iteration':
         if type in typeAll:
-            if not is_role(req.user, proj, Role.SUPERMASTER) and not is_role(
-                req.user, proj, Role.SYS
+            if (
+                not is_role(req.user, proj, Role.SUPERMASTER)
+                and not is_role(req.user, proj, Role.SYS)
+                and not is_role(req.user, proj, Role.QA)
             ):
                 raise exceptions.PermissionDenied
         if type == "SRState":
@@ -152,15 +157,96 @@ class RMSViewSet(viewsets.ViewSet):
             disabled=False, project=req.auth["proj"], id=sr_id
         ).first()
         if sr:
-            ir = sr.IR.filter(disabled=False).first()
+            ir = sr.IR.filter(disabled=False)
+            commits = CommitSRAssociation.objects.filter(SR=sr).all()
+            issues = IssueSRAssociation.objects.filter(SR=sr).all()
+            mrs = MRSRAssociation.objects.filter(SR=sr).all()
+
             return Response(
                 {
                     "code": 0,
                     "data": {
                         **model_to_dict(sr, exclude=["IR", "disabled"]),
-                        "IR": model_to_dict(ir, exclude=["disabled"]) if ir else None,
+                        "IR": [model_to_dict(i, exclude=["disabled"]) for i in ir],
+                        "commit": [
+                            [
+                                model_to_dict(c.commit, exclude=["disabled"]),
+                                c.auto_added,
+                            ]
+                            for c in commits
+                        ],
+                        "issue": [
+                            [model_to_dict(c.issue), c.auto_added] for c in issues
+                        ],
+                        "mr": [[model_to_dict(c.MR), c.auto_added] for c in mrs],
                     },
                 }
             )
 
         return FAIL
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["POST"])
+    def search_sr(self, req: Request):
+        title_only = require(req.data, "title_only", bool)
+        kw = require(req.data, "kw", str)
+        limit = require(req.data, "limit", int)
+        vals = ("id", "title", "description", "state", "createdBy", "createdAt")
+        if title_only:
+            res = (
+                SR.objects.filter(project=req.auth["proj"], disabled=False)
+                .filter(title__contains=kw)
+                .order_by("-createdAt")
+                .values(*vals)[:limit]
+            )
+        else:
+            res = (
+                SR.objects.filter(project=req.auth["proj"], disabled=False)
+                .filter(Q(title__contains=kw) | Q(description__contains=kw))
+                .order_by("-createdAt")
+                .values(*vals)[:limit]
+            )
+
+        return Response({"code": 0, "data": res})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def dashboard(self, req: Request):
+        limit = require(req.query_params, "limit", int)
+
+        if limit > 10:
+            limit = 10
+
+        wip = [
+            model_to_dict(s, exclude=["IR"])
+            for s in SR.objects.filter(
+                usersrassociation__user=req.user,
+                project=req.auth["proj"],
+                state=SR.SRState.WIP,
+                disabled=False,
+            ).order_by("-priority", "-createdAt")[:limit]
+        ]
+
+        todo = [
+            model_to_dict(s, exclude=["IR"])
+            for s in SR.objects.filter(
+                usersrassociation__user=req.user,
+                project=req.auth["proj"],
+                state=SR.SRState.TODO,
+                disabled=False,
+            ).order_by("-priority", "-createdAt")[:limit]
+        ]
+
+        reviewing = [
+            model_to_dict(s, exclude=["IR"])
+            for s in SR.objects.filter(
+                usersrassociation__user=req.user,
+                project=req.auth["proj"],
+                state=SR.SRState.Reviewing,
+                disabled=False,
+            ).order_by("-priority", "-createdAt")[:limit]
+        ]
+
+        return Response(
+            {"code": 0, "data": {"wip": wip, "todo": todo, "reviewing": reviewing}}
+        )

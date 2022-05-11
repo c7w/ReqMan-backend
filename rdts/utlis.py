@@ -553,6 +553,8 @@ def pagination(
     related_set=None,
     addon=None,
 ):
+    if size > 100:
+        size = 100
     all_count = QS.count()
     if not order:
         order = "-createdAt"

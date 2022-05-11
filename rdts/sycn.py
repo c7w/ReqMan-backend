@@ -62,7 +62,7 @@ def search_for_commit_update(commits, r: RemoteRepo, ori_commits, req, crawl=Non
         print("diff status", diff_status, additions, deletions)
         _kw["additions"] = additions
         _kw["deletions"] = deletions
-        _kw["diff"] = json.dumps(diffs, ensure_ascii=False)
+        # _kw["diff"] = json.dumps(diffs, ensure_ascii=False)
         return _kw
 
     updated = False

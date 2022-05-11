@@ -122,7 +122,7 @@ class UserViewSet(viewsets.ViewSet):
             {
                 "code": 0,
                 "data": {
-                    "schedule": {"done": [], "wip": [], "todo": []},
+                    # "schedule": {"done": [], "wip": [], "todo": []},
                     **user_and_projects(req.user),
                 },
             }
@@ -207,13 +207,11 @@ class UserViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["POST"], url_path="project")
     def show_project_detail(self, req: Request):
         proj = req.auth["proj"]
-        avatar = proj.avatar
+        # avatar = proj.avatar
         users = [user_to_list(u, proj) for u in all_users().filter(project=proj)]
         proj = proj_to_list(proj)
 
-        return Response(
-            {"code": 0, "data": {"project": proj, "users": users, "avatar": avatar}}
-        )
+        return Response({"code": 0, "data": {"project": proj, "users": users}})
 
     @project_rights(Role.SUPERMASTER)
     @action(detail=False, methods=["POST"])

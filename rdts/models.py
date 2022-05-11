@@ -37,18 +37,18 @@ class Commit(models.Model):
     createdAt = models.FloatField()
     url = models.TextField()
     disabled = models.BooleanField(default=False)
+    commite_date = models.FloatField(default=0)
 
     class Meta:
         indexes = [
             models.Index(fields=["commiter_email"]),
-            models.Index(fields=["commiter_name"]),
             models.Index(fields=["repo"]),
         ]
 
     user_committer = models.ForeignKey(
         "ums.User", on_delete=models.CASCADE, null=True, default=None, related_name="+"
     )
-    diff = models.TextField(default="")
+    # diff = models.TextField(default="")
     additions = models.IntegerField(default=-1)
     deletions = models.IntegerField(default=-1)
 

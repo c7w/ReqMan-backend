@@ -3,12 +3,13 @@ import time
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from urllib.parse import urlencode
+from ums.utils import intify
 
 
 class RemoteRepoFetcher:
     def __init__(self, base_url: str, repo, access_token: str):
         self.base = base_url.strip("/")
-        self.repo = int(repo)
+        self.repo = intify(repo)
         self.token = access_token
 
     def merges(self, page):
@@ -105,15 +106,15 @@ class Gitlab(RemoteRepoFetcher):
     def commit_diff_lines(self, _hash: str):
         status, res = self.request(f"repository/commits/{_hash}/diff")
         if status == 200:
-            diffs = []
+            # diffs = []
             total_add = 0
             total_subs = 0
             for file in res:
                 add, subs = from_diff_to_lines(file["diff"])
                 total_add += add
                 total_subs += subs
-                diffs += [file["diff"]]
-            return status, total_add, total_subs, diffs
+                # diffs += [file["diff"]]
+            return status, total_add, total_subs, ""
         else:
             return status, -1, -1, []
 
