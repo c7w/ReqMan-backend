@@ -250,3 +250,69 @@ class RMSViewSet(viewsets.ViewSet):
         return Response(
             {"code": 0, "data": {"wip": wip, "todo": todo, "reviewing": reviewing}}
         )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def get_iteration_digest(self, req: Request):
+        it = require(req.query_params, "iteration", int)
+        SRs = SRIterationAssociation.objects.filter(
+            iteration_id=it,
+            iteration__project=req.auth["proj"],
+            iteration__disabled=False,
+            SR__disabled=False,
+            SR__project=req.auth["proj"],
+        ).values("SR_id")
+        bug_count = Issue.objects.filter(
+            repo__disabled=False,
+            repo__project=req.auth["proj"],
+            is_bug=True,
+            issuesrassociation__SR__in=map(lambda x: x["SR_id"], SRs),
+        ).count()
+        return Response(
+            {"code": 0, "data": {"bug_count": bug_count, "SR_count": len(SRs)}}
+        )
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def get_ir_sr(self, req: Request):
+        ir = require(req.query_params, "ir", int)
+        SRs = SR.objects.filter(
+            irsrassociation__IR__id=ir,
+            irsrassociation__IR__project=req.auth["proj"],
+            irsrassociation__IR__disabled=False,
+            disabled=False,
+            project=req.auth["proj"],
+        ).values(
+            "id", "title", "description", "priority", "state", "createdBy", "createdAt"
+        )
+        return Response({"code": 0, "data": SRs})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def get_service_sr(self, req: Request):
+        service = require(req.query_params, "service", int)
+        SRs = SR.objects.filter(
+            servicesrassociation__service__id=service,
+            servicesrassociation__service__project=req.auth["proj"],
+            servicesrassociation__service__disabled=False,
+            disabled=False,
+            project=req.auth["proj"],
+        ).values(
+            "id", "title", "description", "priority", "state", "createdBy", "createdAt"
+        )
+        return Response({"code": 0, "data": SRs})
+
+    @project_rights("AnyMember")
+    @action(detail=False, methods=["GET"])
+    def get_iteration_sr(self, req: Request):
+        it = require(req.query_params, "iteration", int)
+        SRs = SR.objects.filter(
+            sriterationassociation__iteration__id=it,
+            sriterationassociation__iteration__project=req.auth["proj"],
+            sriterationassociation__iteration__disabled=False,
+            disabled=False,
+            project=req.auth["proj"],
+        ).values(
+            "id", "title", "description", "priority", "state", "createdBy", "createdAt"
+        )
+        return Response({"code": 0, "data": SRs})
