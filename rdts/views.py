@@ -425,7 +425,7 @@ class RDTSViewSet(viewsets.ViewSet):
                     )
                     .filter(
                         user_assignee__id=did,
-                        closedAt__gte=begin,
+                        authoredAt__gte=begin,
                         repo__project=req.auth["proj"],
                         repo__disabled=False,
                         is_bug=True,
