@@ -203,13 +203,13 @@ def createUserIterationAssociation(datas: dict):
     it = Iteration.objects.filter(id=it).first()
     user = require(datas, "userId")
     judgeTypeInt(user)
-    user = User.objects.filter(id=user).first()
+    user = User.objects.filter(id=user, disabled=False).first()
     if not user or not it:
         raise ParamErr(f"wrong It/User Id.")
     data = {"user": user, "iteration": it}
-    exist = UserIterationAssociation.objects.filter(iteration=it).first()
+    exist = UserIterationAssociation.objects.filter(iteration=it, user=user).first()
     if exist:
-        raise ParamErr("Association Exist")
+        return
     UserIterationAssociation.objects.create(**data)
 
 
