@@ -207,6 +207,7 @@ class Command(BaseCommand):
 
             batch_refresh_sr_status(iss_c, mr_c, comm_c, r)
             r.created = True
+            r.save()
 
         self.stdout.write("END OF CREATE CRAWL")
 
