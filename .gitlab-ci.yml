@@ -2,7 +2,7 @@ image: registry.secoder.net/tool/deployer
 
 stages:
   - build
-  - test
+#  - test
   - deploy
 
 build-master:
@@ -29,15 +29,15 @@ build-dev:
   except:
     - master
 
-style-test:
-  image: python:3.8.5
-  stage: test
-  before_script:
-    - cp ./config.yml.bak ./config.yml
-    - pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
-  script:
-    - pylint --load-plugins pylint_django --fail-under=0 --django-settings-module=backend.settings backend rms ums rdts
-    - exit $?
+#style-test:
+#  image: python:3.8.5
+#  stage: test
+#  before_script:
+#    - cp ./config.yml.bak ./config.yml
+#    - pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
+#  script:
+#    - pylint --load-plugins pylint_django --fail-under=0 --django-settings-module=backend.settings backend rms ums rdts
+#    - exit $?
 
 #unit-test:
 #  image: python:3.8.5
