@@ -4,6 +4,7 @@ from ums.models import *
 import json
 from ums.views import EMAIL_EXPIRE_SECONDS, RESETTING_STATUS_EXPIRE_SECONDS
 import ums.utils
+from utils.exceptions import ParamErr
 
 SUCC = {"code": 0}
 FAIL = {"code": 1}
@@ -1240,3 +1241,36 @@ class UMS_Tests(TestCase):
     def test_utils(self):
         ums.utils.user_to_list(self.u4, self.p1)
         ums.utils.send_mail("", "")
+        ums.utils.email_verify("test@secoder.net", "__hash")
+        ums.utils.key_render("", {})
+        ums.utils.email_password_reset("test@secoder.net", "__hash")
+        ums.utils.floatify(4.0)
+        try:
+            ums.utils.floatify("4.0")
+        except ParamErr:
+            pass
+
+        try:
+            ums.utils.floatify("Impossible")
+        except ParamErr:
+            pass
+
+        try:
+            ums.utils.require({"hello": "world"}, "hello", float)
+        except ParamErr:
+            pass
+
+        try:
+            ums.utils.require({"hello": []}, "hello")
+        except ParamErr:
+            pass
+
+        try:
+            ums.utils.booleanfy("Impossible")
+        except ParamErr:
+            pass
+
+        try:
+            ums.utils.booleanfy(1)
+        except ParamErr:
+            pass

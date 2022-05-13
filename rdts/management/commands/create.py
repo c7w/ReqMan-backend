@@ -72,16 +72,6 @@ class Command(BaseCommand):
 
         updated = False
 
-        # search for deletion
-        # for c in ori_merges:
-        #     if c.merge_id not in merges_dic:
-        #         updated = True
-        #         c.disabled = True
-        #         c.save()
-        #         MergeCrawlAssociation.objects.create(
-        #             merge=c, crawl=crawl, operation=CrawlerOp.REMOVE
-        #         )
-        #         MRSRAssociation.objects.filter(MR=c).delete()
 
         # search for addition
         add_updated = search_for_mr_addition(merges, r, ori_merges, crawl)
@@ -133,17 +123,6 @@ class Command(BaseCommand):
 
         updated = False
 
-        # search for deletion
-        # for c in ori_commits:
-        #     if c.hash_id not in commits_dic:
-        #         updated = True
-        #         c.disabled = True
-        #         c.save()
-        #         CommitCrawlAssociation.objects.create(
-        #             commit=c, crawl=crawl, operation=CrawlerOp.REMOVE
-        #         )
-        #         CommitSRAssociation.objects.filter(commit=c).delete()
-
         # search for addition
         add_upd = search_for_commit_update(commits, r, ori_commits, req, crawl)
         if add_upd:
@@ -194,18 +173,6 @@ class Command(BaseCommand):
 
         updated = False
 
-        # search for deletion
-        # for c in ori_issues:
-        #     if c.issue_id not in issues_dic:
-        #         updated = True
-        #         c.disabled = True
-        #         c.save()
-        #         IssueCrawlAssociation.objects.create(
-        #             issue=c, crawl=crawl, operation=CrawlerOp.REMOVE
-        #         )
-        #         IssueSRAssociation.objects.filter(issue=c).delete()
-
-        # search for addition
         add_update = search_for_issue_update(issues, r, ori_issues, crawl)
         if add_update:
             updated = add_update
@@ -217,7 +184,7 @@ class Command(BaseCommand):
 
     def crawl_all(self):
         remote_repos = list(
-            RemoteRepo.objects.filter(enable_crawling=True, repo__disabled=False, created=True)
+            RemoteRepo.objects.filter(enable_crawling=True, repo__disabled=False, created=False)
         )
         self.stdout.write("Repos: " + ", ".join([str(r.id) for r in remote_repos]))
 
@@ -239,12 +206,13 @@ class Command(BaseCommand):
             sleep(BIG_INTERVAL)
 
             batch_refresh_sr_status(iss_c, mr_c, comm_c, r)
+            r.created = True
 
-        self.stdout.write("END OF TASK CRAWL")
+        self.stdout.write("END OF CREATE CRAWL")
 
     def handle(self, *args, **options):
         s = BlockingScheduler()
-        self.stdout.write("Scheduler Initialized")
-        s.add_job(self.crawl_all, "interval", minutes=1)
+        self.stdout.write("Creating Scheduler Initialized")
+        s.add_job(self.crawl_all, "interval", seconds=1)
         s.start()
         # self.crawl_all()

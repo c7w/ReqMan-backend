@@ -194,6 +194,7 @@ class RemoteRepo(models.Model):
     info = models.TextField(default="{}")  # 额外信息，如网址
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE)  # 对应的本地仓库
     secret_token = models.CharField(max_length=255, default="", unique=True)
+    created = models.BooleanField(default=False)
 
     class Meta:
         indexes = [models.Index(fields=["repo"]), models.Index(fields=["secret_token"])]

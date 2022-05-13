@@ -68,7 +68,7 @@ class Gitlab(RemoteRepoFetcher):
     def request(self, req_type: str, page=None, headers=False, path=None, ref=None):
         params = []
         if page:
-            params += [("page", page), ("per_page", 100)]
+            params += [("page", page), ("per_page", 1000)]
         if path:
             params += [("path", path)]
         if ref:
