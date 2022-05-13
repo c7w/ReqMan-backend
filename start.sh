@@ -6,6 +6,6 @@ python3 manage.py createcachetable
 python3 manage.py schedule &
 python3 manage.py webhook &
 python3 manage.py create &
-python3 manage.py runserver 80
+#python3 manage.py runserver 80
 
-uwsgi --chdir=/opt/tmp/ --module=backend.wsgi:application  --env DJANGO_SETTINGS_MODULE=backend.settings --master  --http=127.0.0.1:8009   --processes=5   --uid=1000 --gid=2000   --harakiri=20   --max-requests=5000    --vacuum   &
+uwsgi --chdir=/opt/tmp/ --module=backend.wsgi:application  --env DJANGO_SETTINGS_MODULE=backend.settings --master  --http=127.0.0.1:80   --processes=5   --uid=1000 --gid=2000   --harakiri=20   --max-requests=5000    --vacuum   &
