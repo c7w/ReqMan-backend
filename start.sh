@@ -6,5 +6,6 @@ python3 manage.py createcachetable
 python3 manage.py schedule &
 python3 manage.py webhook &
 python3 manage.py create &
+python3 manage.py runserver 80
 
-uwsgi --ini uwsgi.ini
+#uwsgi --ini uwsgi.ini
