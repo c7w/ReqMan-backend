@@ -72,7 +72,6 @@ class Command(BaseCommand):
 
         updated = False
 
-
         # search for addition
         add_updated = search_for_mr_addition(merges, r, ori_merges, crawl)
         if not updated:
@@ -184,7 +183,9 @@ class Command(BaseCommand):
 
     def crawl_all(self):
         remote_repos = list(
-            RemoteRepo.objects.filter(enable_crawling=True, repo__disabled=False, created=False)
+            RemoteRepo.objects.filter(
+                enable_crawling=True, repo__disabled=False, created=False
+            )
         )
         self.stdout.write("Repos: " + ", ".join([str(r.id) for r in remote_repos]))
 
