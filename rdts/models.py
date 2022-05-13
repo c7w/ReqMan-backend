@@ -82,6 +82,8 @@ class MergeRequest(models.Model):
         "ums.User", on_delete=models.CASCADE, null=True, default=None, related_name="+"
     )
 
+    updated_at = models.FloatField(null=True, default=0)
+
     class Meta:
         indexes = [
             models.Index(fields=["authoredByUserName"]),

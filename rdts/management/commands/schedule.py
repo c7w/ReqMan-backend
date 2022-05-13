@@ -217,7 +217,9 @@ class Command(BaseCommand):
 
     def crawl_all(self):
         remote_repos = list(
-            RemoteRepo.objects.filter(enable_crawling=True, repo__disabled=False, created=True)
+            RemoteRepo.objects.filter(
+                enable_crawling=True, repo__disabled=False, created=True
+            )
         )
         self.stdout.write("Repos: " + ", ".join([str(r.id) for r in remote_repos]))
 
