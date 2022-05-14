@@ -573,10 +573,12 @@ class ScheduleFunctionTest(TestCase):
 
     def test_fetch_function(self):
         from rdts.management.commands.create import Command as creator
+
         cmd = creator()
         cmd.crawl_all()
 
         from rdts.management.commands.schedule import Command as schor
+
         cmd = schor()
         cmd.crawl_all()
 

@@ -45,6 +45,7 @@ def mr_action(repo: RemoteRepo, body: dict, req):
     if status != 200:
         print(status, bdy)
         return
+    bdy["updated_at"] = now()
     mr_c = CrawlLog.objects.create(
         repo=repo,
         time=now(),
@@ -65,6 +66,7 @@ def issue_action(repo: RemoteRepo, body: dict, req: RemoteRepoFetcher):
     if status != 200:
         print(status, bdy)
         return
+    bdy["updated_at"] = now()
     iss_c = CrawlLog.objects.create(
         repo=repo,
         time=now(),

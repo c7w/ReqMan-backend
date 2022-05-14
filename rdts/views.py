@@ -811,6 +811,9 @@ class RDTSViewSet(viewsets.ViewSet):
         from_num = require(req.query_params, "from", int)
         size = require(req.query_params, "size", int)
 
+        if from_num < 0:
+            from_num = 0
+
         if size > 100:
             size = 100
         commits = (

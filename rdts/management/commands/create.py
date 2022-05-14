@@ -34,6 +34,7 @@ class Command(BaseCommand):
 
     def get_merge(self, r: RemoteRepo, req):
         self.stdout.write("begin query merges")
+        this_begin = now()
         # make requests
         merges = []
         i = 1
@@ -59,6 +60,8 @@ class Command(BaseCommand):
                 )
                 return
         self.stdout.write(str(len(merges)))
+        for mm in merges:
+            mm["updated_at"] = this_begin
 
         # process merges
         crawl = CrawlLog.objects.create(repo=r, time=now(), request_type="merge")
@@ -71,7 +74,6 @@ class Command(BaseCommand):
         ori_merges = MergeRequest.objects.filter(repo=r.repo, disabled=False)
 
         updated = False
-
 
         # search for addition
         add_updated = search_for_mr_addition(merges, r, ori_merges, crawl)
@@ -135,6 +137,7 @@ class Command(BaseCommand):
 
     def get_issue(self, r: RemoteRepo, req):
         self.stdout.write("begin query issues")
+        this_begin = now()
         # make requests
         issues = []
         i = 1
@@ -160,6 +163,8 @@ class Command(BaseCommand):
                 )
                 return
         self.stdout.write(str(len(issues)))
+        for ii in issues:
+            ii['updated_at'] = this_begin
 
         # process issues
         crawl = CrawlLog.objects.create(repo=r, time=now(), request_type="issue")
@@ -184,7 +189,9 @@ class Command(BaseCommand):
 
     def crawl_all(self):
         remote_repos = list(
-            RemoteRepo.objects.filter(enable_crawling=True, repo__disabled=False, created=False)
+            RemoteRepo.objects.filter(
+                enable_crawling=True, repo__disabled=False, created=False
+            )
         )
         self.stdout.write("Repos: " + ", ".join([str(r.id) for r in remote_repos]))
 
@@ -207,6 +214,7 @@ class Command(BaseCommand):
 
             batch_refresh_sr_status(iss_c, mr_c, comm_c, r)
             r.created = True
+            r.save()
 
         self.stdout.write("END OF CREATE CRAWL")
 
