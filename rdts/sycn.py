@@ -168,7 +168,7 @@ def search_for_issue_update(issues, r: RemoteRepo, ori_issues, crawl=None):
             "state": c["state"],
             "authoredByUserName": c["author"]["username"],
             "authoredAt": dt.datetime.timestamp(parse_date(c["created_at"])),
-            "updatedAt": dt.datetime.timestamp(parse_date(c["updated_at"])),
+            "updatedAt": c["updated_at"],
             "closedByUserName": c["closed_by"]["username"]
             if c["closed_by"] is not None
             else "",
@@ -297,7 +297,7 @@ def search_for_mr_addition(
             if c["merged_at"] is not None
             else None,
             "url": c["web_url"],
-            "updated_at": dt.datetime.timestamp(parse_date(c["updated_at"])),
+            "updated_at": c["updated_at"],
         }
         mr = ori_merges.filter(merge_id=c["iid"])
         if len(mr):

@@ -553,6 +553,9 @@ def pagination(
     related_set=None,
     addon=None,
 ):
+    if from_num < 0:
+        from_num = 0
+
     if size > 100:
         size = 100
     all_count = QS.count()
