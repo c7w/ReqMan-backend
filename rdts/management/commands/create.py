@@ -164,7 +164,7 @@ class Command(BaseCommand):
                 return
         self.stdout.write(str(len(issues)))
         for ii in issues:
-            ii['updated_at'] = this_begin()
+            ii['updated_at'] = this_begin
 
         # process issues
         crawl = CrawlLog.objects.create(repo=r, time=now(), request_type="issue")
